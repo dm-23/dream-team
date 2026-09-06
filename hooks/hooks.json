@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" team-mode-prompt",
+            "shell": "bash",
+            "timeout": 10,
+            "async": false,
+            "statusMessage": "Checking team mode"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "team": {
+    "name": "dream-team",
+    "version": "2.2.0",
+    "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
+  },
+  "agents": [
+    "brainstorm",
+    "researcher-explorer",
+    "architect",
+    "developer",
+    "tester",
+    "reviewer"
+  ],
+  "skills": [
+    "team",
+    "generate-knowledge",
+    "team-setup"
+  ],
+  "knowledge": {
+    "dir": ".claude/knowledge",
+    "generator": "/generate-knowledge",
+    "required": [
+      "PROJECT-OVERVIEW.md",
+      "BACKEND-ARCHITECTURE.md",
+      "FRONTEND-ARCHITECTURE.md",
+      "DI-AND-STARTUP.md",
+      "TESTING-CONVENTIONS.md",
+      "SEARCH-PLAYBOOK.md",
+      "TOOLCHAIN.md",
+      "CODING-STANDARDS.md",
+      "REVIEW-CHECKLIST.md",
+      "PROJECT-RULES.md"
+    ],
+    "persistent": [
+      "LEARNINGS.md"
+    ],
+    "persistentTemplates": {
+      "LEARNINGS.md": ".claude/team/templates/learnings.md"
+    },
+    "environment": {
+      "CAPABILITIES.md": {
+        "writtenBy": "/team-setup",
+        "template": ".claude/team/templates/capabilities.md",
+        "note": "Describes this machine, not this repository: which optional capabilities are installed and how the team may use them. Rewritten by every /team-setup run. Absent or empty means the team runs with none, which is a supported state."
+      }
+    }
+  },
+  "tracking": {
+    "dir": ".claude-tracking"
+  },
+  "hooks": {
+    "dir": ".claude/team/hooks",
+    "pluginConfig": "hooks/hooks.json",
+    "settingsSnippet": "hooks/settings-snippet.json",
+    "launcher": "hooks/run-hook.cmd",
+    "events": [
+      "UserPromptSubmit"
+    ],
+    "marker": ".claude-tracking/.team-mode",
+    "purpose": "Sticky team mode: while the marker file exists, every user prompt is routed back through the /team orchestrator, surviving model switches, pauses, compaction and restarts.",
+    "requires": "a bash shell (Git Bash or WSL on Windows); without one the hook exits quietly and sticky mode is simply unavailable"
+  },
+  "templates": {
+    "dir": ".claude/team/templates",
+    "status": "status.md",
+    "handoff": "handoff.md",
+    "reportHtml": "report-html.md",
+    "capabilities": "capabilities.md",
+    "standards": "standards"
+  },
+  "gitExclude": [
+    ".claude/knowledge/",
+    ".claude-tracking/"
+  ],
+  "pluginPolicy": {
+    "consent": "Every plugin in this list is optional and is installed only after the user agrees to that specific plugin. /team-setup reports what is missing and asks before installing anything. /team and the subagents never install, enable or disable a plugin.",
+    "degradation": "The team must produce the same quality of work with none of these installed. A capability is an accelerator, never a prerequisite. An agent that cannot see a capability proceeds without it and never tells the user something was impossible because a plugin was absent.",
+    "brokering": "Subagents run with the tool list in their own frontmatter, which does not include tools contributed by plugins. By default the orchestrator uses a capability itself and passes the result into the handoff. A team owner who wants an agent to call a capability directly must add that capability's tools to the agent's frontmatter; /team-setup reports which agents would need that and never edits them.",
+    "verification": "Install identifiers below were confirmed against the official marketplace listing and the vendors' own installation instructions in September 2026. Re-check before relying on one; /team-setup reports what is actually installed rather than trusting this file."
+  },
+  "plugins": [
+    {
+      "capability": "library-docs",
+      "name": "context7",
+      "marketplace": "claude-plugins-official",
+      "install": "/plugin install context7@claude-plugins-official",
+      "alternativeInstall": "claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp",
+      "required": false,
+      "consent": "ask",
+      "detect": "a tool whose name contains \"context7\"",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["researcher-explorer", "architect", "developer", "reviewer"],
+      "useWhen": "The task depends on a third-party library or framework and the exact current signature, option name, or version-specific behaviour is not visible in this repository. Look it up before designing or writing the call, not after it fails.",
+      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from .claude/knowledge/ and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
+    },
+    {
+      "capability": "session-memory",
+      "name": "claude-mem",
+      "marketplace": "thedotmack/claude-mem",
+      "install": "/plugin marketplace add thedotmack/claude-mem, then /plugin install claude-mem",
+      "required": false,
+      "consent": "ask",
+      "detect": "a tool or command whose name contains \"mem\", contributed by this plugin",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["orchestrator"],
+      "useWhen": "At preflight, to recall the user's standing preferences and what earlier sessions concluded about this project. Treat every recollection as a hint to verify, never as a fact.",
+      "neverUseFor": "Storing the team's own learnings. LEARNINGS.md stays the single compounding record: it is reviewable, project-scoped and lives beside the code. Never let a recollection outrank the repository or the knowledge files."
+    },
+    {
+      "capability": "instructions-maintenance",
+      "name": "claude-md-management",
+      "marketplace": "claude-plugins-official",
+      "install": "/plugin install claude-md-management@claude-plugins-official",
+      "required": false,
+      "consent": "ask",
+      "detect": "a command for revising the project instruction file, contributed by this plugin",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["orchestrator"],
+      "useWhen": "At the docs-sync step of a run that changed a documented rule or created a new obligation: propose the instruction-file update through this capability and let the user approve the diff.",
+      "neverUseFor": "Editing project instruction files silently or in the middle of a run, and regenerating PROJECT-RULES.md — that belongs to the knowledge generator, which reads the instruction file rather than writing it."
+    },
+    {
+      "capability": "browser-control",
+      "name": "chrome-devtools-mcp",
+      "marketplace": "claude-plugins-official",
+      "install": "/plugin install chrome-devtools-mcp@claude-plugins-official",
+      "required": false,
+      "consent": "ask",
+      "detect": "a tool for navigating, inspecting or screenshotting a live browser page",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["tester", "reviewer"],
+      "useWhen": "A run changed something a person sees and the result can be observed by loading the running application: the Tester needs a check against real rendering, the Reviewer needs to confirm the change actually appears, or a diagnosis needs the real console or network behaviour.",
+      "neverUseFor": "Projects with no user interface; starting a server or opening a page without the user agreeing first; and never as a substitute for a test — a screenshot is evidence, not coverage."
+    },
+    {
+      "capability": "browser-control",
+      "name": "playwright",
+      "marketplace": "(not published as a marketplace plugin as of September 2026)",
+      "install": "claude mcp add playwright -- npx @playwright/mcp@latest",
+      "required": false,
+      "consent": "ask",
+      "detect": "a tool for driving a browser through structured page data",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["tester", "reviewer"],
+      "alternativeTo": "chrome-devtools-mcp",
+      "useWhen": "Same as the other browser-control entry. Install at most one of the two: two browser drivers competing for the same page waste context and produce contradictory observations.",
+      "neverUseFor": "Same exclusions as the other browser-control entry."
+    }
+  ],
+  "checks": {
+    "runFrom": "team root (this directory; in an installed project: .claude/team)",
+    "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
+    "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md README.md"
+  },
+  "installedRoot": ".claude/team"
+}

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Dream Team — UserPromptSubmit hook.
+#
+# While the marker file .claude-tracking/.team-mode exists, every user message
+# is routed back through the /team orchestrator. This survives a model switch,
+# a long pause, a compaction and a restart, because the harness runs this hook
+# on every submitted prompt rather than relying on anything staying in context.
+#
+# Exit 0 with no output = no injection. The hook must never break a session,
+# so every failure path is silent.
+
+set -uo pipefail
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
+MARKER="${PROJECT_DIR}/.claude-tracking/.team-mode"
+
+[ -f "$MARKER" ] || exit 0
+
+payload="$(cat 2>/dev/null || true)"
+
+# A slash command is an explicit instruction to the harness — never override it.
+if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"/'; then
+  exit 0
+fi
+
+read_field() {
+  sed -n "s/^$1=//p" "$MARKER" 2>/dev/null | head -1 | tr -d '\r'
+}
+
+context_id="$(read_field context_id)"
+workflow="$(read_field workflow)"
+phase="$(read_field phase)"
+
+[ -n "$context_id" ] || exit 0
+[ -n "$workflow" ] || workflow="unknown"
+[ -n "$phase" ] || phase="unknown"
+
+escape_for_json() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+context_id="$(escape_for_json "$context_id")"
+workflow="$(escape_for_json "$workflow")"
+phase="$(escape_for_json "$phase")"
+
+context="<TEAM-MODE-ACTIVE>\n"
+context="${context}Dream Team mode is ON for this project. Run: ${context_id}. Workflow: ${workflow}. Last recorded phase: ${phase}.\n"
+context="${context}Treat the user's message as input to that run, not as a standalone request.\n"
+context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\") and read .claude-tracking/${context_id}/status.md before answering.\n"
+context="${context}2. Continue the existing run from its first unchecked phase. Never restart it and never open a second run in parallel.\n"
+context="${context}3. Stay in the orchestrator role: no production code, no tests, no build or test commands of your own — those belong to the Developer, Tester and Reviewer subagents.\n"
+context="${context}Handle directly, without the workflow: a request to stop or pause team mode (delete .claude-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
+context="${context}</TEAM-MODE-ACTIVE>"
+
+printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "UserPromptSubmit",\n    "additionalContext": "%s"\n  },\n  "suppressOutput": true\n}\n' "$context"
