@@ -12,7 +12,7 @@ It knows nothing about your technology and nothing about your project. Everythin
 
 ```bash
 cd <your project>
-git submodule add <this repo url> .claude/team
+git submodule add https://github.com/dm-23/dream-team.git .claude/team
 ```
 
 Then make the agents and commands visible to Claude Code. Pick one of the two.
@@ -61,11 +61,14 @@ Step 2 takes a few minutes and is the only step that reads your whole codebase. 
 
 `/team` picks the workflow itself and announces it. You approve the plan before anyone writes code.
 
+The two task lines above are not decoration. The team answers in whichever language you wrote the task in and records that language in the run's status file, so a run resumed days later still answers the way it started.
+
 ## What to expect
 
 - You are asked up to a handful of clarifying questions, then shown a plan.
 - Nothing is written until you approve.
-- Every run leaves a diary in `.claude-tracking/` and one entry in the learnings log.
+- Every run leaves a diary in `.claude-tracking/`. Runs that change code also leave an entry in the learnings log; `Analyze` has no reviewer and so leaves none.
+- An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long. Ask for something shareable and you get HTML instead.
 - The team reports the build and test results it actually ran, not a promise.
 
 ## Requirements
@@ -95,7 +98,7 @@ This split is the whole design. Layer one carries process and roles. Layer two c
 team-manifest.json             the contract: what must exist, where, and what to check
 agents/                        six role prompts
 skills/                        three commands
-templates/                     status, handoff, learnings, report, and stack cards
+templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
 ```
 
@@ -115,6 +118,8 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 The orchestrator is the only role that talks to you. It never writes code and never runs a build.
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question.
+
+**Model.** Brainstorm is the only role that pins one, in `agents/brainstorm.md`. Every other role inherits the session's. Since three instances run on every phase that uses them, that single line is the team's main cost lever — lower it there if a run costs more than it is worth to you.
 
 ## The five workflows
 
@@ -155,7 +160,7 @@ Two more files sit in the same directory and are written by someone else.
 
 The team ships with none and works fully without any. A capability is an accelerator: when one is present the work is better grounded, when it is absent nothing is blocked and no report ever blames its absence for a gap.
 
-Four are declared in the manifest, each mapped to a specific plugin, each installed only if you agree to that plugin by name.
+Four are declared in the manifest, each backed by the plugins that can provide it, and each installed only if you agree to that plugin by name. A capability may list more than one: `browser-control` ships two interchangeable entries, of which you install one.
 
 | Capability | What it adds | Who it helps |
 |------------|--------------|--------------|
