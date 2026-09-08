@@ -17,7 +17,7 @@ Answer in the language the task is written in. Record that language in status.md
 - You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies.
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
-- Every Agent call begins with the handoff envelope from `.claude/team/templates/handoff.md`, fully filled.
+- Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
 - A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
 - Update `.claude-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
@@ -25,7 +25,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Report requests
 
-A message asking for a report — "сформируй отчёт", "сделай отчёт", "нужен отчёт по X", "make a report", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/team/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
+A message asking for a report — "сформируй отчёт", "сделай отчёт", "нужен отчёт по X", "make a report", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
 
 This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "мини-отчёт в чате", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
 
@@ -63,7 +63,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 ## Step -1: Preflight (every invocation)
 
 0. If the argument is `stop` or `status`, act per the "Sticky team mode" table and stop here.
-1. Read `.claude/team/team-manifest.json`. For every file in `knowledge.required`, check it exists under `knowledge.dir`. If any is missing: stop and tell the user to run `/generate-knowledge` (list the missing files). Do not attempt to generate knowledge yourself.
+1. Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check it exists under `knowledge.dir`. If any is missing: stop and tell the user to run `/generate-knowledge` (list the missing files). Do not attempt to generate knowledge yourself.
 2. If `LEARNINGS.md` is missing, create it from `knowledge.persistentTemplates`.
 3. Read `TOOLCHAIN.md → Missing on this machine`. If it lists tools, warn the user once (they may continue).
 3b. Read `CAPABILITIES.md` if it exists (see "Optional capabilities"). Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
@@ -81,7 +81,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 
 Detect from the task (any language): analysis verbs → Analyze; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/team/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain` (these two read-only version-control commands are the only shell commands you run). Then write the sticky-mode marker.
+Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain` (these two read-only version-control commands are the only shell commands you run). Then write the sticky-mode marker.
 
 ## Learnings check (all workflows, before any Brainstorm or research)
 

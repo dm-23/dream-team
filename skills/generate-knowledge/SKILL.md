@@ -18,12 +18,12 @@ Output language: the language of the user's request; file contents in English (a
 
 ## Inputs (read all before writing)
 
-1. `.claude/team/team-manifest.json` — the required file list and template locations.
+1. `.claude/team-manifest.json` — the required file list and template locations.
 2. Repository manifests and build files (whatever exists): dependency manifests, lock files, task runners, container files, CI/CD pipeline definitions, editor/format configuration.
 3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`, `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
 5. `.claude/knowledge/LEARNINGS.md` → all `[STALE-CHECK]` lines not yet marked resolved.
-6. Stack cards: every file in `.claude/team/templates/standards/` except `_generic.md`.
+6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
 
 ## Stack detection
 
@@ -201,4 +201,4 @@ For each existing knowledge file: verify every path it names exists, every comma
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
-- Do not touch `.claude/team/`, `.claude/agents/`, `.claude/skills/`, human documentation, or source code.
+- `.claude/knowledge/` is the only directory you write to. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.

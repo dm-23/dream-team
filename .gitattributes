@@ -1,5 +1,10 @@
-# Everything here ships cross-platform and is checked out on machines with
-# core.autocrlf=true. hooks/team-mode-prompt is a bash script and hooks/run-hook.cmd
-# is a cmd/sh polyglot: a CRLF checkout breaks both, and with them sticky team mode.
-# Pin LF in the working tree so a clone matches what was committed.
-* text=auto eol=lf
+# hooks/team-mode-prompt is a bash script and hooks/run-hook.cmd is a cmd/sh
+# polyglot: a CRLF checkout breaks both, and with them sticky team mode. Pin LF
+# so a clone matches what was committed, on machines with core.autocrlf=true.
+#
+# Scoped to those two files on purpose. This file travels with the team and
+# lands at .claude/.gitattributes in a project, where a blanket `* eol=lf` would
+# silently impose line endings on everything else that ends up under .claude/,
+# including the generated knowledge files.
+hooks/run-hook.cmd text eol=lf
+hooks/team-mode-prompt text eol=lf

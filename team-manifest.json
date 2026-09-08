@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "2.2.1",
+    "version": "3.0.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -37,12 +37,12 @@
       "LEARNINGS.md"
     ],
     "persistentTemplates": {
-      "LEARNINGS.md": ".claude/team/templates/learnings.md"
+      "LEARNINGS.md": ".claude/templates/learnings.md"
     },
     "environment": {
       "CAPABILITIES.md": {
         "writtenBy": "/team-setup",
-        "template": ".claude/team/templates/capabilities.md",
+        "template": ".claude/templates/capabilities.md",
         "note": "Describes this machine, not this repository: which optional capabilities are installed and how the team may use them. Rewritten by every /team-setup run. Absent or empty means the team runs with none, which is a supported state."
       }
     }
@@ -51,8 +51,7 @@
     "dir": ".claude-tracking"
   },
   "hooks": {
-    "dir": ".claude/team/hooks",
-    "pluginConfig": "hooks/hooks.json",
+    "dir": ".claude/hooks",
     "settingsSnippet": "hooks/settings-snippet.json",
     "launcher": "hooks/run-hook.cmd",
     "events": [
@@ -63,7 +62,7 @@
     "requires": "a bash shell (Git Bash or WSL on Windows); without one the hook exits quietly and sticky mode is simply unavailable"
   },
   "templates": {
-    "dir": ".claude/team/templates",
+    "dir": ".claude/templates",
     "status": "status.md",
     "handoff": "handoff.md",
     "reportHtml": "report-html.md",
@@ -150,9 +149,8 @@
     }
   ],
   "checks": {
-    "runFrom": "team root (this directory; in an installed project: .claude/team)",
+    "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
     "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md README.md"
-  },
-  "installedRoot": ".claude/team"
+  }
 }

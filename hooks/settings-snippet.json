@@ -1,12 +1,12 @@
 {
-  "_comment": "Merge the UserPromptSubmit entry below into <project>/.claude/settings.json when the team is installed by links rather than as a plugin. Do not replace an existing hooks block — append this entry to the UserPromptSubmit array. When the team is installed as a plugin, hooks/hooks.json already does this and this snippet is not needed.",
+  "_comment": "Merge the UserPromptSubmit entry below into <project>/.claude/settings.json to enable sticky team mode. Do not replace an existing hooks block — append this entry to the UserPromptSubmit array. /team-setup fix offers to do this for you.",
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/team/hooks/run-hook.cmd\" team-mode-prompt",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/run-hook.cmd\" team-mode-prompt",
             "shell": "bash",
             "timeout": 10,
             "async": false,

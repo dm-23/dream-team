@@ -1,5 +1,0 @@
-{
-  "name": "dream-team",
-  "version": "2.2.2",
-  "description": "Stack-agnostic multi-agent development team for Claude Code (/team, /generate-knowledge, /team-setup)"
-}
