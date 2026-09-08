@@ -18,9 +18,18 @@ Answer in the language the task is written in. Record that language in status.md
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/team/templates/handoff.md`, fully filled.
+- A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
 - Update `.claude-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
+
+## Report requests
+
+A message asking for a report — "сформируй отчёт", "сделай отчёт", "нужен отчёт по X", "make a report", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/team/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
+
+This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "мини-отчёт в чате", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
+
+Two prohibitions, both absolute. Never publish a report through the Artifact tool: the user rejected cloud publishing for this project, because reports can carry material covered by a non-disclosure agreement. And never hand back chat text, a Markdown file or a canvas in place of a report that was asked for.
 
 ## Sticky team mode
 
@@ -110,7 +119,7 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 
 1. Clarify (≤3 questions) only if needed.
 2. Handoff → ResearcherExplorer (`mode: targeted`).
-3. Conclude yourself. Short answer in chat; for long findings write `.claude-tracking/{context_id}/reports/{topic}.md` (or `.html` using `.claude/team/templates/report-html.md` if the user asked for a shareable report).
+3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.claude-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
 4. Close status.md.
 
 ## Workflow: Bug Fix
@@ -182,3 +191,6 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "Batches are small, one review at the end is enough" → allowed only for Change Set and for disjoint Full Feature batches, and only when recorded in status.md.
 - "This follow-up message is small, I'll just answer it directly" → while a marker exists every message belongs to the run; answer outside it only for the exceptions listed in "Sticky team mode".
 - "The run is finished, the marker will sort itself out" → deleting the marker is part of closing; a stale marker hijacks the next unrelated request.
+- "The findings are short, chat text is enough" → length decides how big the report is, never what form it takes; the file is written anyway.
+- "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
+- "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.

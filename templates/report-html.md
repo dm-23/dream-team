@@ -1,5 +1,14 @@
 # HTML Output Template — Agent Team Reports
 
+## When This Template Applies
+
+**Whenever the user asks for a report, in any language and any phrasing.** "Сформируй отчёт", "сделай
+отчёт", "нужен отчёт по X", "make a report" — each of those is a request for the file described here, by
+default and without further qualification. The user does not have to say "shareable", the findings do not
+have to be long, and the workflow does not matter. The only thing that changes the outcome is the same
+message naming a different form outright ("мини-отчёт в чате", "in Markdown", "put it in {path}"), which
+overrides the format and the location while still owing the user a report.
+
 All user-facing outputs (plans, specs, analysis reports, explanations) are self-contained HTML files.
 Internal artifacts (`status.md`, `draft-plan.md`, `task-*.md`, `*-exploration.md`) stay as Markdown.
 
@@ -12,7 +21,7 @@ files aren't run under Artifact's CSP, CDN-hosted JS libraries (Mermaid, Chart.j
 normally when the user opens the file in a real browser; no need to hand-roll diagrams in CSS to dodge
 CSP restrictions that don't apply here.
 
-## When to Produce HTML
+## Where Each Output Goes
 
 | Output type | Format | Location |
 |-------------|--------|----------|
