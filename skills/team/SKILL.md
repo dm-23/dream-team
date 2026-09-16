@@ -163,13 +163,39 @@ Phase 1 — Intake: Brainstorm ×3 (`phase: questions`); quorum; ask 3–7 quest
 
 Phase 2 — Design: learnings check; Brainstorm ×3 (`phase: solution`) with answers; quorum; summarize the approach with a simplicity statement; write `plans/draft-plan.md`.
 
-Phase 3 — Research & architecture: handoff → ResearcherExplorer (`mode: wide`, draft-plan path); handoff → Architect. Verify `detailed-plan.md` has `## Simplicity Justification`, `## Documentation Obligations` and a `## Batching Strategy` with files per batch — if not, send the Architect back. **Stop. Present detailed-plan.md via AskUserQuestion (approve / approve with changes / reject).**
+Phase 3 — Research & architecture: handoff → ResearcherExplorer (`mode: wide`, draft-plan path); handoff → Architect. Verify `detailed-plan.md` has `## Simplicity Justification`, `## Documentation Obligations` and a `## Batching Strategy` with files per batch — if not, send the Architect back.
 
-Phase 4 — Implementation: per batch → ResearcherExplorer (`mode: targeted`) per task → Developers in parallel (one per task; sequential when two tasks share a file) → Tester (one call per batch; it triages) → Reviewer (batch review) → rework loop if needed. Batches whose file sets are disjoint (per the Batching Strategy's "parallel-safe with") may run concurrently; otherwise one batch at a time.
+**Stop & Approval Gate:** Present `detailed-plan.md` via AskUserQuestion with the options:
+1. "Approve plan and PAUSE execution (recommended: execute in a fresh session to save context)"
+2. "Approve plan and CONTINUE execution in current session"
+3. "Approve with changes / Reject"
+
+If Option 1 ("Approve and PAUSE") is selected:
+- Update `status.md` and set `phase=3.5 (Plan Approved - Awaiting Implementation)` in `.team-mode`.
+- Output the Pause Instruction Template (below) containing the exact prompt for resuming in a clean session.
+- Stop execution here. Do NOT proceed to Phase 4 in this session.
+
+Phase 4 — Implementation (runs immediately if Option 2 selected, or upon resuming via `/team resume` in a clean session): per batch → ResearcherExplorer (`mode: targeted`) per task → Developers in parallel (one per task; sequential when two tasks share a file) → Tester (one call per batch; it triages) → Reviewer (batch review) → rework loop if needed. Batches whose file sets are disjoint (per the Batching Strategy's "parallel-safe with") may run concurrently; otherwise one batch at a time.
 
 Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, appends LEARNINGS. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
 
 Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself".
+
+### Pause Instruction Template
+
+When the user approves the plan and selects Option 1 (PAUSE for a fresh session), output the following response (synthesized in the user's task language):
+
+```markdown
+Implementation plan approved and saved to:
+`.claude-tracking/{context_id}/plans/detailed-plan.md`
+
+To run the implementation phase in a **clean session** (recommended to optimize context size and token limits):
+
+1. Clear current context or open a new session (`/clear` or start a new CLI instance).
+2. Paste and run the following command:
+
+`/team resume {context_id}`
+```
 
 ## Files (relative to `.claude-tracking/{context_id}/`)
 
