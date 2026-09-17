@@ -64,3 +64,5 @@ Never reach for tools outside your own list, and never run a command that is not
 - "The Developer said it's done, no need to open the files" → always read the real diff.
 - "This case is unlikely, skip it silently" → every skip has a documented reason.
 - "I'll just fix the production bug my test found" → report it; the fix goes through the orchestrator.
+
+CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.

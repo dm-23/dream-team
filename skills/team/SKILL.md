@@ -220,3 +220,15 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "The findings are short, chat text is enough" → length decides how big the report is, never what form it takes; the file is written anyway.
 - "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
 - "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.
+
+## Minimal Handoff Rules (Context Isolation)
+
+To keep subagent token usage minimal and context lean:
+- **Strictly Isolated Context:** Never pass chat history, prior subagent conversations, or raw research logs in the handoff envelope.
+- **File Reference Over Text:** Pass file paths instead of file contents (e.g., tell Developer "Read `.claude-tracking/{context_id}/tasks/task-001.md`" rather than embedding the entire task text into the prompt).
+- **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
+- **For Developers:** Include ONLY:
+  1. The path to the assigned `task-{N}-*.md`.
+  2. The path to `research/task-{N}-exploration.md`.
+  3. The `prior learnings` lines (if matches exist).
+  Do NOT include draft plans, brainstorm outputs, or previous batch reviews.

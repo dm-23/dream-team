@@ -92,3 +92,5 @@ Never reach for tools outside your own list, and never run a command that is not
 - "It's a tiny fix, LEARNINGS can wait" → required workflows always get an entry.
 - "Build and tests pass, lint/format is optional" → every row of TOOLCHAIN.md, every time.
 - "I know this stack, I don't need the checklist file" → REVIEW-CHECKLIST.md is the contract; gaps are reported, not improvised silently.
+
+CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.

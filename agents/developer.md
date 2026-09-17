@@ -68,3 +68,5 @@ Never reach for tools outside your own list, and never run a command that is not
 - "I'll fix that nearby thing too" → out of scope; report it.
 - "A shared abstraction will be useful later" → only what the task needs today.
 - "Format/build output is noisy, skip it" → self-check is mandatory when TOOLCHAIN.md lists the command.
+
+CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.
