@@ -175,7 +175,25 @@ If Option 1 ("Approve and PAUSE") is selected:
 - Output the Pause Instruction Template (below) containing the exact prompt for resuming in a clean session.
 - Stop execution here. Do NOT proceed to Phase 4 in this session.
 
-Phase 4 — Implementation (runs immediately if Option 2 selected, or upon resuming via `/team resume` in a clean session): per batch → ResearcherExplorer (`mode: targeted`) per task → Developers in parallel (one per task; sequential when two tasks share a file) → Tester (one call per batch; it triages) → Reviewer (batch review) → rework loop if needed. Batches whose file sets are disjoint (per the Batching Strategy's "parallel-safe with") may run concurrently; otherwise one batch at a time.
+Phase 4 — Implementation: 
+Execute batches according to the Batching Strategy. For each batch:
+1. Run ResearcherExplorer (`mode: targeted`) per task → Developers in parallel → Tester → Reviewer.
+2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start Batch {N+1}. Ask via AskUserQuestion:
+   - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute Batch {N+1} directly in THIS session.
+   - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start Batch {N+1} in a fresh session.
+   - **Option 3 (Custom):** Wait for user instructions.
+
+3. **If Option 2 is selected:**
+   - Run `git commit` for Batch {N}.
+   - Update `status.md` and `.team-mode` (`phase=4.{N} Batch {N} Complete - Awaiting Batch {N+1}`).
+   - Output the fresh session prompt:
+     ```text
+     Batch {N} completed and committed!
+     To execute Batch {N+1} in a fresh session:
+     1. Run /clear or open a new terminal session.
+     2. Run: /team resume {context_id}
+     ```
+   - Stop execution here.
 
 Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, appends LEARNINGS. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
 
