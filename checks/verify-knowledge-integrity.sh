@@ -4,24 +4,41 @@
 #
 #   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>
 #
+# The manifest is read at "$(dirname <knowledge-dir>)/team-manifest.json",
+# the deployed layout (.claude/knowledge/ beside .claude/team-manifest.json).
+# knowledge.classification is the source of truth for what every knowledge
+# file's verdict should be; this script never guesses a file's classification
+# from directory structure. Missing manifest or missing/empty classification
+# is a hard failure, not a silent pass.
+#
+# For every file in knowledge.classification (other than LEARNINGS.md, which
+# Check 1 owns):
+#   - "subset" with a topic directory present  -> Check 2, both directions:
+#     nothing in the topic directory is absent from the backup original
+#     (nothing fabricated), and nothing in the backup original is absent from
+#     the union of the topic directory and its index file (nothing lost). The
+#     index may legitimately carry descriptive lines the original never had;
+#     only the topic-directory side is held to the no-new-content rule.
+#   - "subset" with no topic directory present -> it was never split, so it
+#     must still be byte-identical to its backup copy. A subset file that
+#     fits its budget and stays one file is not thereby exempt: either it was
+#     split (covered above) or fix never touched it, and a difference either
+#     way is unexplained.
+#   - "whole" -> out of scope. fix changes such a file only under the
+#     separate rewrites class, which the operator consents to separately and
+#     which does not promise byte-for-byte preservation, so there is nothing
+#     this script can verify for it. Its name is still listed alongside a
+#     passing result, sourced from the manifest, so "ok" never implies more
+#     than it checked.
+# A file or directory present under <knowledge-dir> but absent from
+# knowledge.classification is not a silent pass either: it is reported as
+# unclassified and fails the run.
+#
 # Check 1: every entry in the backup's LEARNINGS.md exists byte for byte as one
 #          file under <knowledge-dir>/learnings/.
-# Check 2: for a split ("subset"-classified) file, every content line of the
-#          backup original appears somewhere in the union of its index file
-#          and its topic directory (nothing lost), and every content line in
-#          the topic directory appears in the backup original (nothing
-#          fabricated). The index may legitimately carry descriptive lines
-#          the original never had; only the topic-directory side is held to
-#          that stricter no-new-content rule.
 #
-# Files classified "whole" in team-manifest.json are out of scope for both
-# checks: fix changes such a file only under the separate rewrites class,
-# which the operator consents to separately and which does not promise
-# byte-for-byte preservation, so there is nothing this script can verify for
-# them. Their names are still listed alongside a passing result so "ok" never
-# implies more than it checked.
-#
-# Exit 0 = both guarantees held. Exit 1 = a guarantee was broken. Writes nothing.
+# Exit 0 = every guarantee held. Exit 1 = a guarantee was broken, or the
+# classification needed to check it could not be read. Writes nothing.
 set -uo pipefail
 export LC_ALL=C
 
@@ -35,6 +52,9 @@ current="${2:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>}
 [ -d "$backup" ] || { echo "FAIL: backup dir not found: $backup" >&2; exit 1; }
 [ -d "$current" ] || { echo "FAIL: knowledge dir not found: $current" >&2; exit 1; }
 
+manifest="$(dirname "$current")/team-manifest.json"
+[ -f "$manifest" ] || { echo "FAIL: manifest not found at $manifest (needed to read knowledge.classification)" >&2; exit 1; }
+
 status=0
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -45,6 +65,42 @@ normalize() {
     | awk '{ l[NR] = $0 } END { last = NR; while (last > 0 && l[last] == "") last--;
              for (i = 1; i <= last; i++) print l[i] }'
 }
+
+# --- Read knowledge.classification from the manifest --------------------------
+# Extracted structurally (brace counting, then character-position slicing
+# between quotes), not by any JSON parser: this is a fixed shell/awk/sed/grep
+# toolchain check, so classification is read the same way Task 1's budgets
+# check reads its own JSON blocks.
+awk '
+  BEGIN { found = 0; level = 0 }
+  !found && $0 ~ /"classification"[[:space:]]*:[[:space:]]*\{/ {
+    found = 1; level = 1; next
+  }
+  found && level > 0 {
+    for (i = 1; i <= length($0); i++) {
+      c = substr($0, i, 1)
+      if (c == "{") level++
+      else if (c == "}") { level--; if (level == 0) exit }
+    }
+    line = $0
+    if (line ~ /"[^"]+\.md"[[:space:]]*:[[:space:]]*"(subset|whole)"/) {
+      s = line
+      sub(/^[^"]*"/, "", s)
+      n = index(s, "\"")
+      fname = substr(s, 1, n - 1)
+      s = substr(s, n + 1)
+      sub(/^[^"]*"/, "", s)
+      n = index(s, "\"")
+      val = substr(s, 1, n - 1)
+      print fname "\t" val
+    }
+  }
+' "$manifest" > "$tmp/classification"
+
+if [ ! -s "$tmp/classification" ]; then
+  echo "FAIL: no knowledge.classification entries found in $manifest" >&2
+  exit 1
+fi
 
 # --- Check 1: LEARNINGS entries survive byte for byte ------------------------
 if [ -f "$backup/LEARNINGS.md" ] && [ -d "$current/learnings" ]; then
@@ -82,30 +138,20 @@ if [ -f "$backup/LEARNINGS.md" ] && [ -d "$current/learnings" ]; then
   fi
 fi
 
-# --- Check 2: split files lose nothing and topics fabricate nothing ----------
-# "$checked" collects the lowercase names of every topic directory Check 2
-# looked at, so the closing summary can name which top-level knowledge files
-# it never touched (the "whole"-classified ones).
-checked=""
-
-for dir in "$current"/*/; do
-  [ -d "$dir" ] || continue
-  name="$(basename "$dir")"
-  [ "$name" = "learnings" ] && continue
-  checked="$checked $name"
-
-  upper="$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')"
-  origin="$backup/$upper.md"
-  index_file="$current/$upper.md"
+# --- Check 2: every classified file gets a verdict ----------------------------
+# name here is the topic directory's basename (already lowercase); "$name/"
+# in messages refers to <current>/<name>/.
+check_split_dir() {
+  local name="$1" origin="$2" index_file="$3" topic_dir="$4"
 
   if [ ! -f "$origin" ]; then
     echo "FAIL: $name/ has no counterpart at $origin in the backup" >&2
     status=1
-    continue
+    return
   fi
 
   : > "$tmp/topic-lines"
-  for f in "$dir"*.md; do
+  for f in "$topic_dir"/*.md; do
     [ -e "$f" ] || continue
     normalize "$f" >> "$tmp/topic-lines"
   done
@@ -136,29 +182,89 @@ for dir in "$current"/*/; do
     comm -23 "$tmp/origin-sorted" "$tmp/covered-sorted" | sed 's/^/    /' >&2
     status=1
   fi
-done
+}
 
-# --- Report what "whole"-classified files were not checked -------------------
-# A top-level .md file with no matching topic directory was left untouched by
-# Check 2 by construction (there is nothing to iterate over for it), which is
-# exactly the set of files this script cannot verify: those classified
-# "whole" in team-manifest.json, whose changes fall under the separate
-# rewrites class instead of the moves class this script checks.
-uncovered=""
+# name here is the file's own basename (e.g. "BACKEND-ARCHITECTURE.md"),
+# unsplit: it must still exist, unchanged, since fix never touched it.
+check_unsplit_subset() {
+  local cname="$1" origin="$2" index_file="$3"
+
+  if [ ! -f "$origin" ]; then
+    return # nothing in the backup to compare against; not this script's call
+  fi
+  if [ ! -f "$index_file" ]; then
+    echo "FAIL: $cname is classified subset but is missing from the knowledge dir (backup had it at $origin)" >&2
+    status=1
+    return
+  fi
+
+  normalize "$origin" > "$tmp/unsplit-origin"
+  normalize "$index_file" > "$tmp/unsplit-current"
+  if ! diff -q "$tmp/unsplit-origin" "$tmp/unsplit-current" >/dev/null 2>&1; then
+    echo "FAIL: $cname was not split and differs from its backup copy at $origin:" >&2
+    diff "$tmp/unsplit-origin" "$tmp/unsplit-current" | sed 's/^/    /' >&2
+    status=1
+  fi
+}
+
+declared_whole=""
+: > "$tmp/known-names"
+
+while IFS="$(printf '\t')" read -r cname cvalue; do
+  [ -n "$cname" ] || continue
+  [ "$cname" = "LEARNINGS.md" ] && continue # LEARNINGS is entirely Check 1's
+
+  base="${cname%.md}"
+  lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
+  printf '%s\n' "$lower" >> "$tmp/known-names"
+
+  origin="$backup/$cname"
+  index_file="$current/$cname"
+  topic_dir="$current/$lower"
+
+  case "$cvalue" in
+    whole)
+      declared_whole="$declared_whole $cname"
+      ;;
+    subset)
+      if [ -d "$topic_dir" ]; then
+        check_split_dir "$lower" "$origin" "$index_file" "$topic_dir"
+      else
+        check_unsplit_subset "$cname" "$origin" "$index_file"
+      fi
+      ;;
+    *)
+      echo "FAIL: $cname has an unrecognized classification value '$cvalue' in $manifest" >&2
+      status=1
+      ;;
+  esac
+done < "$tmp/classification"
+
+# --- Anything in the knowledge dir the manifest never classified fails too ----
 for f in "$current"/*.md; do
   [ -e "$f" ] || continue
   base="$(basename "$f" .md)"
   [ "$base" = "LEARNINGS" ] && continue
   lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
-  case " $checked " in
-    *" $lower "*) ;;
-    *) uncovered="$uncovered $base.md" ;;
-  esac
+  if ! grep -qxF "$lower" "$tmp/known-names"; then
+    echo "FAIL: $f is not classified in $manifest (knowledge.classification)" >&2
+    status=1
+  fi
+done
+
+for dir in "$current"/*/; do
+  [ -d "$dir" ] || continue
+  name="$(basename "$dir")"
+  [ "$name" = "learnings" ] && continue
+  if ! grep -qxF "$name" "$tmp/known-names"; then
+    echo "FAIL: $dir is not classified in $manifest (knowledge.classification)" >&2
+    status=1
+  fi
 done
 
 if [ $status -eq 0 ]; then
-  if [ -n "$uncovered" ]; then
-    echo "knowledge integrity: ok (not checked, classified whole:$uncovered)"
+  if [ -n "$declared_whole" ]; then
+    echo "knowledge integrity: ok (not checked, classified whole in $manifest:$declared_whole)"
   else
     echo "knowledge integrity: ok"
   fi
