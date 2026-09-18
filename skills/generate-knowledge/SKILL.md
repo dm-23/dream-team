@@ -44,7 +44,10 @@ with hyphens preserved — `BACKEND-ARCHITECTURE.md` becomes `backend-architectu
 This is the exact and only transform; do not abbreviate, reorder, or otherwise alter
 the name. The index holds one descriptive line per topic and the short orienting
 material every reader needs, inside `indexTokens`. Each topic file stays inside
-`topicTokens`; a topic over budget is split again.
+`topicTokens`; a topic over budget is split again into additional flat sibling files
+inside the same topic directory, never a nested subdirectory — the integrity check
+that verifies a `fix` run only scans a topic directory one level deep, so anything
+nested there would be invisible to it and reported as lost content.
 
 Topic boundaries are the file's own top-level (`##`) sections — one section, one
 topic — with adjacent sections merged when a topic would fall under roughly 300
