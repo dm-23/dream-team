@@ -10,10 +10,19 @@ stopped relying on.
     t(){ echo $(( $(cat "$@" 2>/dev/null | wc -c) / 4 )); }
     cd .claude/knowledge
     t CODING-STANDARDS.md TOOLCHAIN.md PROJECT-RULES.md BACKEND-ARCHITECTURE.md
-    awk '/^## Index/,/^## Entry format/' LEARNINGS.md | wc -c
+    awk '/^```/{f=!f} !f && /^## \[/{exit} {print}' LEARNINGS.md | wc -c
 
 Record both numbers. The first is what a Developer on a task in the server language
 reads; the second, divided by four, is the index a run pays on every invocation.
+
+The second command measures everything above the first entry, which is the index
+region in both shapes: before the run it stops at the first entry body, after the run
+there are none and it measures the whole file — exactly what the orchestrator then
+reads. Bounding it by a heading instead would break on the After run, because `fix`
+may remove the headings a migrated index no longer needs. The fence test is there for
+the same reason the integrity check has one: the template documents the entry format
+inside a fenced block that opens with a literal entry heading, and that example is
+not an entry.
 
 ## Run
 

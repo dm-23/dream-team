@@ -94,6 +94,9 @@ agents/                        six role prompts
 skills/                        three commands
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
+checks/                        the scripts the manifest's checks run: manifest budgets, and
+                               the integrity check `/generate-knowledge fix` must pass
+docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
 ```
 
@@ -114,7 +117,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question.
 
-**Model.** Brainstorm is the only role that pins one, in `agents/brainstorm.md`. Every other role inherits the session's. Since three instances run on every phase that uses them, that single line is the team's main cost lever — lower it there if a run costs more than it is worth to you.
+**Model.** Three roles pin one in their own file: Brainstorm pins the strongest model, ResearcherExplorer and Tester pin a cheaper one. Architect, Developer and Reviewer inherit the session's. Brainstorm's line is the main cost lever, because three instances run on every phase that uses it — lower it there first if a run costs more than it is worth to you. The other two pins are already at the cheap end; raise one only if you find its output thin.
 
 ## The five workflows
 
@@ -147,7 +150,7 @@ If research shows a Small Change is bigger than three files, or touches a schema
 
 Two more files sit in the same directory and are written by someone else.
 
-`LEARNINGS.md` persists across regenerations. The reviewer appends one entry per run plus an index row. When a run contradicts something a knowledge file claims, the reviewer marks it rather than editing that file; the next `/generate-knowledge` resolves the mark.
+`LEARNINGS.md` persists across regenerations. It is the index: the reviewer writes each run's learning as its own file under `learnings/` and adds one row here, so what is read on every run stays one small table however much accumulates. When a run contradicts something a knowledge file claims, the reviewer marks it rather than editing that file; the next `/generate-knowledge` resolves the mark.
 
 `/generate-knowledge fix` restructures an existing knowledge base into the current
 shape — splitting the files a reader only needs part of, and moving learnings entries
