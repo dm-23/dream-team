@@ -235,9 +235,21 @@ fi
 # region after the template's "---" separator was rejected: it depends on one
 # separator staying in place in every deployed copy of a file nothing
 # version-controls, and an entry body is free to contain "---" of its own. A
-# fence flag depends only on the fences immediately around the example, and it
-# additionally protects any entry that quotes a fenced example -- the same
-# reason the example needs protecting in the first place.
+# fence flag reads the example where it is, and it equally protects an entry
+# that quotes a fenced example of its own -- the same reason the example needs
+# protecting in the first place.
+#
+# But the flag is one piece of state spanning the whole file, not a local
+# reading of the fences around the example, and an unbalanced fence therefore
+# changes how every line below it is read. Both faces of that are serious. An
+# odd number of column-0 fence markers above the first entry inverts the flag,
+# so every entry is read as documentation, both files split into nothing, and
+# a comparison of {} against {} reports ok over a total loss. An unterminated
+# fence inside an entry body merges the entries below it and fails a correct
+# migration with a byte mismatch, which the runbook answers by restoring the
+# backup. So an unbalanced fence is a hard failure here, in either file, and
+# is reported as what it is. Refusing is what makes the paragraph above true
+# rather than assumed.
 split_entries() {
   local src="$1" outdir="$2"
   mkdir -p "$outdir"
@@ -245,7 +257,16 @@ split_entries() {
     /^```/                 { fence = !fence }
     !fence && /^## \[/     { n++; f = sprintf("%s/entry-%04d", out, n) }
     n > 0                  { print > f }
+    END                    { if (fence) exit 2 }
   ' "$src"
+  if [ $? -eq 2 ]; then
+    echo "FAIL: $src ends inside a fenced block (an odd number of lines starting with three backticks)" >&2
+    echo "  Which entries this file contains cannot be determined while that is true:" >&2
+    echo "  everything below the unclosed fence reads as documentation rather than as" >&2
+    echo "  entry text, so this check would compare the wrong text, or no text at all." >&2
+    echo "  Balance the fences in that file and run this check again." >&2
+    exit 1
+  fi
 }
 
 # Hashes every entry file in <dir> onto the end of <accumulator>.
