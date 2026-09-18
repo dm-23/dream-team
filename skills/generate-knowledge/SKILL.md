@@ -20,7 +20,10 @@ Output language: the language of the user's request; file contents in English (a
 
 1. `.claude/team-manifest.json` — the required file list and template locations.
 2. Repository manifests and build files (whatever exists): dependency manifests, lock files, task runners, container files, CI/CD pipeline definitions, editor/format configuration.
-3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`, `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`.
+3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`,
+   `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`. The team's own documents are not
+   project documentation: skip anything under `.claude/docs/superpowers/`, which
+   belongs to the team that was deployed here and says nothing about this project.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
 5. `.claude/knowledge/LEARNINGS.md` → all `[STALE-CHECK]` lines not yet marked resolved.
 6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
@@ -28,6 +31,38 @@ Output language: the language of the user's request; file contents in English (a
 ## Stack detection
 
 For each stack card, evaluate its `## Detect` section against the repository (search for the listed files). Every card that matches is "active". If none matches, use `_generic.md`. A repository may have several active cards (for example a back end in one language, a user interface in another, scripts in a third) — include all, each labelled with the directories where it applies. Record the result in `PROJECT-OVERVIEW.md → Stack`.
+
+## File shape and budgets
+
+`team-manifest.json → knowledge.classification` gives each file a class, and
+`knowledge.budgets` gives the sizes. Read both; never hardcode a number here.
+Measure by characters at four to the token — no tokenizer is available.
+
+**A `subset` file** becomes an index at its own path plus a sibling directory of
+topics. The directory's name is the file's own base name (without `.md`), lower-cased,
+with hyphens preserved — `BACKEND-ARCHITECTURE.md` becomes `backend-architecture/`.
+This is the exact and only transform; do not abbreviate, reorder, or otherwise alter
+the name. The index holds one descriptive line per topic and the short orienting
+material every reader needs, inside `indexTokens`. Each topic file stays inside
+`topicTokens`; a topic over budget is split again.
+
+Topic boundaries are the file's own top-level (`##`) sections — one section, one
+topic — with adjacent sections merged when a topic would fall under roughly 300
+tokens. Do not invent a structure the content does not already have.
+
+Longer material that *every* reader needs does not fit the index and does not
+become optional because of it. It becomes a topic the index marks **required**.
+Every other topic line states the condition that selects it, so a reader chooses
+by matching its task, not by guessing.
+
+**A `whole` file** stays one file inside `wholeFileTokens`, or its own entry in
+`budgets.overrides`. Over budget it is cut, never split — splitting would
+contradict its class. The cuts that work:
+
+- Drop `[n/a]` items instead of listing them with the evidence that made them so.
+- One example path per pattern, not three.
+- Do not restate what another knowledge file says; link to it.
+- Record a decision once, without the search that produced it.
 
 ## Files to generate (all in `.claude/knowledge/`)
 
@@ -193,7 +228,15 @@ For each existing knowledge file: verify every path it names exists, every comma
 8. Compose REVIEW-CHECKLIST.md last (it depends on all others).
 9. Resolve STALE-CHECK lines.
 10. Cross-check consistency across files (same paths, same commands).
-11. Report to the user: files written, active cards, unverified commands, conflicts needing a decision, discrepancies found in human documentation (do NOT edit human documentation).
+11. Report to the user: files written, active cards, unverified commands, conflicts
+    needing a decision, discrepancies found in human documentation (do NOT edit human
+    documentation), and the size table below.
+
+## Size table
+
+End every run that writes files with one row per file: name, measured tokens, the
+budget that applies to it, and `ok` or `over`. A file reported `over` is a defect in
+this run, not a note for later — say so plainly rather than burying it.
 
 ## Quality criteria
 
@@ -202,3 +245,4 @@ For each existing knowledge file: verify every path it names exists, every comma
 - Unsure → `[VERIFY]` with what to check.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
 - `.claude/knowledge/` is the only directory you write to. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- Every file is inside the budget its class gives it, and the size table proves it.
