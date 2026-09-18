@@ -50,6 +50,12 @@ inside the same topic directory, never a nested subdirectory — the integrity c
 that verifies a `fix` run only scans a topic directory one level deep, so anything
 nested there would be invisible to it and reported as lost content.
 
+When a topic is split that way, the index names every file the split produced, each
+on its own line under the same selecting condition. A file no index line names is
+content that exists on disk, survives the integrity check, and no reader can reach:
+nothing lost and nothing findable are different guarantees, and only the index
+delivers the second one.
+
 Topic boundaries are the file's own top-level (`##`) sections — one section, one
 topic — with adjacent sections merged when a topic would fall under roughly 300
 tokens. Do not invent a structure the content does not already have.
@@ -222,7 +228,16 @@ For each existing knowledge file: verify every path it names exists, every comma
 
 ## Fix mode (`fix`)
 
-Restructures what is already written. It opens `.claude/knowledge/` and the manifest and nothing else — it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so and point at `all`; do not guess.
+Restructures what is already written. It reads `.claude/knowledge/`, the manifest, and `.claude/templates/learnings.md` — the last one read-only, for the index shape it defines, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so and point at `all`; do not guess.
+
+**The target shape**, which `fix` moves a file towards and which the gate below tests
+alongside the budget:
+
+- A `subset` file is an index at its own path plus its sibling topic directory. One
+  file with no directory beside it is not in shape, whatever it measures.
+- `LEARNINGS.md` is an index and nothing else: no entry bodies below the index table,
+  every entry a file in `learnings/`.
+- A `whole` file is one file with no sibling directory.
 
 **Refuse to run when `.claude-tracking/.team-mode` exists.** A live run is reading these files. Report which run is open and stop.
 
@@ -232,22 +247,32 @@ Restructures what is already written. It opens `.claude/knowledge/` and the mani
 
 *Moves* relocate text byte for byte: splitting a `subset` file into an index and topics, lifting each `LEARNINGS` entry into its own file. Nothing is reworded. The only new text is the descriptive lines in the index.
 
-*Rewrites* change text: compacting `LEARNINGS` index rows to `learningsIndexRowTokens`, cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost, so ask for this class separately. Accepting moves and declining rewrites is a supported outcome — do the moves.
+*Rewrites* change text: compacting `LEARNINGS` index rows to `learningsIndexRowTokens`, `learningsIndexRowTitleChars` and `learningsIndexRowMaxTags`; reconciling that index's table header to the one `templates/learnings.md` defines, when an older deployment's header carries columns the template no longer has and rows written to the current shape would not line up with it; cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost — dropping a column loses what was in it — so ask for this class separately. Accepting moves and declining rewrites is a supported outcome — do the moves.
 
 **Order of work.**
 
 1. Refuse if a run is open.
 2. Measure every file; build the size table.
-3. Report: file, class, measured tokens, budget, and the proposal for it. For a split, list the topics you would create, from the file's own `##` sections. Nothing over budget → report that and stop: nothing to back up, nothing to apply.
+3. Report: file, class, measured tokens, budget, and the proposal for it. For a split, list the topics you would create, from the file's own `##` sections. Every file already in the target shape **and** inside its budget → report that and stop: nothing to back up, nothing to apply.
+
+   Shape and size are separate triggers, and testing only the size would skip work
+   that has nothing to do with size. A young project's `LEARNINGS.md` can sit under
+   `indexTokens` with every entry still inline; a small `subset` file can sit under
+   `wholeFileTokens` with no topic directory beside it. Stopping there leaves the
+   Reviewer writing new entries into `learnings/` while the old ones stay in the
+   file, and the orchestrator reading a file the shape rules call an index and that
+   is not one. Testing both keeps the property this gate exists for — a second run
+   changes nothing — because a file in shape and inside budget is what a finished
+   run leaves behind.
 4. Ask via AskUserQuestion, once per class, naming what each would change. Nothing accepted → report that and stop: nothing to back up, nothing to apply.
 5. Back up, as above.
 6. Apply what was accepted.
-7. Verify with `checks.knowledgeIntegrity` from the manifest, passing the backup and the knowledge directory. Report its result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back.
+7. Verify with `checks.knowledgeIntegrity` from the manifest, passing the backup and the knowledge directory in the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**, not from `.claude/`: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`. `checks.knowledgeIntegrityRunFrom` spells the whole invocation out. Report its result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back.
 8. Print the size table again, before and after.
 
-**Idempotent.** A second run immediately after reports every file inside budget and writes nothing — not even a backup.
+**Idempotent.** A second run immediately after reports every file already in the target shape and inside its budget, and writes nothing — not even a backup.
 
-**Never** touch agents, skills, templates, hooks, the manifest, source code or human documentation. Moves never delete knowledge, because splitting relocates text rather than dropping it; rewrites may reduce it, and only by consent.
+**Never** write to agents, skills, templates, hooks, the manifest, source code or human documentation. `templates/learnings.md` is read in this mode and stays read-only; reading it is not permission to correct it. Moves never delete knowledge, because splitting relocates text rather than dropping it; rewrites may reduce it, and only by consent.
 
 ## Process
 

@@ -8,9 +8,13 @@ Compounding knowledge for `/team`. Append-only. Written by the `reviewer` subage
 |------|-------|------|
 
 <!-- INDEX: one row per entry, newest last. The reviewer adds the row and the entry file in the same edit.
-     This table is read in full on every /team run, so every row is a cost. Hard limits:
-       Title — max 80 characters, no parenthetical asides.
-       Tags  — max 6, each one word or one hyphenated term.
+     The header above defines the row: those columns, that order. An index carrying other
+     columns predates this template, and /generate-knowledge fix reconciles it.
+     This table is read in full on every /team run, so every row is a cost. The limits live in
+     team-manifest.json -> knowledge.budgets, which owns every number the team applies:
+       whole row — learningsIndexRowTokens
+       Title     — learningsIndexRowTitleChars, no parenthetical asides
+       Tags      — learningsIndexRowMaxTags, each one word or one hyphenated term
      Workflow, symptom, cause and file paths belong in the entry file, never in this table. -->
 
 ## Entry format
@@ -22,7 +26,7 @@ Compounding knowledge for `/team`. Append-only. Written by the `reviewer` subage
 - **Root cause:** one paragraph max
 - **Fix pattern:** reusable shape of the fix, max 5 lines
 - **Files touched:** key paths
-- **Tags:** max 6 comma-separated keywords, each one word or one hyphenated term
+- **Tags:** comma-separated keywords, at most `learningsIndexRowMaxTags` of them, each one word or one hyphenated term
 [STALE-CHECK] {knowledge file} — {why it may be outdated}   <- only if a knowledge claim is contradicted
 ```
 
@@ -37,5 +41,19 @@ Entries do not live in this file. Each one is a file in `learnings/`, named
 no wrapper. The file's whole content is the entry, because that is what makes a
 migration verifiable byte for byte.
 
+`{slug}` is derived from the row's title by a fixed transform, so that whoever writes
+the entry and whoever later looks it up compute the same path from the same row:
+
+1. lower-case the title;
+2. replace every run of characters that are not letters or digits with one hyphen;
+3. drop a leading or trailing hyphen;
+4. cut to 60 characters, then drop a trailing hyphen again.
+
+If that file already exists — the same title on the same date — append `-2`, then
+`-3`, and so on. A reader that computes the path and finds nothing tries those
+suffixes before concluding the entry is missing. It does not list `YYYY-MM-DD-*` and
+guess: a date carries as many entries as that day produced, and guessing picks the
+wrong one silently.
+
 This file is the index and only the index. It is read on every `/team` run, so a row
-is held to `knowledge.budgets.learningsIndexRowTokens` in the manifest.
+is held to the budget keys named above.
