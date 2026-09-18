@@ -25,9 +25,9 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Report requests
 
-A message asking for a report — "сформируй отчёт", "сделай отчёт", "нужен отчёт по X", "make a report", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
+A message asking for a report — "generate a report", "make a report", "I need a report on X", "write up the findings", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
 
-This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "мини-отчёт в чате", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
+This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "a short report in chat", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
 
 Two prohibitions, both absolute. Never publish a report through the Artifact tool: the user rejected cloud publishing for this project, because reports can carry material covered by a non-disclosure agreement. And never hand back chat text, a Markdown file or a canvas in place of a report that was asked for.
 
@@ -85,7 +85,7 @@ Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `
 
 ## Learnings check (all workflows, before any Brainstorm or research)
 
-Read `LEARNINGS.md → ## Index` only. Match rows whose title/tags overlap the task terms. For matches, read those entries and put their title + "Fix pattern" lines into every handoff's `prior learnings` field. Record matched titles in status.md.
+Read `LEARNINGS.md`. In the current shape it is an index and nothing else, so read it whole. **If it still carries `## [` entry bodies below the index, this deployment has not been migrated yet**: read only from `## Index` down to the first `## [` line, stop there, and tell the user once that `/generate-knowledge fix` will shrink it — reading an un-migrated log whole is the cost this shape exists to remove, and the team layer updates before the knowledge layer does. Match rows whose title or tags overlap the task terms, then open the matched entries: from `learnings/` once they live there, otherwise from the entry bodies further down the same file. Put their title + "Fix pattern" lines into every handoff's `prior learnings` field, and record matched titles in status.md.
 
 ## Optional capabilities
 
@@ -130,7 +130,7 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 4. Brainstorm ×3 (`phase: diagnosis`) with research + learnings. Quorum on root cause and fix.
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
 6. On approval: handoff → Developer (inline task, exploration notes attached).
-7. Handoff → Reviewer (single pass, baseline attached). Reviewer appends LEARNINGS.
+7. Handoff → Reviewer (single pass, baseline attached). Reviewer records the learning (entry file + index row).
 8. If Reviewer returns `manual` findings or `needs rework`: handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user).
 9. Report; close status.md.
 
@@ -155,7 +155,7 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 7. Tester: one call for the whole change set; it triages per its own table.
 8. Reviewer: one combined review of all batches (final review). Rework loop as in Bug Fix step 8.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
-10. Report; close status.md. Reviewer has appended LEARNINGS.
+10. Report; close status.md. Reviewer has recorded the learning (entry file + index row).
 
 ## Workflow: Full Feature
 
@@ -195,7 +195,7 @@ Execute batches according to the Batching Strategy. For each batch:
      ```
    - Stop execution here.
 
-Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, appends LEARNINGS. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
+Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, records the learning (entry file + index row). Build/test failures → Reviewer fixes (max 2) → escalate to the user.
 
 Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself".
 

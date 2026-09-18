@@ -2,11 +2,11 @@
 
 ## When This Template Applies
 
-**Whenever the user asks for a report, in any language and any phrasing.** "Сформируй отчёт", "сделай
-отчёт", "нужен отчёт по X", "make a report" — each of those is a request for the file described here, by
+**Whenever the user asks for a report, in any language and any phrasing.** "Generate a report", "make a
+report", "I need a report on X", "write up the findings" — each of those is a request for the file described here, by
 default and without further qualification. The user does not have to say "shareable", the findings do not
 have to be long, and the workflow does not matter. The only thing that changes the outcome is the same
-message naming a different form outright ("мини-отчёт в чате", "in Markdown", "put it in {path}"), which
+message naming a different form outright ("a short report in chat", "in Markdown", "put it in {path}"), which
 overrides the format and the location while still owing the user a report.
 
 All user-facing outputs (plans, specs, analysis reports, explanations) are self-contained HTML files.

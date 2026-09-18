@@ -1,7 +1,7 @@
 ---
 name: generate-knowledge
 description: Use when the user explicitly asks to (re)generate or check the Dream Team knowledge base for this repository — first run on a new project, after major architecture changes, or when LEARNINGS.md has [STALE-CHECK] marks. Produces project documentation AND coding standards/toolchain/review-checklist files under .claude/knowledge/. Never auto-invoke.
-argument-hint: "[check | all | <FILE-NAME.md> ...]"
+argument-hint: "[check | fix | all | <FILE-NAME.md> ...]"
 disable-model-invocation: true
 user-invocable: true
 ---
@@ -12,6 +12,7 @@ Arguments: `$ARGUMENTS`
 
 - empty or `all` → regenerate every file in `team-manifest.json → knowledge.required`.
 - `check` → do not write; compare each existing knowledge file against the repository and print a staleness report (see "Check mode").
+- `fix` → restructure the existing knowledge base into the shape "File shape and budgets" describes, without re-reading the repository (see "Fix mode").
 - one or more file names → regenerate only those files (others untouched).
 
 Output language: the language of the user's request; file contents in English (agents read them).
@@ -20,7 +21,10 @@ Output language: the language of the user's request; file contents in English (a
 
 1. `.claude/team-manifest.json` — the required file list and template locations.
 2. Repository manifests and build files (whatever exists): dependency manifests, lock files, task runners, container files, CI/CD pipeline definitions, editor/format configuration.
-3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`, `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`.
+3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`,
+   `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`. The team's own documents are not
+   project documentation: skip anything under `.claude/docs/superpowers/`, which
+   belongs to the team that was deployed here and says nothing about this project.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
 5. `.claude/knowledge/LEARNINGS.md` → all `[STALE-CHECK]` lines not yet marked resolved.
 6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
@@ -28,6 +32,47 @@ Output language: the language of the user's request; file contents in English (a
 ## Stack detection
 
 For each stack card, evaluate its `## Detect` section against the repository (search for the listed files). Every card that matches is "active". If none matches, use `_generic.md`. A repository may have several active cards (for example a back end in one language, a user interface in another, scripts in a third) — include all, each labelled with the directories where it applies. Record the result in `PROJECT-OVERVIEW.md → Stack`.
+
+## File shape and budgets
+
+`team-manifest.json → knowledge.classification` gives each file a class, and
+`knowledge.budgets` gives the sizes. Read both; never hardcode a number here.
+Measure by characters at four to the token — no tokenizer is available.
+
+**A `subset` file** becomes an index at its own path plus a sibling directory of
+topics. The directory's name is the file's own base name (without `.md`), lower-cased,
+with hyphens preserved — `BACKEND-ARCHITECTURE.md` becomes `backend-architecture/`.
+This is the exact and only transform; do not abbreviate, reorder, or otherwise alter
+the name. The index holds one descriptive line per topic and the short orienting
+material every reader needs, inside `indexTokens`. Each topic file stays inside
+`topicTokens`; a topic over budget is split again into additional flat sibling files
+inside the same topic directory, never a nested subdirectory — the integrity check
+that verifies a `fix` run only scans a topic directory one level deep, so anything
+nested there would be invisible to it and reported as lost content.
+
+When a topic is split that way, the index names every file the split produced, each
+on its own line under the same selecting condition. A file no index line names is
+content that exists on disk, survives the integrity check, and no reader can reach:
+nothing lost and nothing findable are different guarantees, and only the index
+delivers the second one.
+
+Topic boundaries are the file's own top-level (`##`) sections — one section, one
+topic — with adjacent sections merged when a topic would fall under roughly 300
+tokens. Do not invent a structure the content does not already have.
+
+Longer material that *every* reader needs does not fit the index and does not
+become optional because of it. It becomes a topic the index marks **required**.
+Every other topic line states the condition that selects it, so a reader chooses
+by matching its task, not by guessing.
+
+**A `whole` file** stays one file inside `wholeFileTokens`, or its own entry in
+`budgets.overrides`. Over budget it is cut, never split — splitting would
+contradict its class. The cuts that work:
+
+- Drop `[n/a]` items instead of listing them with the evidence that made them so.
+- One example path per pattern, not three.
+- Do not restate what another knowledge file says; link to it.
+- Record a decision once, without the search that produced it.
 
 ## Files to generate (all in `.claude/knowledge/`)
 
@@ -181,6 +226,54 @@ If missing, create it from `team-manifest.json → knowledge.persistentTemplates
 
 For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Write nothing.
 
+## Fix mode (`fix`)
+
+Restructures what is already written. It reads `.claude/knowledge/`, the manifest, and `.claude/templates/learnings.md` — the last one read-only, for the index shape it defines, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so and point at `all`; do not guess.
+
+**The target shape**, which `fix` moves a file towards and which the gate below tests
+alongside the budget:
+
+- A `subset` file is an index at its own path plus its sibling topic directory. One
+  file with no directory beside it is not in shape, whatever it measures.
+- `LEARNINGS.md` is an index and nothing else: no entry bodies below the index table,
+  every entry a file in `learnings/`.
+- A `whole` file is one file with no sibling directory.
+
+**Refuse to run when `.claude-tracking/.team-mode` exists.** A live run is reading these files. Report which run is open and stop.
+
+**Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.claude-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only, in this mode only.
+
+**Two classes of work, consented separately.**
+
+*Moves* relocate text byte for byte: splitting a `subset` file into an index and topics, lifting each `LEARNINGS` entry into its own file. Nothing is reworded. The only new text is the descriptive lines in the index.
+
+*Rewrites* change text: compacting `LEARNINGS` index rows to `learningsIndexRowTokens`, `learningsIndexRowTitleChars` and `learningsIndexRowMaxTags`; reconciling that index's table header to the one `templates/learnings.md` defines, when an older deployment's header carries columns the template no longer has and rows written to the current shape would not line up with it; cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost — dropping a column loses what was in it — so ask for this class separately. Accepting moves and declining rewrites is a supported outcome — do the moves.
+
+**Order of work.**
+
+1. Refuse if a run is open.
+2. Measure every file; build the size table.
+3. Report: file, class, measured tokens, budget, and the proposal for it. For a split, list the topics you would create, from the file's own `##` sections. Every file already in the target shape **and** inside its budget → report that and stop: nothing to back up, nothing to apply.
+
+   Shape and size are separate triggers, and testing only the size would skip work
+   that has nothing to do with size. A young project's `LEARNINGS.md` can sit under
+   `indexTokens` with every entry still inline; a small `subset` file can sit under
+   `wholeFileTokens` with no topic directory beside it. Stopping there leaves the
+   Reviewer writing new entries into `learnings/` while the old ones stay in the
+   file, and the orchestrator reading a file the shape rules call an index and that
+   is not one. Testing both keeps the property this gate exists for — a second run
+   changes nothing — because a file in shape and inside budget is what a finished
+   run leaves behind.
+4. Ask via AskUserQuestion, once per class, naming what each would change. Nothing accepted → report that and stop: nothing to back up, nothing to apply.
+5. Back up, as above.
+6. Apply what was accepted.
+7. Verify with `checks.knowledgeIntegrity` from the manifest, passing the backup and the knowledge directory in the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**, not from `.claude/`: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`. `checks.knowledgeIntegrityRunFrom` spells the whole invocation out. Report its result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back.
+8. Print the size table again, before and after.
+
+**Idempotent.** A second run immediately after reports every file already in the target shape and inside its budget, and writes nothing — not even a backup.
+
+**Never** write to agents, skills, templates, hooks, the manifest, source code or human documentation. `templates/learnings.md` is read in this mode and stays read-only; reading it is not permission to correct it. Moves never delete knowledge, because splitting relocates text rather than dropping it; rewrites may reduce it, and only by consent.
+
 ## Process
 
 1. Read inputs 1–6.
@@ -193,7 +286,15 @@ For each existing knowledge file: verify every path it names exists, every comma
 8. Compose REVIEW-CHECKLIST.md last (it depends on all others).
 9. Resolve STALE-CHECK lines.
 10. Cross-check consistency across files (same paths, same commands).
-11. Report to the user: files written, active cards, unverified commands, conflicts needing a decision, discrepancies found in human documentation (do NOT edit human documentation).
+11. Report to the user: files written, active cards, unverified commands, conflicts
+    needing a decision, discrepancies found in human documentation (do NOT edit human
+    documentation), and the size table below.
+
+## Size table
+
+End every run that writes files with one row per file: name, measured tokens, the
+budget that applies to it, and `ok` or `over`. A file reported `over` is a defect in
+this run, not a note for later — say so plainly rather than burying it.
 
 ## Quality criteria
 
@@ -201,4 +302,5 @@ For each existing knowledge file: verify every path it names exists, every comma
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
-- `.claude/knowledge/` is the only directory you write to. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode you also write the backup directory under `.claude-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- Every file is inside the budget its class gives it, and the size table proves it.

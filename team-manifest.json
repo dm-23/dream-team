@@ -33,8 +33,35 @@
       "REVIEW-CHECKLIST.md",
       "PROJECT-RULES.md"
     ],
+    "budgets": {
+      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class.",
+      "indexTokens": 800,
+      "topicTokens": 1500,
+      "wholeFileTokens": 4000,
+      "learningsIndexRowTokens": 45,
+      "learningsIndexRowTitleChars": 80,
+      "learningsIndexRowMaxTags": 6,
+      "overrides": {
+        "REVIEW-CHECKLIST.md": 14000
+      }
+    },
+    "classification": {
+      "_comment": "subset = a reader needs part of it, so it becomes an index at this path plus a sibling directory of topics. whole = every reader needs all of it, so it stays one file and is cut, never split.",
+      "PROJECT-OVERVIEW.md": "whole",
+      "BACKEND-ARCHITECTURE.md": "subset",
+      "FRONTEND-ARCHITECTURE.md": "subset",
+      "DI-AND-STARTUP.md": "subset",
+      "TESTING-CONVENTIONS.md": "whole",
+      "SEARCH-PLAYBOOK.md": "whole",
+      "TOOLCHAIN.md": "whole",
+      "CODING-STANDARDS.md": "subset",
+      "REVIEW-CHECKLIST.md": "whole",
+      "PROJECT-RULES.md": "whole",
+      "LEARNINGS.md": "subset"
+    },
     "persistent": [
-      "LEARNINGS.md"
+      "LEARNINGS.md",
+      "learnings/"
     ],
     "persistentTemplates": {
       "LEARNINGS.md": ".claude/templates/learnings.md"
@@ -151,6 +178,10 @@
   "checks": {
     "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
-    "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md README.md"
+    "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md README.md",
+    "manifestBudgets": "bash checks/verify-manifest-budgets.sh",
+    "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
+    "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
+    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge"
   }
 }
