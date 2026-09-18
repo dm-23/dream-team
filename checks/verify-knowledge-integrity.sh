@@ -37,10 +37,40 @@
 #     than it checked.
 # A file or directory present under <knowledge-dir> but absent from
 # knowledge.classification is not a silent pass either: it is reported as
-# unclassified and fails the run.
+# unclassified and fails the run. The one exception is the keys of
+# knowledge.environment, which are files written by /team-setup to describe
+# the machine rather than the repository. They are deliberately outside
+# knowledge.required and therefore outside knowledge.classification, fix
+# never touches them, and fix is forbidden from editing the manifest, so an
+# operator could not exempt them by hand either. They are read from the
+# manifest and exempted from the file sweep -- and from that sweep only:
+# nothing else about them is assumed, and a *directory* by the same name is
+# still unclassified.
 #
-# Check 1: every entry in the backup's LEARNINGS.md exists byte for byte as one
-#          file under <knowledge-dir>/learnings/.
+# Check 1: the entries accumulated in the learnings log survive the run. The
+#          invariant is a set equation rather than a presence test: the entries
+#          in the backup -- inline in its LEARNINGS.md plus whatever files its
+#          learnings/ already held -- must equal the entries in the knowledge
+#          dir, again inline plus files. Stating it that way covers the run
+#          that moved nothing (moves declined, rewrites accepted: entries stay
+#          inline and learnings/ is never created), the run that moved
+#          everything, the partly-applied run, and a second consecutive run
+#          over an already-migrated base -- none of which a "learnings/ must
+#          exist" guard could tell apart from the one case that matters, a run
+#          that stripped the entries out of LEARNINGS.md and wrote them
+#          nowhere. LEARNINGS.md is the only knowledge file with no
+#          version-controlled copy anywhere, so that case must not reach
+#          "ok".
+#
+# What "without losing or altering it" means per check, so the claim above is
+# not read wider than the checks support. Check 1 compares whole entries by
+# hash: byte for byte within an entry (after trailing-whitespace
+# normalization), and a set across entries, so it does not police the order
+# entries appear in. Check 2 compares sorted, deduplicated line sets: it proves
+# that no line was lost and that none was invented, and it would pass text
+# whose lines were reordered, or a line that occurred twice and now occurs
+# once. Neither reordering nor de-duplication is a move fix performs, so the
+# gap is between what the checks prove and what fix promises, not a licence.
 #
 # Exit 0 = every guarantee held. Exit 1 = a guarantee was broken, or the
 # classification needed to check it could not be read. Writes nothing.
@@ -163,40 +193,113 @@ if [ ! -s "$tmp/classification" ]; then
   exit 1
 fi
 
-# --- Check 1: LEARNINGS entries survive byte for byte ------------------------
-if [ -f "$backup/LEARNINGS.md" ] && [ -d "$current/learnings" ]; then
-  # Split entries into files under a prefix that cannot collide with the
-  # "old-hashes"/"new-hashes" accumulator files below: a plain "old-*" glob
-  # would also match a file literally named "old-hashes" in the same
-  # directory and fold its own growing content back into itself.
-  awk -v out="$tmp" '
-    /^## \[/ { n++; f = sprintf("%s/entry-%04d", out, n) }
-    n > 0    { print > f }
-  ' "$backup/LEARNINGS.md"
+# --- Read knowledge.environment's keys (files exempt from the file sweep) -----
+# Same scoping discipline as classification: the key only counts nested under
+# "knowledge", and an ambiguous manifest is refused rather than guessed at.
+# Absent is not an error -- a manifest may declare no environment files -- but
+# more than one block is, because there would be no way to know which is
+# knowledge.environment.
+: > "$tmp/environment-names"
+environment_blocks="$(count_key_blocks environment "$tmp/knowledge-block")"
+if [ "$environment_blocks" -gt 1 ]; then
+  echo "FAIL: $manifest defines $environment_blocks \"environment\" blocks under \"knowledge\"; refusing to guess which one is knowledge.environment" >&2
+  exit 1
+fi
+if [ "$environment_blocks" -eq 1 ]; then
+  extract_key_block environment "$tmp/knowledge-block" > "$tmp/environment-block"
+  # A key of the environment block is a file name opening an object; the
+  # string-valued keys inside each object (writtenBy, template, note) cannot
+  # match, because they are not followed by a brace.
+  awk '
+    /"[^"]+\.md"[[:space:]]*:[[:space:]]*\{/ {
+      s = $0
+      sub(/^[^"]*"/, "", s)
+      n = index(s, "\"")
+      print substr(s, 1, n - 1)
+    }
+  ' "$tmp/environment-block" > "$tmp/environment-names"
+fi
 
-  : > "$tmp/old-hashes"
-  for f in "$tmp"/entry-*; do
+# --- Check 1: the learnings entries survive the run --------------------------
+# Splits a learnings log into one file per entry under <outdir>.
+#
+# Fence-aware, and that is the whole point of it. templates/learnings.md
+# documents the entry format inside a fenced block whose first line is a
+# literal "## [YYYY-MM-DD] {short-title}". Every deployed LEARNINGS.md carries
+# that example, so a splitter that keyed on "^## \[" alone counted one entry
+# more than exists and failed a *correct* migration -- and the acceptance
+# reacts to a failure by restoring the backup, so the check would have
+# destroyed what it exists to protect.
+#
+# Two ways to exclude the example were available. Anchoring extraction to the
+# region after the template's "---" separator was rejected: it depends on one
+# separator staying in place in every deployed copy of a file nothing
+# version-controls, and an entry body is free to contain "---" of its own. A
+# fence flag depends only on the fences immediately around the example, and it
+# additionally protects any entry that quotes a fenced example -- the same
+# reason the example needs protecting in the first place.
+split_entries() {
+  local src="$1" outdir="$2"
+  mkdir -p "$outdir"
+  awk -v out="$outdir" '
+    /^```/                 { fence = !fence }
+    !fence && /^## \[/     { n++; f = sprintf("%s/entry-%04d", out, n) }
+    n > 0                  { print > f }
+  ' "$src"
+}
+
+# Hashes every entry file in <dir> onto the end of <accumulator>.
+hash_entries() {
+  local dir="$1" acc="$2" f
+  for f in "$dir"/entry-*; do
     [ -e "$f" ] || continue
-    normalize "$f" | sha256sum | awk '{print $1}' >> "$tmp/old-hashes"
+    normalize "$f" | sha256sum | awk '{print $1}' >> "$acc"
   done
+}
 
-  : > "$tmp/new-hashes"
-  for f in "$current"/learnings/*.md; do
+# Hashes every *.md in <dir> onto the end of <accumulator>.
+hash_entry_files() {
+  local dir="$1" acc="$2" f
+  for f in "$dir"/*.md; do
     [ -e "$f" ] || continue
-    normalize "$f" | sha256sum | awk '{print $1}' >> "$tmp/new-hashes"
+    normalize "$f" | sha256sum | awk '{print $1}' >> "$acc"
   done
+}
 
-  sort -o "$tmp/old-hashes" "$tmp/old-hashes"
-  sort -o "$tmp/new-hashes" "$tmp/new-hashes"
+# Both sides are the union of what is inline and what is in learnings/. The
+# entry files are split into their own subdirectories rather than into $tmp,
+# so that the entry-* glob can never pick up one of the hash accumulators and
+# fold it back into itself.
+: > "$tmp/old-hashes"
+: > "$tmp/new-hashes"
 
-  if ! diff -q "$tmp/old-hashes" "$tmp/new-hashes" >/dev/null 2>&1; then
-    echo "FAIL: LEARNINGS entries are not byte-identical after the move" >&2
-    echo "  entries in backup: $(wc -l < "$tmp/old-hashes")" >&2
-    echo "  entry files now:   $(wc -l < "$tmp/new-hashes")" >&2
-    comm -23 "$tmp/old-hashes" "$tmp/new-hashes" \
-      | sed 's/^/  entry lost or altered, hash /' >&2
-    status=1
-  fi
+if [ -f "$backup/LEARNINGS.md" ]; then
+  split_entries "$backup/LEARNINGS.md" "$tmp/backup-inline"
+  hash_entries "$tmp/backup-inline" "$tmp/old-hashes"
+fi
+[ -d "$backup/learnings" ] && hash_entry_files "$backup/learnings" "$tmp/old-hashes"
+
+if [ -f "$current/LEARNINGS.md" ]; then
+  split_entries "$current/LEARNINGS.md" "$tmp/current-inline"
+  hash_entries "$tmp/current-inline" "$tmp/new-hashes"
+fi
+[ -d "$current/learnings" ] && hash_entry_files "$current/learnings" "$tmp/new-hashes"
+
+# Deduplicated, because two entries with identical text are indistinguishable
+# by content and this check is about content surviving, not about how many
+# copies of it exist.
+sort -u -o "$tmp/old-hashes" "$tmp/old-hashes"
+sort -u -o "$tmp/new-hashes" "$tmp/new-hashes"
+
+if ! diff -q "$tmp/old-hashes" "$tmp/new-hashes" >/dev/null 2>&1; then
+  echo "FAIL: the learnings entries in $current are not the entries in $backup" >&2
+  echo "  distinct entries in backup: $(wc -l < "$tmp/old-hashes")" >&2
+  echo "  distinct entries now:       $(wc -l < "$tmp/new-hashes")" >&2
+  comm -23 "$tmp/old-hashes" "$tmp/new-hashes" \
+    | sed 's/^/  entry lost or altered, hash /' >&2
+  comm -13 "$tmp/old-hashes" "$tmp/new-hashes" \
+    | sed 's/^/  entry present now but not in the backup, hash /' >&2
+  status=1
 fi
 
 # --- Check 2: every classified file gets a verdict ----------------------------
@@ -306,6 +409,9 @@ for f in "$current"/*.md; do
   [ -e "$f" ] || continue
   base="$(basename "$f" .md)"
   [ "$base" = "LEARNINGS" ] && continue
+  # Declared under knowledge.environment: describes the machine, written by
+  # /team-setup on every run, never classified and never touched by fix.
+  grep -qxF "$(basename "$f")" "$tmp/environment-names" && continue
   lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
   if ! grep -qxF "$lower" "$tmp/known-names"; then
     echo "FAIL: $f is not classified in $manifest (knowledge.classification)" >&2
