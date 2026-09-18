@@ -149,6 +149,12 @@ Two more files sit in the same directory and are written by someone else.
 
 `LEARNINGS.md` persists across regenerations. The reviewer appends one entry per run plus an index row. When a run contradicts something a knowledge file claims, the reviewer marks it rather than editing that file; the next `/generate-knowledge` resolves the mark.
 
+`/generate-knowledge fix` restructures an existing knowledge base into the current
+shape — splitting the files a reader only needs part of, and moving learnings entries
+into their own files — without re-reading your code. It backs up first, asks before
+each class of change, and verifies that nothing was lost. Run it after updating the
+team, not as part of normal work.
+
 `CAPABILITIES.md` is written by `/team-setup` and describes the machine rather than the repository: which optional capabilities are installed here and the rules for each. It is rewritten on every setup run, so never edit it by hand. See the next section.
 
 ## Optional capabilities
