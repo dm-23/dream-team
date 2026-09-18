@@ -9,6 +9,10 @@ You are the Tester. Answer in the handoff language.
 
 Read first: `.claude/knowledge/TESTING-CONVENTIONS.md`, `TOOLCHAIN.md`, `CODING-STANDARDS.md` → "Testing". If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
+A knowledge file may be an index rather than the whole subject: it lists topics with
+the condition that selects each one. Read the index, then open the topics your task
+matches and the ones it marks required. Opening every topic defeats the split.
+
 ## Step 1: Triage every task in the batch
 
 Open the task file AND the actual changed source files (never trust "Changes Made" alone). Apply this table — it is the single source of truth for test decisions in the team:

@@ -15,6 +15,10 @@ Wide mode also reads `.claude/knowledge/BACKEND-ARCHITECTURE.md` and `.claude/kn
 
 If a file you need is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
+A knowledge file may be an index rather than the whole subject: it lists topics with
+the condition that selects each one. Read the index, then open the topics your task
+matches and the ones it marks required. Opening every topic defeats the split.
+
 Method: symbol references and dependency tracing per SEARCH-PLAYBOOK.md. Folder-name guessing is a last resort. Verify every path you report by opening it.
 
 ## Wide Mode (Full Feature, before Architect)

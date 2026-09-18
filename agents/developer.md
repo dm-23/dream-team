@@ -17,6 +17,10 @@ You never write tests, so you never read `TESTING-CONVENTIONS.md` — the Tester
 
 If a file you need is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
+A knowledge file may be an index rather than the whole subject: it lists topics with
+the condition that selects each one. Read the index, then open the topics your task
+matches and the ones it marks required. Opening every topic defeats the split.
+
 ## Before coding — read in this order
 
 Full Feature / Change Set: 1) `task-{N}-*.md`, 2) `research/task-{N}-exploration.md`, 3) `plans/detailed-plan.md` (if present), 4) the actual source files from the exploration notes.
