@@ -7,11 +7,11 @@ Compounding knowledge for `/team`. Append-only. Written by the `reviewer` subage
 | Date | Title | Tags |
 |------|-------|------|
 
-<!-- INDEX: one row per entry, newest last. The reviewer adds the row AND the entry in the same edit.
+<!-- INDEX: one row per entry, newest last. The reviewer adds the row and the entry file in the same edit.
      This table is read in full on every /team run, so every row is a cost. Hard limits:
        Title — max 80 characters, no parenthetical asides.
        Tags  — max 6, each one word or one hyphenated term.
-     Workflow, symptom, cause and file paths belong in the entry below, never in this table. -->
+     Workflow, symptom, cause and file paths belong in the entry file, never in this table. -->
 
 ## Entry format
 
@@ -32,4 +32,10 @@ Entry length limit: 25 lines. Put long narratives into `.claude-tracking/{contex
 
 ---
 
-<!-- Entries below this line. -->
+Entries do not live in this file. Each one is a file in `learnings/`, named
+`YYYY-MM-DD-{slug}.md`, holding exactly the entry and nothing else — no frontmatter,
+no wrapper. The file's whole content is the entry, because that is what makes a
+migration verifiable byte for byte.
+
+This file is the index and only the index. It is read on every `/team` run, so a row
+is held to `knowledge.budgets.learningsIndexRowTokens` in the manifest.

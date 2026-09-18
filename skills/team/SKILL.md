@@ -85,7 +85,7 @@ Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `
 
 ## Learnings check (all workflows, before any Brainstorm or research)
 
-Read the `## Index` table of `LEARNINGS.md` and nothing else. The file grows to thousands of lines, and a default read would pull most of it into context, so bound the read: take the lines from `## Index` down to `## Entry format` by offset and limit, or grep the table rows. Match rows whose title or tags overlap the task terms. Read the matched entries the same bounded way — by their offset, never by opening the file whole — and put their title + "Fix pattern" lines into every handoff's `prior learnings` field. Record matched titles in status.md.
+Read `LEARNINGS.md`. It is an index and nothing else, so read it whole. Match rows whose title or tags overlap the task terms, then open only the matched entries from `learnings/`. Put their title + "Fix pattern" lines into every handoff's `prior learnings` field, and record matched titles in status.md.
 
 ## Optional capabilities
 

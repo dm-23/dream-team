@@ -58,7 +58,8 @@
       "LEARNINGS.md": "subset"
     },
     "persistent": [
-      "LEARNINGS.md"
+      "LEARNINGS.md",
+      "learnings/"
     ],
     "persistentTemplates": {
       "LEARNINGS.md": ".claude/templates/learnings.md"

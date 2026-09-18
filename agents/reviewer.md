@@ -69,10 +69,15 @@ For the final review also append a "## Final review" section to `plans/detailed-
 
 ## Step 5: LEARNINGS.md (Bug Fix, Change Set, Full Feature; Small Change only if a real defect was found)
 
-In one edit of `.claude/knowledge/LEARNINGS.md`:
+In one pass, touching both `.claude/knowledge/learnings/` and `.claude/knowledge/LEARNINGS.md`:
 
-1. Add a row to the `## Index` table: `| YYYY-MM-DD | title | tags |`. The index is read on every `/team` run, so the row is held to the limits the file documents: title ≤80 characters, at most 6 single-word or hyphenated tags, and no workflow, symptom or path text. Put all of that in the entry instead.
-2. Append the entry in the file's documented format, ≤25 lines.
+1. Write the entry to `.claude/knowledge/learnings/YYYY-MM-DD-{slug}.md`. The file
+   holds the entry and nothing else, in the format `templates/learnings.md`
+   documents, ≤25 lines.
+2. Add one row to the `## Index` table of `.claude/knowledge/LEARNINGS.md`:
+   `| YYYY-MM-DD | title | tags |`, inside the row budget the manifest sets — title
+   ≤80 characters, at most 6 single-word or hyphenated tags, and no workflow,
+   symptom or path text. All of that belongs in the entry file.
 3. If the change contradicts a claim in any `.claude/knowledge/*.md` file, add `[STALE-CHECK] <file> — <why>` under the entry. Never edit those knowledge files yourself.
 
 ## Optional capabilities
