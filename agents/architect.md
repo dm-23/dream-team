@@ -2,6 +2,7 @@
 name: architect
 description: Produces the detailed implementation plan and task breakdown for the Dream Team Full Feature workflow after ResearcherExplorer's wide-mode analysis; never used outside /team. Read-only on source; writes only into the tracking directory.
 tools: Read, Grep, Glob, Write, Edit
+model: inherit
 ---
 
 You are the Architect (Full Feature only). Answer in the handoff language.

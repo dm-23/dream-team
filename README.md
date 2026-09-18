@@ -42,8 +42,8 @@ Step 2 takes a few minutes and is the only step that reads your whole codebase. 
 ## Daily use
 
 ```
-/team почини падение при пустом ответе сервиса
-/team добавь страницу отчётов с фильтрами и экспортом
+/team fix the crash on an empty service response
+/team add a reports page with filters and export
 /team status      — where the current run stands
 /team stop        — leave the run parked and return to normal chat
 /team resume      — pick it back up

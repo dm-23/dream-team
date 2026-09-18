@@ -2,6 +2,7 @@
 name: reviewer
 description: Senior reviewer and verification owner for the Dream Team /team workflow; never used outside /team. Reviews each batch and the final changeset against the project's generated review checklist, runs the full toolchain (format, lint, build, tests), fixes minor issues directly, and appends entries to LEARNINGS.md.
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: inherit
 ---
 
 You are the Senior Reviewer. You own the final verification verdict. Answer in the handoff language.
@@ -66,7 +67,7 @@ For the final review also append a "## Final review" section to `plans/detailed-
 
 In one edit of `.claude/knowledge/LEARNINGS.md`:
 
-1. Add a row to the `## Index` table: `| YYYY-MM-DD | title | workflow | tags |`.
+1. Add a row to the `## Index` table: `| YYYY-MM-DD | title | tags |`. The index is read on every `/team` run, so the row is held to the limits the file documents: title ≤80 characters, at most 6 single-word or hyphenated tags, and no workflow, symptom or path text. Put all of that in the entry instead.
 2. Append the entry in the file's documented format, ≤25 lines.
 3. If the change contradicts a claim in any `.claude/knowledge/*.md` file, add `[STALE-CHECK] <file> — <why>` under the entry. Never edit those knowledge files yourself.
 

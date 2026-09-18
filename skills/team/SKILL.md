@@ -25,9 +25,9 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Report requests
 
-A message asking for a report — "сформируй отчёт", "сделай отчёт", "нужен отчёт по X", "make a report", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
+A message asking for a report — "generate a report", "make a report", "I need a report on X", "write up the findings", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
 
-This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "мини-отчёт в чате", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
+This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "a short report in chat", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
 
 Two prohibitions, both absolute. Never publish a report through the Artifact tool: the user rejected cloud publishing for this project, because reports can carry material covered by a non-disclosure agreement. And never hand back chat text, a Markdown file or a canvas in place of a report that was asked for.
 
@@ -85,7 +85,7 @@ Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `
 
 ## Learnings check (all workflows, before any Brainstorm or research)
 
-Read `LEARNINGS.md → ## Index` only. Match rows whose title/tags overlap the task terms. For matches, read those entries and put their title + "Fix pattern" lines into every handoff's `prior learnings` field. Record matched titles in status.md.
+Read the `## Index` table of `LEARNINGS.md` and nothing else. The file grows to thousands of lines, and a default read would pull most of it into context, so bound the read: take the lines from `## Index` down to `## Entry format` by offset and limit, or grep the table rows. Match rows whose title or tags overlap the task terms. Read the matched entries the same bounded way — by their offset, never by opening the file whole — and put their title + "Fix pattern" lines into every handoff's `prior learnings` field. Record matched titles in status.md.
 
 ## Optional capabilities
 
