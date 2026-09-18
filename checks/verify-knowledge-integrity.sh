@@ -9,7 +9,12 @@
 # knowledge.classification is the source of truth for what every knowledge
 # file's verdict should be; this script never guesses a file's classification
 # from directory structure. Missing manifest or missing/empty classification
-# is a hard failure, not a silent pass.
+# is a hard failure, not a silent pass. The "classification" key is only
+# read where it is nested under "knowledge", and the manifest is refused
+# outright if it is ambiguous about either key (more than one "knowledge"
+# block, or more than one "classification" block anywhere) -- guessing among
+# candidates in the manifest itself would reintroduce the exact defect this
+# script exists to catch in the knowledge directory.
 #
 # For every file in knowledge.classification (other than LEARNINGS.md, which
 # Check 1 owns):
@@ -71,17 +76,73 @@ normalize() {
 # between quotes), not by any JSON parser: this is a fixed shell/awk/sed/grep
 # toolchain check, so classification is read the same way Task 1's budgets
 # check reads its own JSON blocks.
-awk '
-  BEGIN { found = 0; level = 0 }
-  !found && $0 ~ /"classification"[[:space:]]*:[[:space:]]*\{/ {
-    found = 1; level = 1; next
-  }
-  found && level > 0 {
-    for (i = 1; i <= length($0); i++) {
-      c = substr($0, i, 1)
-      if (c == "{") level++
-      else if (c == "}") { level--; if (level == 0) exit }
+#
+# A file-wide search for "classification" alone is not enough: nothing stops
+# an unrelated top-level key from also having its own "classification" object,
+# and a search that just takes the first (or last) match would silently pick
+# among candidates -- the same defect this script exists to catch, one level
+# up, in its own input. So the key is scoped ("classification" only counts if
+# it is nested inside "knowledge") and, separately, refused outright if the
+# manifest is ambiguous about it (more than one "classification" block
+# anywhere, or more than one "knowledge" block). Scoping and ambiguity are
+# both checked because scoping alone would still happily pick the one
+# "classification" block that exists if it happened to sit outside
+# "knowledge", and the ambiguity count alone would not know which of several
+# candidates is the real one.
+
+# Count occurrences of a JSON `"key": {` opening anywhere in a file's text.
+count_key_blocks() {
+  awk -v key="$1" '
+    { n = gsub("\"" key "\"[[:space:]]*:[[:space:]]*\\{", "&"); total += n }
+    END { print total + 0 }
+  ' "$2"
+}
+
+# Extract the raw text strictly between a named key's opening { and its
+# matching closing }, by brace depth. Callers must first confirm with
+# count_key_blocks that exactly one such key exists in the input, or this
+# takes the first match, same as any other single-pass scan would.
+extract_key_block() {
+  awk -v key="$1" '
+    BEGIN { found = 0; level = 0 }
+    !found && $0 ~ ("\"" key "\"[[:space:]]*:[[:space:]]*\\{") {
+      found = 1; level = 1; next
     }
+    found && level > 0 {
+      for (i = 1; i <= length($0); i++) {
+        c = substr($0, i, 1)
+        if (c == "{") level++
+        else if (c == "}") { level--; if (level == 0) exit }
+      }
+      print
+    }
+  ' "$2"
+}
+
+knowledge_blocks="$(count_key_blocks knowledge "$manifest")"
+if [ "$knowledge_blocks" -ne 1 ]; then
+  echo "FAIL: $manifest defines $knowledge_blocks \"knowledge\" blocks, expected exactly 1" >&2
+  exit 1
+fi
+
+classification_blocks_total="$(count_key_blocks classification "$manifest")"
+if [ "$classification_blocks_total" -ne 1 ]; then
+  echo "FAIL: $manifest defines $classification_blocks_total \"classification\" blocks; refusing to guess which one is knowledge.classification" >&2
+  exit 1
+fi
+
+extract_key_block knowledge "$manifest" > "$tmp/knowledge-block"
+
+classification_blocks_in_knowledge="$(count_key_blocks classification "$tmp/knowledge-block")"
+if [ "$classification_blocks_in_knowledge" -ne 1 ]; then
+  echo "FAIL: no classification block found nested under \"knowledge\" in $manifest" >&2
+  exit 1
+fi
+
+extract_key_block classification "$tmp/knowledge-block" > "$tmp/classification-block"
+
+awk '
+  {
     line = $0
     if (line ~ /"[^"]+\.md"[[:space:]]*:[[:space:]]*"(subset|whole)"/) {
       s = line
@@ -95,7 +156,7 @@ awk '
       print fname "\t" val
     }
   }
-' "$manifest" > "$tmp/classification"
+' "$tmp/classification-block" > "$tmp/classification"
 
 if [ ! -s "$tmp/classification" ]; then
   echo "FAIL: no knowledge.classification entries found in $manifest" >&2
