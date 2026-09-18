@@ -1,7 +1,7 @@
 ---
 name: generate-knowledge
 description: Use when the user explicitly asks to (re)generate or check the Dream Team knowledge base for this repository — first run on a new project, after major architecture changes, or when LEARNINGS.md has [STALE-CHECK] marks. Produces project documentation AND coding standards/toolchain/review-checklist files under .claude/knowledge/. Never auto-invoke.
-argument-hint: "[check | all | <FILE-NAME.md> ...]"
+argument-hint: "[check | fix | all | <FILE-NAME.md> ...]"
 disable-model-invocation: true
 user-invocable: true
 ---
@@ -12,6 +12,7 @@ Arguments: `$ARGUMENTS`
 
 - empty or `all` → regenerate every file in `team-manifest.json → knowledge.required`.
 - `check` → do not write; compare each existing knowledge file against the repository and print a staleness report (see "Check mode").
+- `fix` → restructure the existing knowledge base into the shape "File shape and budgets" describes, without re-reading the repository (see "Fix mode").
 - one or more file names → regenerate only those files (others untouched).
 
 Output language: the language of the user's request; file contents in English (agents read them).
@@ -219,6 +220,35 @@ If missing, create it from `team-manifest.json → knowledge.persistentTemplates
 
 For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Write nothing.
 
+## Fix mode (`fix`)
+
+Restructures what is already written. It opens `.claude/knowledge/` and the manifest and nothing else — it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so and point at `all`; do not guess.
+
+**Refuse to run when `.claude-tracking/.team-mode` exists.** A live run is reading these files. Report which run is open and stop.
+
+**Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.claude-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only, in this mode only.
+
+**Two classes of work, consented separately.**
+
+*Moves* relocate text byte for byte: splitting a `subset` file into an index and topics, lifting each `LEARNINGS` entry into its own file. Nothing is reworded. The only new text is the descriptive lines in the index.
+
+*Rewrites* change text: compacting `LEARNINGS` index rows to `learningsIndexRowTokens`, cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost, so ask for this class separately. Accepting moves and declining rewrites is a supported outcome — do the moves.
+
+**Order of work.**
+
+1. Refuse if a run is open.
+2. Measure every file; build the size table.
+3. Report: file, class, measured tokens, budget, and the proposal for it. For a split, list the topics you would create, from the file's own `##` sections. Nothing over budget → report that and stop: nothing to back up, nothing to apply.
+4. Ask via AskUserQuestion, once per class, naming what each would change. Nothing accepted → report that and stop: nothing to back up, nothing to apply.
+5. Back up, as above.
+6. Apply what was accepted.
+7. Verify with `checks.knowledgeIntegrity` from the manifest, passing the backup and the knowledge directory. Report its result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back.
+8. Print the size table again, before and after.
+
+**Idempotent.** A second run immediately after reports every file inside budget and writes nothing — not even a backup.
+
+**Never** touch agents, skills, templates, hooks, the manifest, source code or human documentation; never delete knowledge, because splitting relocates text rather than dropping it.
+
 ## Process
 
 1. Read inputs 1–6.
@@ -247,5 +277,5 @@ this run, not a note for later — say so plainly rather than burying it.
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
-- `.claude/knowledge/` is the only directory you write to. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode you also write the backup directory under `.claude-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
 - Every file is inside the budget its class gives it, and the size table proves it.
