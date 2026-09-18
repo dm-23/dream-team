@@ -247,7 +247,7 @@ Restructures what is already written. It opens `.claude/knowledge/` and the mani
 
 **Idempotent.** A second run immediately after reports every file inside budget and writes nothing — not even a backup.
 
-**Never** touch agents, skills, templates, hooks, the manifest, source code or human documentation; never delete knowledge, because splitting relocates text rather than dropping it.
+**Never** touch agents, skills, templates, hooks, the manifest, source code or human documentation. Moves never delete knowledge, because splitting relocates text rather than dropping it; rewrites may reduce it, and only by consent.
 
 ## Process
 
