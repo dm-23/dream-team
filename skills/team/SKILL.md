@@ -178,18 +178,18 @@ If Option 1 ("Approve and PAUSE") is selected:
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
 1. Run ResearcherExplorer (`mode: targeted`) per task → Developers in parallel → Tester → Reviewer.
-2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start Batch {N+1}. Ask via AskUserQuestion:
-   - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute Batch {N+1} directly in THIS session.
-   - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start Batch {N+1} in a fresh session.
+2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. Ask via AskUserQuestion:
+   - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
+   - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start the next batch in a fresh session.
    - **Option 3 (Custom):** Wait for user instructions.
 
 3. **If Option 2 is selected:**
    - Run `git commit` for Batch {N}.
-   - Update `status.md` and `.team-mode` (`phase=4.{N} Batch {N} Complete - Awaiting Batch {N+1}`).
+   - Update `status.md` and `.team-mode` (`phase=4.{N} Batch {N} Complete - Awaiting the next batch`).
    - Output the fresh session prompt:
      ```text
      Batch {N} completed and committed!
-     To execute Batch {N+1} in a fresh session:
+     To execute the next batch in a fresh session:
      1. Run /clear or open a new terminal session.
      2. Run: /team resume {context_id}
      ```

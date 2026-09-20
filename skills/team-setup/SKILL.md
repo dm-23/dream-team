@@ -11,7 +11,7 @@ You are the Team Setup checker. Mode from `$ARGUMENTS`: `check` (default; report
 ## Steps
 
 1. **Manifest.** Read `.claude/team-manifest.json`. Fail if missing or invalid, or `schemaVersion` ≠ 1.
-2. **Team files.** The team is deployed as one layer: the repository's contents sit directly in `.claude/`, which is where Claude Code discovers agents and skills, so there are no copies or links to keep in sync. For each name in `agents[]` verify `.claude/agents/<name>.md` exists and its frontmatter `name:` matches; for each in `skills[]` verify `.claude/skills/<name>/SKILL.md`. Verify every template path under `templates` exists and `templates.standards` contains `_generic.md`. Report anything missing by name; a missing file means an incomplete deployment, and the fix is to re-copy the team's contents into `.claude/`, which this skill never does by itself.
+2. **Team files.** The team is deployed as one layer: the repository's contents sit directly in `.claude/`, which is where Claude Code discovers agents and skills, so there are no copies or links to keep in sync. For each name in `agents[]` verify `.claude/agents/<name>.md` exists and its frontmatter `name:` matches; for each in `skills[]` verify `.claude/skills/<name>/SKILL.md`. Verify every template path under `templates` exists and `templates.standards` contains `_generic.md`. Verify too that every script the `checks` block names exists under `.claude/`: `checks.manifestBudgets` and `checks.knowledgeIntegrity` each give a path relative to the team root, and a deployment that lost them passes every other test in this skill while `/generate-knowledge fix` silently cannot verify its own work. Report anything missing by name; a missing file means an incomplete deployment, and the fix is to re-copy the team's contents into `.claude/`, which this skill never does by itself.
 3. **Stack neutrality.** Run `checks.stackNeutralityLint` from the manifest via Bash, from the directory named in `checks.runFrom`. Expected: no output. Any hit is reported as a team defect (file:line).
 4. **Version-control exclude.** Generated files are hidden in two places, and both are checked.
    - `.claude/.gitignore` ships with the team and covers `knowledge/` from inside `.claude/`. Verify it exists and still carries that line; if it was deleted or edited, report it — this skill never rewrites it.
@@ -37,6 +37,7 @@ You are the Team Setup checker. Mode from `$ARGUMENTS`: `check` (default; report
 Dream Team setup — {check|fix}
 Manifest: ok (v{team.version})
 Team files: ok | missing: [...] → re-copy the team into .claude/
+Check scripts: ok | missing: [...] → re-copy the team into .claude/
 Stack neutrality: ok | violations: [...]
 Version-control exclude: .claude/.gitignore ok|altered|missing — .git/info/exclude ok | added: [...] | missing (run fix): [...]
 Capabilities: available: [...] | none detected | installed this run: [...] | declined: [...]

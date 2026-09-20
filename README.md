@@ -10,7 +10,7 @@ It knows nothing about your technology and nothing about your project. Everythin
 
 ## Install into a project
 
-The team's contents are placed directly in your project's `.claude/`. That is the directory Claude Code already scans for agents and commands, so nothing has to be linked, duplicated or registered afterwards.
+The team's contents are placed directly in your project's `.claude/`. That is the directory Claude Code already scans for agents and commands, so nothing has to be linked, duplicated or registered afterwards. The commands below are bash; on Windows run them from Git Bash, which the hook needs anyway.
 
 ```bash
 cd <your project>
@@ -57,6 +57,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 
 - You are asked up to a handful of clarifying questions, then shown a plan.
 - Nothing is written until you approve.
+- A Full Feature run stops at gates you control: once when the plan is ready, and again after every batch. At each one you choose to carry on here, or to park the run, commit what is done, and pick it up in a clean session with `/team resume`. Splitting a long run that way is the recommended path, not a fallback.
 - Every run leaves a diary in `.claude-tracking/`. Runs that change code also leave an entry in the learnings log; `Analyze` has no reviewer and so leaves none.
 - An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.
@@ -64,7 +65,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 
 ## Requirements
 
-Claude Code, a version-controlled project, and a bash shell for the sticky-mode hook (Git Bash or WSL on Windows). Without bash everything else still works; only sticky mode is unavailable.
+Claude Code, a version-controlled project, and a bash shell (Git Bash or WSL on Windows). Bash runs the sticky-mode hook, the neutrality check and the two scripts under `checks/`. Without it those are unavailable; the workflows themselves still run.
 
 ---
 
@@ -98,6 +99,7 @@ checks/                        the scripts the manifest's checks run: manifest b
                                the integrity check `/generate-knowledge fix` must pass
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
+.gitattributes                 pins LF on the two hook files; a CRLF checkout breaks them
 ```
 
 ## The six roles
@@ -127,7 +129,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, review |
 | Change Set | a list of independent small items | One research pass, batches with non-overlapping files run in parallel, one combined review |
-| Full Feature | a new capability across modules | Questions, design, wide research, architecture, your approval of the plan, batched implementation, final review |
+| Full Feature | a new capability across modules | Questions, design, wide research, architecture, your approval of the plan, batched implementation with a stop after each batch, final review |
 
 If research shows a Small Change is bigger than three files, or touches a schema, a public interface or wiring, you are asked whether to upgrade it rather than being quietly let through.
 
@@ -147,6 +149,10 @@ If research shows a Small Change is bigger than three files, or touches a schema
 | `CODING-STANDARDS.md` | developer, reviewer | Stack card plus your observed conventions; where they conflict, yours wins |
 | `REVIEW-CHECKLIST.md` | reviewer | A flat numbered list the reviewer applies to every changed file |
 | `PROJECT-RULES.md` | all | Obligations lifted from your own documentation, such as what must be updated alongside a change |
+
+**Shape and size.** The manifest gives every knowledge file a class and a token budget, and the generator keeps it inside that budget. A file every reader needs whole stays one file and is shortened to fit. A file a reader only needs part of becomes an index at its own path plus a sibling directory of topics — `BACKEND-ARCHITECTURE.md` next to `backend-architecture/` — so an agent reads the short index and then only the topic its task selects. The numbers live in `team-manifest.json` under `knowledge.budgets`; `checks/verify-manifest-budgets.sh` keeps them consistent with each other.
+
+`/generate-knowledge check` writes nothing: it compares what the existing files claim against the repository and reports what has gone stale. Naming files regenerates only those, for example `/generate-knowledge TOOLCHAIN.md`.
 
 Two more files sit in the same directory and are written by someone else.
 
@@ -229,7 +235,9 @@ cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team
 
 `knowledge/` and any `settings.json` you have are untouched — nothing in this repository is named either. Then reopen the session, so the new role and command prompts are loaded, and run `/team-setup check`.
 
-Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate.
+A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
+
+Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
 
 ## Troubleshooting
 
