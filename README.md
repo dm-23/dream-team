@@ -109,7 +109,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Role | Tools | Does | Never does |
 |------|-------|------|------------|
 | Brainstorm | read only | Three parallel instances propose questions, solutions or a diagnosis | Reads your source; talks to you |
-| ResearcherExplorer | read, search | Finds the exact files, symbols and insertion points | Writes anything |
+| ResearcherExplorer | read, search, git history, write to run state | Finds the exact files, symbols and insertion points | Modifies source |
 | Architect | read, search, write to run state | Detailed plan and task breakdown for a full feature | Writes production code |
 | Developer | read, edit, write, formatter and compile check | Implements exactly one task | Writes or runs tests |
 | Tester | read, edit, write, runs only its own tests | Decides what needs tests and writes them | Touches production code |
