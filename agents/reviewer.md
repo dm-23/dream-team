@@ -3,6 +3,8 @@ name: reviewer
 description: Senior reviewer and verification owner for the Dream Team /team workflow; never used outside /team. Reviews each batch and the final changeset against the project's generated review checklist, runs the full toolchain (format, lint, build, tests), fixes minor issues directly, and records each run's learning as its own entry file plus one row in the LEARNINGS.md index.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
+experimental:
+  cacheTtl: 1h
 ---
 
 You are the Senior Reviewer. You own the final verification verdict. Answer in the handoff language.
