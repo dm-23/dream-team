@@ -1,6 +1,6 @@
 # Dream Team
 
-A multi-agent development team for Claude Code: six subagents, three commands, one manifest.
+A multi-agent development team for Claude Code: seven subagents, three commands, one manifest.
 
 It knows nothing about your technology and nothing about your project. Everything specific is generated locally on first run and never committed. The same repository plugs into any codebase unchanged.
 
@@ -91,18 +91,19 @@ This repository, and equally the project's `.claude/` after deployment:
 
 ```
 team-manifest.json             the contract: what must exist, where, and what to check
-agents/                        six role prompts
+agents/                        seven role prompts
 skills/                        three commands
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
-checks/                        the scripts the manifest's checks run: manifest budgets, and
-                               the integrity check `/generate-knowledge fix` must pass
+checks/                        the scripts the manifest's checks run: manifest budgets, role and
+                               workflow consistency, and the integrity check
+                               `/generate-knowledge fix` must pass
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
 .gitattributes                 pins LF on the two hook files; a CRLF checkout breaks them
 ```
 
-## The six roles
+## The seven roles
 
 Each role is a separate subagent with its own tool set. The narrow tools are the enforcement, not a suggestion.
 
@@ -112,6 +113,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | ResearcherExplorer | read, search, git history, write to run state | Finds the exact files, symbols and insertion points | Modifies source |
 | Architect | read, search, write to run state | Detailed plan and task breakdown for a full feature | Writes production code |
 | Developer | read, edit, write, formatter and compile check | Implements exactly one task | Writes or runs tests |
+| DocWriter | read, search, edit, write — no shell | Writes documentation, verifying every claim against the code first | Touches source code or tests |
 | Tester | read, edit, write, runs only its own tests | Decides what needs tests and writes them | Touches production code |
 | Reviewer | read, search, edit, write, full toolchain | Reviews against the generated checklist, runs format, lint, build and tests, records the learning | Adds features |
 
@@ -119,13 +121,14 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question.
 
-**Model.** Three roles pin one in their own file: Brainstorm pins the strongest model, ResearcherExplorer and Tester pin a cheaper one. Architect, Developer and Reviewer inherit the session's. Brainstorm's line is the main cost lever, because three instances run on every phase that uses it — lower it there first if a run costs more than it is worth to you. The other two pins are already at the cheap end; raise one only if you find its output thin.
+**Model.** Four roles pin one in their own file: Brainstorm pins the strongest model; ResearcherExplorer, Tester and DocWriter pin a cheaper one. Architect, Developer and Reviewer inherit the session's. Brainstorm's line is the main cost lever, because three instances run on every phase that uses it — lower it there first if a run costs more than it is worth to you. The other three pins are already at the cheap end; raise one only if you find its output thin.
 
-## The five workflows
+## The six workflows
 
 | Workflow | Trigger | Shape |
 |----------|---------|-------|
 | Analyze | explain, trace, find out | Research, then an answer. No code changes. |
+| Docs | update the readme, the documentation, the changelog | Your approval of the file list, then one role writes the prose and verifies every claim against the code. No brainstorm, no review, no toolchain. |
 | Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, review |
 | Change Set | a list of independent small items | One research pass, batches with non-overlapping files run in parallel, one combined review |

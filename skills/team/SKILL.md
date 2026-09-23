@@ -1,6 +1,6 @@
 ---
 name: team
-description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Bug Fix / Small Change / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, ResearcherExplorer, Architect, Developer, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
+description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, ResearcherExplorer, Architect, Developer, DocWriter, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
 argument-hint: "task description | resume [context_id] | stop | status"
 disable-model-invocation: true
 user-invocable: true
@@ -39,7 +39,7 @@ Marker path: `.claude-tracking/.team-mode` (plain text, one `key=value` per line
 
 ```
 context_id={workflow}_{slug}_{YYYY-MM-DD}
-workflow={Analyze | Bug Fix | Small Change | Change Set | Full Feature}
+workflow={Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 phase={number and name of the phase just entered}
 language={language the user wrote the task in}
 started={YYYY-MM-DD}
@@ -74,16 +74,19 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 | Workflow | Use when | Ceremony |
 |----------|----------|----------|
 | Analyze | find/explain/trace; no code change | minimal |
+| Docs | the change touches only documentation files | minimal |
 | Bug Fix | something is broken; a fix is needed | light |
 | Small Change | one concern, expected ≤3 files, not a bug | medium |
 | Change Set | several independent small items (post-release polish, a list of tweaks), each small, files mostly disjoint | medium, parallel |
 | Full Feature | new capability across modules (new entity + API + user interface, new page, new integration) | full |
 
-Detect from the task (any language): analysis verbs → Analyze; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
+Detect from the task (any language): analysis verbs → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain` (these two read-only version-control commands are the only shell commands you run). Then write the sticky-mode marker.
+Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-## Learnings check (all workflows, before any Brainstorm or research)
+Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, plus `git diff` for the Docs workflow's own verification step, are the only shell commands you run — all three read-only, and none of them a build, a test or a lint. Then write the sticky-mode marker.
+
+## Learnings check (every workflow except Docs, before any Brainstorm or research)
 
 Read `LEARNINGS.md`. In the current shape it is an index and nothing else, so read it whole. **If it still carries `## [` entry bodies below the index, this deployment has not been migrated yet**: read only from `## Index` down to the first `## [` line, stop there, and tell the user once that `/generate-knowledge fix` will shrink it — reading an un-migrated log whole is the cost this shape exists to remove, and the team layer updates before the knowledge layer does. Match rows whose title or tags overlap the task terms, then open the matched entries: from `learnings/` once they live there, otherwise from the entry bodies further down the same file. Put their title + "Fix pattern" lines into every handoff's `prior learnings` field, and record matched titles in status.md.
 
@@ -113,23 +116,41 @@ Always launch three Brainstorm instances in parallel with lenses `minimalism`, `
 
 ## Scope gate (Small Change and Bug Fix)
 
-After targeted research read `## Scope Count`. If the total is more than 3 files, or the change touches a schema, a public interface, or wiring/registration, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
+After targeted research read the `Scope Count` and `Wiring/surface` lines of the ResearcherExplorer's pointer block — the report itself stays unread; those two lines are what the gate is decided from. If the total is more than 3 files, or `Wiring/surface` names anything other than `none`, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
 
 ## Workflow: Analyze
 
 1. Clarify (≤3 questions) only if needed.
-2. Handoff → ResearcherExplorer (`mode: targeted`).
+2. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Read that file yourself before concluding — here you are the consumer.
 3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.claude-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
 4. Close status.md.
+
+## Workflow: Docs
+
+Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no LEARNINGS entry — the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
+
+1. Clarify only when the target files or the intent are genuinely ambiguous (≤2 questions).
+2. Establish the file list: which documentation files this touches, by name. Look for yourself if the request does not say.
+3. AskUserQuestion: the files you will touch and a one-line plan per file — approve / edit the list / reject.
+4. On approval: handoff → DocWriter. `inputs` carries the request and the agreed file list; `constraints` says that no other file may change and that source files are out of bounds.
+5. Verify it yourself — this is the step that replaces the Reviewer:
+   - `git diff` against the baseline. Every changed file is on the approved list; nothing else moved.
+   - Every line under "Claims verified" names a source path you can open. Spot-check the ones that carry weight.
+   - "Gaps / could not verify" is empty, or you tell the user what is in it.
+   - Anything under "Code change required": do not act on it. Ask the user via AskUserQuestion whether to open a Small Change or a Bug Fix for it, as a separate run.
+   - A diff that does not match the block, or a claim that does not hold: one handoff back to the DocWriter with the specifics, then escalate to the user. There is no second rework cycle here.
+6. Close status.md. Tick phases 0, 1, 4 and 5; mark 2, 3, 6, 7, 8 and 9 as `n/a — Docs`. Delete the marker.
+
+The learnings check is skipped: nothing in this workflow consumes it, and the Reviewer who would write the entry never runs. Doc-only items inside a code run are a different matter — see Change Set step 6 — and documentation obligations that `PROJECT-RULES.md` attaches to a code change stay with the Developer, in the same change as the code.
 
 ## Workflow: Bug Fix
 
 1. Clarify (symptoms, reproduction, environment; ≤3 questions).
 2. Learnings check.
-3. Handoff → ResearcherExplorer (`mode: targeted`). Scope gate.
-4. Brainstorm ×3 (`phase: diagnosis`) with research + learnings. Quorum on root cause and fix.
+3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.
+4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix.
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
-6. On approval: handoff → Developer (inline task, exploration notes attached).
+6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to).
 7. Handoff → Reviewer (single pass, baseline attached). Reviewer records the learning (entry file + index row).
 8. If Reviewer returns `manual` findings or `needs rework`: handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user).
 9. Report; close status.md.
@@ -137,8 +158,8 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 ## Workflow: Small Change
 
 1. Clarify if ambiguous (≤3).
-2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`). Scope gate.
-3. Brainstorm ×3 (`phase: solution`). Quorum.
+2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the pointer block's `Scope Count` line.
+3. Brainstorm ×3 (`phase: solution`); `inputs` is the exploration **path** plus the learnings lines. Quorum.
 4. Present a 2–5 bullet plan (concrete actions, files) via AskUserQuestion for approval.
 5. Handoff → Developer (1–2 inline tasks, disjoint files if 2).
 6. Handoff → Reviewer (single pass). Rework loop as in Bug Fix step 8.
@@ -147,11 +168,11 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 ## Workflow: Change Set
 
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
-2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`) once with all items — it returns files per item.
-3. Brainstorm ×3 (`phase: solution`) over the whole list. Quorum per item.
+2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
+3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
 4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses).
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
-6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file).
+6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
 7. Tester: one call for the whole change set; it triages per its own table.
 8. Reviewer: one combined review of all batches (final review). Rework loop as in Bug Fix step 8.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
@@ -177,7 +198,7 @@ If Option 1 ("Approve and PAUSE") is selected:
 
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
-1. Run ResearcherExplorer (`mode: targeted`) per task → Developers in parallel → Tester → Reviewer.
+1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer.
 2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. Ask via AskUserQuestion:
    - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
    - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start the next batch in a fresh session.
@@ -217,7 +238,7 @@ To run the implementation phase in a **clean session** (recommended to optimize 
 
 ## Files (relative to `.claude-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set).
+`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
 
 ## Simplicity enforcement
 
@@ -225,7 +246,9 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 
 ## Common Rationalizations — Reject These
 
-- "Small task, skip the approval gate" → gates are mandatory for every workflow that changes code.
+- "Small task, skip the approval gate" → gates are mandatory for every workflow that writes a file, prose included. Only Analyze, which writes nothing into the repository, has none.
+- "Docs are trivial, the user does not need to see the file list first" → the same gate, the same words: nothing is written until they approve.
+- "They asked me to write up the findings, that is documentation" → a report is the HTML file in the tracking directory; the Docs workflow edits the repository's own documentation. A message asking for a report gets a report, whichever workflow is open.
 - "First Brainstorm result is obviously right" → always three, always quorum.
 - "The user will understand what was fixed, skip LEARNINGS" → the Reviewer's entry is part of done.
 - "Knowledge files are probably fine" → preflight runs every time; missing files stop the run.
@@ -247,6 +270,12 @@ To keep subagent token usage minimal and context lean:
 - **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
 - **For Developers:** Include ONLY:
   1. The path to the assigned `task-{N}-*.md`.
-  2. The path to `research/task-{N}-exploration.md`.
+  2. The path to the exploration report for that task, when one was written. When the research pass was skipped, put `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` here instead — that one section, named as a section, is the substitute the task file's `Insertion Points` lean on.
   3. The `prior learnings` lines (if matches exist).
-  Do NOT include draft plans, brainstorm outputs, or previous batch reviews.
+  Do NOT include the rest of the draft plan, brainstorm outputs, or previous batch reviews.
+- **For Brainstorm:** Include ONLY:
+  1. The task text or the user's answers.
+  2. The path to the exploration report.
+  3. The `prior learnings` lines (if matches exist).
+
+  Never the exploration text itself. Three instances run in parallel on the strongest model, so pasted research is paid for three times over; the path costs one line.

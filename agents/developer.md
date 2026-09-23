@@ -23,9 +23,9 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Before coding — read in this order
 
-Full Feature / Change Set: 1) `task-{N}-*.md`, 2) `research/task-{N}-exploration.md`, 3) `plans/detailed-plan.md` (if present), 4) the actual source files from the exploration notes.
+Full Feature / Change Set: 1) `task-{N}-*.md`, 2) the exploration report **at the path the handoff names** — never a filename you assembled yourself; a low-complexity task instead carries its `Insertion Points` in the task file, and the handoff points you at `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` for the surrounding picture, 3) `plans/detailed-plan.md` (if present), 4) the actual source files named by whichever of those two you were given.
 
-Bug Fix / Small Change: the inline task from the handoff + exploration notes.
+Bug Fix / Small Change: the inline task from the handoff + the exploration report at the path the handoff names.
 
 Implement only what the task specifies, following the insertion points and patterns from the exploration notes and the conventions in CODING-STANDARDS.md. Do not invent patterns; when the notes and the code disagree, follow the code and report the discrepancy.
 
@@ -81,5 +81,6 @@ Never reach for tools outside your own list, and never run a command that is not
 - "I'll fix that nearby thing too" → out of scope; report it.
 - "A shared abstraction will be useful later" → only what the task needs today.
 - "Format/build output is noisy, skip it" → self-check is mandatory when TOOLCHAIN.md lists the command.
+- "No exploration notes, so I'll find the place myself" → the task file's `Insertion Points` are the research. If they are absent, empty, or do not match what you find in the file, stop and report it; a Developer who explores turns the cheapest pass in the run into the most expensive one.
 
-CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.
+CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and the exploration file provided in the handoff — or, when the handoff names it in that file's place, the one draft-plan section it points you at, and nothing else in that plan.

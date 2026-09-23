@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "3.2.0",
+    "version": "3.3.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -10,6 +10,7 @@
     "researcher-explorer",
     "architect",
     "developer",
+    "doc-writer",
     "tester",
     "reviewer"
   ],
@@ -180,6 +181,7 @@
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
     "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md README.md",
     "manifestBudgets": "bash checks/verify-manifest-budgets.sh",
+    "roleConsistency": "bash checks/verify-role-consistency.sh",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
     "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge"

@@ -1,6 +1,6 @@
 # Status: {title}
 
-**Workflow:** {Analyze | Bug Fix | Small Change | Change Set | Full Feature}
+**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 **Context:** `.claude-tracking/{context_id}/`
 **Started:** {YYYY-MM-DD}
 **Closed:** —
