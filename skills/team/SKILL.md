@@ -1,6 +1,6 @@
 ---
 name: team
-description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Bug Fix / Small Change / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, ResearcherExplorer, Architect, Developer, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
+description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, ResearcherExplorer, Architect, Developer, DocWriter, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
 argument-hint: "task description | resume [context_id] | stop | status"
 disable-model-invocation: true
 user-invocable: true
@@ -39,7 +39,7 @@ Marker path: `.claude-tracking/.team-mode` (plain text, one `key=value` per line
 
 ```
 context_id={workflow}_{slug}_{YYYY-MM-DD}
-workflow={Analyze | Bug Fix | Small Change | Change Set | Full Feature}
+workflow={Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 phase={number and name of the phase just entered}
 language={language the user wrote the task in}
 started={YYYY-MM-DD}
@@ -74,14 +74,17 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 | Workflow | Use when | Ceremony |
 |----------|----------|----------|
 | Analyze | find/explain/trace; no code change | minimal |
+| Docs | the change touches only documentation files | minimal |
 | Bug Fix | something is broken; a fix is needed | light |
 | Small Change | one concern, expected ≤3 files, not a bug | medium |
 | Change Set | several independent small items (post-release polish, a list of tweaks), each small, files mostly disjoint | medium, parallel |
 | Full Feature | new capability across modules (new entity + API + user interface, new page, new integration) | full |
 
-Detect from the task (any language): analysis verbs → Analyze; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
+Detect from the task (any language): analysis verbs → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain` (these two read-only version-control commands are the only shell commands you run). Then write the sticky-mode marker.
+Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
+
+Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, plus `git diff` for the Docs workflow's own verification step, are the only shell commands you run — all three read-only, and none of them a build, a test or a lint. Then write the sticky-mode marker.
 
 ## Learnings check (all workflows, before any Brainstorm or research)
 
@@ -122,6 +125,24 @@ After targeted research read the `Scope Count` line of the ResearcherExplorer's 
 3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.claude-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
 4. Close status.md.
 
+## Workflow: Docs
+
+Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no LEARNINGS entry â the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
+
+1. Clarify only when the target files or the intent are genuinely ambiguous (â¤2 questions).
+2. Establish the file list: which documentation files this touches, by name. Look for yourself if the request does not say.
+3. AskUserQuestion: the files you will touch and a one-line plan per file â approve / edit the list / reject.
+4. On approval: handoff â DocWriter. `inputs` carries the request and the agreed file list; `constraints` says that no other file may change and that source files are out of bounds.
+5. Verify it yourself â this is the step that replaces the Reviewer:
+   - `git diff` against the baseline. Every changed file is on the approved list; nothing else moved.
+   - Every line under "Claims verified" names a source path you can open. Spot-check the ones that carry weight.
+   - "Gaps / could not verify" is empty, or you tell the user what is in it.
+   - Anything under "Code change required": do not act on it. Ask the user via AskUserQuestion whether to open a Small Change or a Bug Fix for it, as a separate run.
+   - A diff that does not match the block, or a claim that does not hold: one handoff back to the DocWriter with the specifics, then escalate to the user. There is no second rework cycle here.
+6. Close status.md. Tick phases 0, 1, 4 and 5; mark 2, 3, 6, 7, 8 and 9 as `n/a â Docs`. Delete the marker.
+
+The learnings check is skipped: nothing in this workflow consumes it, and the Reviewer who would write the entry never runs. Doc-only items inside a code run are a different matter â see Change Set step 6 â and documentation obligations that `PROJECT-RULES.md` attaches to a code change stay with the Developer, in the same change as the code.
+
 ## Workflow: Bug Fix
 
 1. Clarify (symptoms, reproduction, environment; ≤3 questions).
@@ -151,7 +172,7 @@ After targeted research read the `Scope Count` line of the ResearcherExplorer's 
 3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
 4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses).
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
-6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file).
+6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
 7. Tester: one call for the whole change set; it triages per its own table.
 8. Reviewer: one combined review of all batches (final review). Rework loop as in Bug Fix step 8.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
@@ -225,7 +246,9 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 
 ## Common Rationalizations — Reject These
 
-- "Small task, skip the approval gate" → gates are mandatory for every workflow that changes code.
+- "Small task, skip the approval gate" → gates are mandatory for every workflow that writes a file, prose included. Only Analyze, which writes nothing into the repository, has none.
+- "Docs are trivial, the user does not need to see the file list first" → the same gate, the same words: nothing is written until they approve.
+- "They asked me to write up the findings, that is documentation" → a report is the HTML file in the tracking directory; the Docs workflow edits the repository's own documentation. A message asking for a report gets a report, whichever workflow is open.
 - "First Brainstorm result is obviously right" → always three, always quorum.
 - "The user will understand what was fixed, skip LEARNINGS" → the Reviewer's entry is part of done.
 - "Knowledge files are probably fine" → preflight runs every time; missing files stop the run.
