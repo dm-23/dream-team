@@ -96,7 +96,7 @@ skills/                        three commands
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
-                               workflow consistency, and the integrity check
+                               workflow consistency, text encoding, and the integrity check
                                `/generate-knowledge fix` must pass
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
