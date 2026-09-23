@@ -177,7 +177,7 @@ If Option 1 ("Approve and PAUSE") is selected:
 
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
-1. Run ResearcherExplorer (`mode: targeted`) per task → Developers in parallel → Tester → Reviewer.
+1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer.
 2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. Ask via AskUserQuestion:
    - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
    - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start the next batch in a fresh session.
