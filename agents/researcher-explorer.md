@@ -76,7 +76,7 @@ Steps:
 6. Note risks: signature compatibility, side effects, duplicated code paths that must change together, test gaps.
 7. Count the files in "Files to Modify" + "Files to Create" and state the total explicitly (the orchestrator uses it for scope decisions).
 
-Output — always a file, never a wall of text in your final message. Write the report to the path the handoff names under `expected output`: `.claude-tracking/{context_id}/research/task-{N}-exploration.md` for a Full Feature or Change Set task, `.claude-tracking/{context_id}/research/exploration.md` for Analyze, Bug Fix and Small Change. Create `research/` if it does not exist. The report itself:
+Output — always a file, never a wall of text in your final message. Write the report to the path the handoff names under `expected output`, which is the only authority on where it belongs: `.claude-tracking/{context_id}/research/task-{N}-exploration.md` for a per-task pass of a Full Feature, `.claude-tracking/{context_id}/research/exploration.md` for Analyze, Bug Fix, Small Change and the one combined pass of a Change Set. Create `research/` if it does not exist. The report itself:
 
 ```markdown
 # Exploration: [task title]
@@ -112,11 +112,12 @@ Then return this pointer block as your final message — this and nothing else:
 Exploration: {the path you just wrote}
 Scope Count: files to modify N; files to create M; total N+M
 Files: {the paths, comma-separated, one line}
+Wiring/surface: {schema | public interface | registration — whichever the change touches, comma-separated; or "none"}
 Top risk: {one line, or "none"}
 Blockers: {what you could not establish, or "none"}
 ```
 
-Never paste the report into your final message. Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
+Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. Never paste the report into your final message. Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
 
 Then return control to the orchestrator.
 

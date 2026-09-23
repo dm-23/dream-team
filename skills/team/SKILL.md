@@ -86,7 +86,7 @@ Two boundaries on Docs, both narrow. Comments inside source files are not docume
 
 Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, plus `git diff` for the Docs workflow's own verification step, are the only shell commands you run — all three read-only, and none of them a build, a test or a lint. Then write the sticky-mode marker.
 
-## Learnings check (all workflows, before any Brainstorm or research)
+## Learnings check (every workflow except Docs, before any Brainstorm or research)
 
 Read `LEARNINGS.md`. In the current shape it is an index and nothing else, so read it whole. **If it still carries `## [` entry bodies below the index, this deployment has not been migrated yet**: read only from `## Index` down to the first `## [` line, stop there, and tell the user once that `/generate-knowledge fix` will shrink it — reading an un-migrated log whole is the cost this shape exists to remove, and the team layer updates before the knowledge layer does. Match rows whose title or tags overlap the task terms, then open the matched entries: from `learnings/` once they live there, otherwise from the entry bodies further down the same file. Put their title + "Fix pattern" lines into every handoff's `prior learnings` field, and record matched titles in status.md.
 
@@ -116,7 +116,7 @@ Always launch three Brainstorm instances in parallel with lenses `minimalism`, `
 
 ## Scope gate (Small Change and Bug Fix)
 
-After targeted research read the `Scope Count` line of the ResearcherExplorer's pointer block — the report itself stays unread. If the total is more than 3 files, or the change touches a schema, a public interface, or wiring/registration, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
+After targeted research read the `Scope Count` and `Wiring/surface` lines of the ResearcherExplorer's pointer block — the report itself stays unread; those two lines are what the gate is decided from. If the total is more than 3 files, or `Wiring/surface` names anything other than `none`, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
 
 ## Workflow: Analyze
 
@@ -127,21 +127,21 @@ After targeted research read the `Scope Count` line of the ResearcherExplorer's 
 
 ## Workflow: Docs
 
-Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no LEARNINGS entry â the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
+Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no LEARNINGS entry — the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
 
-1. Clarify only when the target files or the intent are genuinely ambiguous (â¤2 questions).
+1. Clarify only when the target files or the intent are genuinely ambiguous (≤2 questions).
 2. Establish the file list: which documentation files this touches, by name. Look for yourself if the request does not say.
-3. AskUserQuestion: the files you will touch and a one-line plan per file â approve / edit the list / reject.
-4. On approval: handoff â DocWriter. `inputs` carries the request and the agreed file list; `constraints` says that no other file may change and that source files are out of bounds.
-5. Verify it yourself â this is the step that replaces the Reviewer:
+3. AskUserQuestion: the files you will touch and a one-line plan per file — approve / edit the list / reject.
+4. On approval: handoff → DocWriter. `inputs` carries the request and the agreed file list; `constraints` says that no other file may change and that source files are out of bounds.
+5. Verify it yourself — this is the step that replaces the Reviewer:
    - `git diff` against the baseline. Every changed file is on the approved list; nothing else moved.
    - Every line under "Claims verified" names a source path you can open. Spot-check the ones that carry weight.
    - "Gaps / could not verify" is empty, or you tell the user what is in it.
    - Anything under "Code change required": do not act on it. Ask the user via AskUserQuestion whether to open a Small Change or a Bug Fix for it, as a separate run.
    - A diff that does not match the block, or a claim that does not hold: one handoff back to the DocWriter with the specifics, then escalate to the user. There is no second rework cycle here.
-6. Close status.md. Tick phases 0, 1, 4 and 5; mark 2, 3, 6, 7, 8 and 9 as `n/a â Docs`. Delete the marker.
+6. Close status.md. Tick phases 0, 1, 4 and 5; mark 2, 3, 6, 7, 8 and 9 as `n/a — Docs`. Delete the marker.
 
-The learnings check is skipped: nothing in this workflow consumes it, and the Reviewer who would write the entry never runs. Doc-only items inside a code run are a different matter â see Change Set step 6 â and documentation obligations that `PROJECT-RULES.md` attaches to a code change stay with the Developer, in the same change as the code.
+The learnings check is skipped: nothing in this workflow consumes it, and the Reviewer who would write the entry never runs. Doc-only items inside a code run are a different matter — see Change Set step 6 — and documentation obligations that `PROJECT-RULES.md` attaches to a code change stay with the Developer, in the same change as the code.
 
 ## Workflow: Bug Fix
 
@@ -150,7 +150,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.
 4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix.
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
-6. On approval: handoff → Developer (inline task, exploration notes attached).
+6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to).
 7. Handoff → Reviewer (single pass, baseline attached). Reviewer records the learning (entry file + index row).
 8. If Reviewer returns `manual` findings or `needs rework`: handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user).
 9. Report; close status.md.
@@ -270,9 +270,9 @@ To keep subagent token usage minimal and context lean:
 - **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
 - **For Developers:** Include ONLY:
   1. The path to the assigned `task-{N}-*.md`.
-  2. The path to `research/task-{N}-exploration.md`.
+  2. The path to the exploration report for that task, when one was written. When the research pass was skipped, put `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` here instead — that one section, named as a section, is the substitute the task file's `Insertion Points` lean on.
   3. The `prior learnings` lines (if matches exist).
-  Do NOT include draft plans, brainstorm outputs, or previous batch reviews.
+  Do NOT include the rest of the draft plan, brainstorm outputs, or previous batch reviews.
 - **For Brainstorm:** Include ONLY:
   1. The task text or the user's answers.
   2. The path to the exploration report.
