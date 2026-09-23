@@ -113,7 +113,7 @@ Always launch three Brainstorm instances in parallel with lenses `minimalism`, `
 
 ## Scope gate (Small Change and Bug Fix)
 
-After targeted research read `## Scope Count`. If the total is more than 3 files, or the change touches a schema, a public interface, or wiring/registration, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
+After targeted research read the `Scope Count` line of the ResearcherExplorer's pointer block — the report itself stays unread. If the total is more than 3 files, or the change touches a schema, a public interface, or wiring/registration, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
 
 ## Workflow: Analyze
 
