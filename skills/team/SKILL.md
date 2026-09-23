@@ -118,7 +118,7 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 ## Workflow: Analyze
 
 1. Clarify (≤3 questions) only if needed.
-2. Handoff → ResearcherExplorer (`mode: targeted`).
+2. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Read that file yourself before concluding — here you are the consumer.
 3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.claude-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
 4. Close status.md.
 
@@ -126,8 +126,8 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 
 1. Clarify (symptoms, reproduction, environment; ≤3 questions).
 2. Learnings check.
-3. Handoff → ResearcherExplorer (`mode: targeted`). Scope gate.
-4. Brainstorm ×3 (`phase: diagnosis`) with research + learnings. Quorum on root cause and fix.
+3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.
+4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix.
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
 6. On approval: handoff → Developer (inline task, exploration notes attached).
 7. Handoff → Reviewer (single pass, baseline attached). Reviewer records the learning (entry file + index row).
@@ -137,8 +137,8 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 ## Workflow: Small Change
 
 1. Clarify if ambiguous (≤3).
-2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`). Scope gate.
-3. Brainstorm ×3 (`phase: solution`). Quorum.
+2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the pointer block's `Scope Count` line.
+3. Brainstorm ×3 (`phase: solution`); `inputs` is the exploration **path** plus the learnings lines. Quorum.
 4. Present a 2–5 bullet plan (concrete actions, files) via AskUserQuestion for approval.
 5. Handoff → Developer (1–2 inline tasks, disjoint files if 2).
 6. Handoff → Reviewer (single pass). Rework loop as in Bug Fix step 8.
@@ -147,8 +147,8 @@ After targeted research read `## Scope Count`. If the total is more than 3 files
 ## Workflow: Change Set
 
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
-2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`) once with all items — it returns files per item.
-3. Brainstorm ×3 (`phase: solution`) over the whole list. Quorum per item.
+2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
+3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
 4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses).
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
 6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file).
@@ -217,7 +217,7 @@ To run the implementation phase in a **clean session** (recommended to optimize 
 
 ## Files (relative to `.claude-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set).
+`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
 
 ## Simplicity enforcement
 
@@ -250,3 +250,9 @@ To keep subagent token usage minimal and context lean:
   2. The path to `research/task-{N}-exploration.md`.
   3. The `prior learnings` lines (if matches exist).
   Do NOT include draft plans, brainstorm outputs, or previous batch reviews.
+- **For Brainstorm:** Include ONLY:
+  1. The task text or the user's answers.
+  2. The path to the exploration report.
+  3. The `prior learnings` lines (if matches exist).
+
+  Never the exploration text itself. Three instances run in parallel on the strongest model, so pasted research is paid for three times over; the path costs one line.
