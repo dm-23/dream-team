@@ -166,5 +166,21 @@ grep -qx 'https://openrouter.ai/api/v1/systemone' "$tmp/log/args" 2>/dev/null \
   || fail "probe openrouter: not sent to the openrouter endpoint"
 reset; ask probe elsewhere; sent && fail "probe of an undeclared provider: curl was called"
 
+# /team-setup offers every provider, key or not, and tells the user where to
+# get the missing key: each provider needs an https keyUrl, and the entry
+# needs the keySetup text that says where to put it.
+manifest="$(tr -d '\r' < team-manifest.json)"
+no_url="$(printf '%s\n' "$manifest" | awk '
+  /"providers"[[:space:]]*:[[:space:]]*\{/ { inp = 1; next }
+  inp && !p && /^[[:space:]]*}/ { exit }
+  inp && !p && /^[[:space:]]*"[^"]*"[[:space:]]*:[[:space:]]*\{/ {
+    p = $0; sub(/^[[:space:]]*"/, "", p); sub(/".*/, "", p); url = 0; next
+  }
+  p && /"keyUrl"[[:space:]]*:[[:space:]]*"https:\/\/[^"]+"/ { url = 1 }
+  p && /^[[:space:]]*}/ { if (!url) print p; p = "" }')"
+[ -z "$no_url" ] || fail "providers without an https keyUrl: $(printf '%s' "$no_url" | tr '\n' ' ')"
+printf '%s\n' "$manifest" | grep -q '"keySetup"[[:space:]]*:[[:space:]]*"[^"]' \
+  || fail "the service entry has no keySetup text"
+
 [ "$status" -eq 0 ] && echo "jev client: ok"
 exit "$status"
