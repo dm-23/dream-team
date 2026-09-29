@@ -204,12 +204,15 @@
       "required": false,
       "consent": "ask",
       "credentialNote": "Each provider's credential names an environment variable in the environment Claude Code runs in. The user sets it; the team never writes it anywhere.",
+      "keySetup": "Put the key in the env block of your user settings, ~/.claude/settings.json: \"env\": { \"{credential}\": \"<key>\" }. Claude Code passes it to every shell it starts, on every OS. A variable exported from your shell profile, or set with setx on Windows, works too. Never put it in the project's .claude/settings.json, which is committed, and never paste it into the chat. Restart Claude Code, then run /team-setup again.",
       "defaultProvider": "typesafe",
       "providers": {
         "typesafe": {
           "endpoint": "https://api.typesafe.ai/v1/systemone",
           "model": "jev-1.13.0",
           "credential": "TYPESAFE_API_KEY",
+          "keyUrl": "https://docs.typesafe.ai",
+          "keyUrlNote": "TypeSafe's documentation names no sign-up or key page, and none was confirmed when this entry was written. Say so, and point the user there to start.",
           "recipients": "TypeSafe AI",
           "retention": "TypeSafe does not train on customer data. Zero retention is offered to enterprise customers only; otherwise its data processing agreement applies."
         },
@@ -217,6 +220,7 @@
           "endpoint": "https://openrouter.ai/api/v1/systemone",
           "model": "typesafe/jev-1.13",
           "credential": "OPENROUTER_API_KEY",
+          "keyUrl": "https://openrouter.ai/keys",
           "recipients": "OpenRouter, which passes the request to TypeSafe AI: two companies receive the text",
           "retention": "OpenRouter's own privacy terms apply on top of TypeSafe's. Its retention for this endpoint was not confirmed when this entry was written; say so and let the user check before agreeing."
         }
