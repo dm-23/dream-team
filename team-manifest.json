@@ -189,6 +189,35 @@
       "neverUseFor": "Same exclusions as the other browser-control entry."
     }
   ],
+  "servicePolicy": {
+    "consent": "A service sends data off this machine, so having its credential is not consent. /team-setup fix asks per service, naming what is sent and where, and records the answer in .claude-tracking/.service-consent (machine-local, never committed). The client refuses to send anything without a granted line there.",
+    "egress": "Only the fields named in an entry's dataSent ever leave the machine. Code, diffs, knowledge files, task files and paths never do.",
+    "degradation": "Same as pluginPolicy.degradation: without the service, or when it is slow or failing, the team does the same work the same way, and no output mentions the service's absence.",
+    "brokering": "Only the orchestrator calls a service, and only through the entry's script. Subagents never do.",
+    "modes": "shadow = ask and log, never act on the answer. act = the answer may influence a decision within the rules skills/team/SKILL.md gives. The mode is the team's policy, set here, not per machine."
+  },
+  "services": [
+    {
+      "capability": "decision-routing",
+      "name": "jev",
+      "vendor": "TypeSafe AI",
+      "required": false,
+      "consent": "ask",
+      "credential": "TYPESAFE_API_KEY in the environment Claude Code runs in; set by the user, never written by the team",
+      "endpoint": "https://api.typesafe.ai/v1/systemone",
+      "pinnedModel": "jev-1.13.0",
+      "script": "tools/jev-decide.sh",
+      "questions": "templates/jev",
+      "dataSent": "The user's task text as typed, cut to 8000 characters, and one fixed question set from templates/jev. Nothing else.",
+      "retention": "The vendor does not train on customer data. Zero retention is offered to enterprise customers only; otherwise its data processing agreement applies. Say this when asking for consent.",
+      "detect": "TYPESAFE_API_KEY is set, consent is granted, and bash tools/jev-decide.sh probe prints a response",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["orchestrator"],
+      "mode": "shadow",
+      "useWhen": "Step 0 workflow selection, and the difficulty of a Bug Fix or Small Change task, as skills/team/SKILL.md → Decision routing describes.",
+      "neverUseFor": "Anything security-relevant, any decision that needs the code, review verdicts, Brainstorm quorum, skipping or softening a gate, and sending anything beyond dataSent."
+    }
+  ],
   "checks": {
     "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
@@ -196,6 +225,7 @@
     "manifestBudgets": "bash checks/verify-manifest-budgets.sh",
     "roleConsistency": "bash checks/verify-role-consistency.sh",
     "textEncoding": "bash checks/verify-text-encoding.sh",
+    "jevClient": "bash checks/verify-jev-decide.sh",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
     "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge"

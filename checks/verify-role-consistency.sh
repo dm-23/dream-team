@@ -71,6 +71,24 @@ if [ -n "$wf_handoff" ] && [ -n "$wf_status" ] && [ -n "$wf_marker" ]; then
   fi
 fi
 
+# --- workflows: the decision-routing question set offers the same workflows --
+# templates/jev/workflow.json asks the service to pick a workflow. Its option
+# keys are the enum lowercased with spaces as underscores, plus "other".
+qs=templates/jev/workflow.json
+if [ ! -f "$qs" ]; then
+  echo "FAIL: $qs not found" >&2; status=1
+elif [ -n "$wf_marker" ]; then
+  qs_keys="$(tr -d '\r' < "$qs" | awk '/"criteria"[[:space:]]*:/{f=1; next} f && /}/{exit} f' \
+    | grep -o '^[[:space:]]*"[a-z_]*"' | tr -d ' "' | grep -v '^other$' | sort)"
+  wf_keys="$(norm "$wf_marker" | tr 'A-Z ' 'a-z_' | sort)"
+  if [ "$qs_keys" != "$wf_keys" ]; then
+    echo "FAIL: $qs criteria and the workflow enum disagree" >&2
+    echo "  question set: $(echo "$qs_keys" | tr '\n' ' ')" >&2
+    echo "  enum:         $(echo "$wf_keys" | tr '\n' ' ')" >&2
+    status=1
+  fi
+fi
+
 # --- README: the roles table has one row per role ----------------------------
 readme_rows="$(awk '/^\| Role \| Tools \|/{f=1; next} f && /^\|---/{next} f && /^\|/{c++} f && !/^\|/{exit} END{print c+0}' README.md)"
 role_count="$(echo "$dir_roles" | grep -c .)"

@@ -95,12 +95,13 @@ agents/                        seven role prompts
 skills/                        three commands
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
+tools/                         the client for the optional decision-routing service
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
                                workflow consistency, text encoding, and the integrity check
                                `/generate-knowledge fix` must pass
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
-.gitattributes                 pins LF on the two hook files; a CRLF checkout breaks them
+.gitattributes                 pins LF on the hook files and the service client; a CRLF checkout breaks them
 ```
 
 ## The seven roles
@@ -194,6 +195,14 @@ Two rules hold for all of them. Whatever a capability returns is evidence to che
 
 **Replacing an entry.** Point a manifest entry at a different plugin, keep its `capability` value, and nothing else changes: the rules and the roles follow the capability, not the vendor. Two entries may share a capability as alternatives, in which case install one, not both.
 
+### Services
+
+A service is an optional capability that is not a plugin: an outside API the orchestrator calls through a script in `tools/`. One is declared, `decision-routing`, backed by Jev from TypeSafe AI, a model that answers typed questions (pick one of these, how likely is this) with a confidence, in well under a second.
+
+Because a service sends data off your machine, having its key is not consent. `/team-setup fix` asks separately, says exactly what is sent (the task text you typed and a fixed question, nothing else) and records your answer in `.claude-tracking/.service-consent`. The script refuses to send anything without that answer, and without the `TYPESAFE_API_KEY` variable, which you set yourself.
+
+It ships in shadow mode: its answers are logged and never change what the team does.
+
 ## Stack cards
 
 A card is one file per language in `templates/standards/`, with a fixed set of twelve sections: how to detect the language, its toolchain, layout, naming, errors, concurrency, testing, dependencies, security, anti-patterns, review checks and sources. Run `ls templates/standards` to see which ship today.
@@ -224,6 +233,8 @@ Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `
 **Plugins.** The `plugins` array declares the optional capabilities described above. Each entry names a capability, the plugin that provides it, its marketplace and install command, who uses it, and the rules for when it may and may not be used. `pluginPolicy` above the array states the three invariants: consent per plugin, equal quality without any of them, and brokering through the orchestrator. Add your own entries the same way.
 
 **Model routing.** The `modelRouting` block maps each role and task complexity to a model; see "The seven roles".
+
+**Services.** The `services` array and `servicePolicy` declare outside APIs the orchestrator may call; see "Services" above.
 
 ## Neutrality check
 

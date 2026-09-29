@@ -18,9 +18,19 @@ Everything here is optional. The team produces the same work with none of it. A 
 |------------|----------------------|------------------------------------------|
 | {capability} | {plugin name} | {install command from the manifest} |
 
+## Services (send data off this machine)
+
+| Capability | Service | Mode | Sends |
+|------------|---------|------|-------|
+| {capability} | {name} ({vendor}) | shadow / act | {dataSent} |
+
+<!-- One row per service that has a key, granted consent and a successful probe. Otherwise write "None available." and list each service under it with the reason: no key, consent not asked, declined, unreachable. -->
+
+A service is called only by the orchestrator, only through its script, and only with what the Sends column names. In `shadow` mode its answers are logged and never acted on.
+
 ## How to use a capability
 
-1. Use it **only** if it appears in "Available here". If it does not, proceed without it and say nothing about it.
+1. Use it **only** if it appears in "Available here" or, for a service, in the "Services" table. If it does not, proceed without it and say nothing about it.
 2. Follow the `useWhen` and `neverUseFor` rules recorded below for that capability. They are copied from `team-manifest.json`; that file is the source of truth.
 3. Respect the brokering column. `orchestrator` means the subagent does not call it: the orchestrator gathers the result and passes it in the handoff under `external context`. A subagent that needs more says so in its output and returns; it never reaches for a tool outside its own frontmatter.
 4. Never install, enable or disable anything. Only `/team-setup` does that, and only after the user agrees to that specific plugin.
@@ -33,7 +43,7 @@ Everything here is optional. The team produces the same work with none of it. A 
 - **Use when:** {useWhen}
 - **Never use for:** {neverUseFor}
 
-<!-- Repeat for every capability listed as available. Omit sections for capabilities that are not installed. -->
+<!-- Repeat for every capability listed as available, services included. Omit sections for capabilities that are not installed or not available. -->
 
 ## Roles that would benefit from direct access
 
