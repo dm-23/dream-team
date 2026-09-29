@@ -123,6 +123,8 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Model.** Four roles pin one in their own file: Brainstorm pins the strongest model; ResearcherExplorer, Tester and DocWriter pin a cheaper one. Architect, Developer and Reviewer inherit the session's. Brainstorm's line is the main cost lever, because three instances run on every phase that uses it — lower it there first if a run costs more than it is worth to you. The other three pins are already at the cheap end; raise one only if you find its output thin.
 
+**Model routing.** Work that comes with a task file — every Full Feature and Change Set task — also carries a `Complexity` of low, medium or high, and `team-manifest.json → modelRouting` turns that into the model for the Developer, Tester, Reviewer and per-task research calls. A low task runs its Developer and Reviewer on the mid tier and its Tester and research on the cheapest; medium and high keep each role's own model. The Reviewer never drops below the mid tier, and the final review always keeps its own. Edit the table to change the policy; `checks/verify-role-consistency.sh` fails if a role has no row or a tier is misspelt.
+
 ## The six workflows
 
 | Workflow | Trigger | Shape |
@@ -220,6 +222,8 @@ Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `
 `/team` reads it on every invocation and refuses to start when a required knowledge file is missing. `/team-setup` validates every field. Adding a role, a command or a knowledge file means editing this file too.
 
 **Plugins.** The `plugins` array declares the optional capabilities described above. Each entry names a capability, the plugin that provides it, its marketplace and install command, who uses it, and the rules for when it may and may not be used. `pluginPolicy` above the array states the three invariants: consent per plugin, equal quality without any of them, and brokering through the orchestrator. Add your own entries the same way.
+
+**Model routing.** The `modelRouting` block maps each role and task complexity to a model; see "The seven roles".
 
 ## Neutrality check
 

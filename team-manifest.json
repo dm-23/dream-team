@@ -19,6 +19,19 @@
     "generate-knowledge",
     "team-setup"
   ],
+  "modelRouting": {
+    "_comment": "The model the orchestrator passes on an Agent call, keyed by the task's Complexity (low | medium | high) from its task file. default = pass no model, so the role's own file decides. A role mapped to one value is never routed. Calls with no task file (Bug Fix, Small Change, Analyze, Docs, wide research, final review) always use default. The floors are deliberate: a misjudged low costs one tier at most, and the Reviewer never drops below sonnet.",
+    "aliases": ["haiku", "sonnet", "opus", "fable", "default"],
+    "roles": {
+      "brainstorm": "default",
+      "researcher-explorer": { "low": "haiku", "medium": "default", "high": "default" },
+      "architect": "default",
+      "developer": { "low": "sonnet", "medium": "default", "high": "default" },
+      "doc-writer": "default",
+      "tester": { "low": "haiku", "medium": "default", "high": "default" },
+      "reviewer": { "low": "sonnet", "medium": "sonnet", "high": "default" }
+    }
+  },
   "knowledge": {
     "dir": ".claude/knowledge",
     "generator": "/generate-knowledge",

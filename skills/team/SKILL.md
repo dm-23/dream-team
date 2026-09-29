@@ -110,6 +110,17 @@ Where each one fits, when present:
 | `instructions-maintenance` | At the docs-sync step, to propose an update to the project instruction file when the run changed a documented rule or created an obligation. The user approves the diff; you never apply one silently. |
 | `browser-control` | When a run changed something a person sees, to gather rendered evidence for the Tester or Reviewer handoff. Ask before starting a server or opening a page. Evidence never replaces a test. |
 
+## Model routing
+
+`team-manifest.json → modelRouting` sets the model for Agent calls whose work is described by a task file. Look the role up in `modelRouting.roles`:
+
+- A single value: never routed. Omit `model`; the role's own file decides.
+- A `low / medium / high` row: pass the value for the task's `Complexity` as the Agent call's `model`, or omit `model` where the value is `default`.
+  - Developer, and a per-task targeted ResearcherExplorer: that task file's `Complexity`.
+  - Tester and the per-batch Reviewer: the highest `Complexity` among the tasks the call covers (in Change Set, the one Tester call covers every item).
+
+Everything else omits `model`: calls without a task file (Analyze, Docs, Bug Fix, Small Change), the wide research pass, and the final review, which judges the whole diff. Never choose a model outside this table and never lower one on your own estimate. The table is the whole policy. When a call is routed to something other than `default`, add a line to status.md → "Decisions log": `{task} {role} → {model} (Complexity {level})`.
+
 ## Quorum (Brainstorm ×3)
 
 Always launch three Brainstorm instances in parallel with lenses `minimalism`, `risk`, `reuse`. Agreement of 2 of 3 on a point → accepted. Three different answers → do not pick silently: launch one more round with all three outputs in the handoff ("reconcile"), and if still split, ask the user via AskUserQuestion with the options. When proposals differ in complexity, prefer the simpler unless the complex one solves a stated problem the simple one does not.
@@ -170,7 +181,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
 3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
-4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses).
+4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
 6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
 7. Tester: one call for the whole change set; it triages per its own table.

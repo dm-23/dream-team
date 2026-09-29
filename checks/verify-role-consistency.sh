@@ -79,5 +79,57 @@ if [ "$readme_rows" != "$role_count" ]; then
   status=1
 fi
 
+# --- model routing: one row per role, every tier a known alias ----------------
+# The orchestrator picks each Agent call's model from this table, so a role
+# without a row silently runs on its file's default, and a misspelt alias
+# fails the call at run time. The block must occur once; an ambiguous manifest
+# is refused, as in verify-manifest-budgets.sh.
+mr_count="$(grep -c '"modelRouting"[[:space:]]*:' team-manifest.json)"
+if [ "$mr_count" != 1 ]; then
+  echo "FAIL: team-manifest.json has $mr_count modelRouting blocks, expected 1" >&2
+  status=1
+else
+  mr_block="$(awk '/"modelRouting"[[:space:]]*:/{f=1} f{print} f && /^  }/{exit}' team-manifest.json | tr -d '\r')"
+  mr_aliases="$(echo "$mr_block" | sed -n 's/.*"aliases"[[:space:]]*:[[:space:]]*\[\(.*\)\].*/\1/p' \
+    | grep -o '"[a-z]*"' | tr -d '"' | sort)"
+  mr_lines="$(echo "$mr_block" | grep -E '^[[:space:]]*"[a-z][a-z-]*"[[:space:]]*:[[:space:]]*[{"]' \
+    | grep -v -E '^[[:space:]]*"(modelRouting|roles)"')"
+  mr_roles="$(echo "$mr_lines" | sed 's/^[[:space:]]*"\([a-z-]*\)".*/\1/' | grep -v '^$' | sort)"
+
+  [ -n "$mr_aliases" ] || { echo "FAIL: modelRouting.aliases is empty or unreadable" >&2; status=1; }
+  if [ "$mr_roles" != "$dir_roles" ]; then
+    echo "FAIL: modelRouting.roles and agents/*.md disagree" >&2
+    echo "  routing: $(echo "$mr_roles" | tr '\n' ' ')" >&2
+    echo "  files:   $(echo "$dir_roles" | tr '\n' ' ')" >&2
+    status=1
+  fi
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    r="$(echo "$line" | sed 's/^[[:space:]]*"\([a-z-]*\)".*/\1/')"
+    rest="${line#*:}"
+    # Every value is taken raw, whatever it looks like, and must then be a
+    # quoted alias from the list: a pattern that only matched well-formed
+    # values would skip "Opus", "sonnet-4" or a bare number without a word.
+    case "$rest" in
+      *"{"*)
+        inner="$(echo "$rest" | sed 's/^[^{]*{//; s/}.*$//')"
+        keys="$(echo "$inner" | tr ',' '\n' | sed -n 's/^[[:space:]]*"\([^"]*\)"[[:space:]]*:.*/\1/p' \
+          | sort | tr '\n' ' ')"
+        [ "$keys" = "high low medium " ] \
+          || { echo "FAIL: modelRouting.roles.$r must map exactly low, medium, high (has: $keys)" >&2; status=1; }
+        vals="$(echo "$inner" | tr ',' '\n' | sed 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*$//')" ;;
+      *)
+        vals="$(echo "$rest" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/,$//; s/[[:space:]]*$//')" ;;
+    esac
+    while IFS= read -r v; do
+      [ -n "$v" ] || continue
+      a="$(echo "$v" | sed -n 's/^"\([a-z]*\)"$/\1/p')"
+      [ -n "$a" ] && echo "$mr_aliases" | grep -qx "$a" \
+        || { echo "FAIL: modelRouting.roles.$r uses unknown alias $v" >&2; status=1; }
+    done <<< "$vals"
+  done <<< "$mr_lines"
+fi
+
 [ "$status" -eq 0 ] && echo "role consistency: ok"
 exit "$status"
