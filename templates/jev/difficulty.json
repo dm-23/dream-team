@@ -1,0 +1,12 @@
+{
+  "difficulty": {
+    "type": "choice",
+    "instructions": "The state is a change a user asked a software development team to make. How much work will the change take? Judge only from what the request says.",
+    "criteria": {
+      "low": "A local edit: one or two files, no new interface, no change to how parts of the system connect. For example a text, a constant, a condition or a one-line fix.",
+      "medium": "Several files in one area, or a new function, option or field that other code uses.",
+      "high": "Several areas of the system, a new public interface, a data or schema change, or a change to how parts of the system connect.",
+      "other": "The request does not describe a change, or its size cannot be judged from the text."
+    }
+  }
+}

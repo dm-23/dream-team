@@ -1,0 +1,15 @@
+{
+  "workflow": {
+    "type": "choice",
+    "instructions": "The state is a request a user gave to a software development team. Which kind of work does the request ask for? Judge only from what the request says.",
+    "criteria": {
+      "analyze": "Find, explain, trace or assess something. Nothing in the repository is to be changed.",
+      "docs": "Change documentation files only, such as a readme, a guide or a changelog. No source code changes.",
+      "bug_fix": "Something is broken, failing, crashing or behaving wrongly, and it must be fixed.",
+      "small_change": "One small addition or change of behaviour, likely touching a few files. Nothing is described as broken.",
+      "change_set": "A list of several independent small changes, each of which could be done on its own.",
+      "full_feature": "A new capability spanning several parts of the system, such as a new entity with its interface and screens, a new page, or a new integration.",
+      "other": "None of the above fits, or the request is not about the software."
+    }
+  }
+}

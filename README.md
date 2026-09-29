@@ -95,12 +95,13 @@ agents/                        seven role prompts
 skills/                        three commands
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
+tools/                         the client for the optional decision-routing service
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
                                workflow consistency, text encoding, and the integrity check
                                `/generate-knowledge fix` must pass
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
-.gitattributes                 pins LF on the two hook files; a CRLF checkout breaks them
+.gitattributes                 pins LF on the hook files and the service client; a CRLF checkout breaks them
 ```
 
 ## The seven roles
@@ -122,6 +123,8 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question.
 
 **Model.** Four roles pin one in their own file: Brainstorm pins the strongest model; ResearcherExplorer, Tester and DocWriter pin a cheaper one. Architect, Developer and Reviewer inherit the session's. Brainstorm's line is the main cost lever, because three instances run on every phase that uses it — lower it there first if a run costs more than it is worth to you. The other three pins are already at the cheap end; raise one only if you find its output thin.
+
+**Model routing.** Work that comes with a task file — every Full Feature and Change Set task — also carries a `Complexity` of low, medium or high, and `team-manifest.json → modelRouting` turns that into the model for the Developer, Tester, Reviewer and per-task research calls. A low task runs its Developer and Reviewer on the mid tier and its Tester and research on the cheapest; medium and high keep each role's own model. The Reviewer never drops below the mid tier, and the final review always keeps its own. Edit the table to change the policy; `checks/verify-role-consistency.sh` fails if a role has no row or a tier is misspelt.
 
 ## The six workflows
 
@@ -192,6 +195,22 @@ Two rules hold for all of them. Whatever a capability returns is evidence to che
 
 **Replacing an entry.** Point a manifest entry at a different plugin, keep its `capability` value, and nothing else changes: the rules and the roles follow the capability, not the vendor. Two entries may share a capability as alternatives, in which case install one, not both.
 
+### Services
+
+A service is an optional capability that is not a plugin: an outside API the orchestrator calls through a script in `tools/`. One is declared, `decision-routing`, backed by Jev from TypeSafe AI, a model that answers typed questions (pick one of these, how likely is this) with a confidence, in well under a second.
+
+Jev can be reached two ways, each a `provider` in the manifest entry: directly from TypeSafe, with `TYPESAFE_API_KEY`, or through OpenRouter, with `OPENROUTER_API_KEY`. Through OpenRouter the text passes through two companies instead of one. Adding another provider is one more block in the manifest: its endpoint, its model id, the variable that holds its key, and who receives the data.
+
+Because a service sends data off your machine, having its key is not consent. `/team-setup fix` asks separately, offers each provider you have a key for, and says exactly what is sent (the task text you typed and a fixed question, nothing else) and who receives it. It records your answer in `.claude-tracking/.service-consent` with the provider named. The script sends nothing without that answer, and uses only that provider's key, endpoint and model: agreeing to one provider never sends your text through another.
+
+It ships in shadow mode: its answers are logged and never change what the team does.
+
+### Decision routing
+
+With `decision-routing` available, the orchestrator asks the service, for every run, which workflow the task needs, and for a Bug Fix or Small Change how big it is. It then decides exactly as it would have anyway. Both answers are written to `routing.log` in the run's tracking directory, and so is what actually happened at the close of the run: the final workflow, whether you overrode it, how many files changed and how many review rounds it took.
+
+Nothing the service says changes a run while it is in shadow mode. The point is to find out, on your own tasks, whether its confident answers are right. `bash .claude/checks/summarize-routing.sh`, run from the project root, prints the running totals. Once 150 answered workflow decisions are logged, at least 50 of them confident and in closed runs, and those confident answers match the final workflow at least 95% of the time, it is worth deciding whether to let it act: ask you when it is unsure, and pick a cheaper model for a small fix.
+
 ## Stack cards
 
 A card is one file per language in `templates/standards/`, with a fixed set of twelve sections: how to detect the language, its toolchain, layout, naming, errors, concurrency, testing, dependencies, security, anti-patterns, review checks and sources. Run `ls templates/standards` to see which ship today.
@@ -220,6 +239,10 @@ Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `
 `/team` reads it on every invocation and refuses to start when a required knowledge file is missing. `/team-setup` validates every field. Adding a role, a command or a knowledge file means editing this file too.
 
 **Plugins.** The `plugins` array declares the optional capabilities described above. Each entry names a capability, the plugin that provides it, its marketplace and install command, who uses it, and the rules for when it may and may not be used. `pluginPolicy` above the array states the three invariants: consent per plugin, equal quality without any of them, and brokering through the orchestrator. Add your own entries the same way.
+
+**Model routing.** The `modelRouting` block maps each role and task complexity to a model; see "The seven roles".
+
+**Services.** The `services` array and `servicePolicy` declare outside APIs the orchestrator may call; see "Services" above.
 
 ## Neutrality check
 
