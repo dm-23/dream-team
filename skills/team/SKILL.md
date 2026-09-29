@@ -127,9 +127,9 @@ Applies only when `CAPABILITIES.md` lists `decision-routing` as available. Other
 
 1. **Workflow.** In Step 0, after creating the run directory, write the user's task text exactly as typed to `routing/task.txt` in it, and run `bash .claude/tools/jev-decide.sh workflow .claude-tracking/{context_id}/routing/task.txt`. Decide the workflow yourself as if the service did not exist.
 2. **Difficulty.** For Bug Fix and Small Change only, run the same script with `difficulty` and the same file.
-3. **Log.** Append one line per call to `routing.log` in the run directory, fields separated by a single tab, in the shapes below. From the JSON it prints, take `answers.{name}.choice` and `answers.{name}.confidence` (two decimals). When it prints nothing, write `jev=unavailable` and `conf=-`. Never retry.
-   - `{YYYY-MM-DD}	workflow	jev={choice}	conf={confidence}	team={your workflow}`
-   - `{YYYY-MM-DD}	difficulty	jev={choice}	conf={confidence}`
+3. **Log.** Append one line per call to `routing.log` in the run directory, fields separated by a single tab, in the shapes below. From the JSON it prints, take `answers.{name}.choice` and `answers.{name}.confidence` (two decimals). When it prints nothing, write `jev=unavailable` and `conf=-`. `{provider}` is the provider named in the Services row of `CAPABILITIES.md`, so a change of provider shows in the numbers. Never retry.
+   - `{YYYY-MM-DD}	workflow	jev={choice}	conf={confidence}	team={your workflow}	provider={provider}`
+   - `{YYYY-MM-DD}	difficulty	jev={choice}	conf={confidence}	provider={provider}`
 4. **Outcome.** When the run closes as `[DONE]`, before marking it, append:
    - `{YYYY-MM-DD}	outcome	workflow={workflow the run finished as}	override={yes if the user switched the workflow, else no}	files={N}	rework={N}`
    - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer returned `needs rework` or `manual` findings.

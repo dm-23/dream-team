@@ -42,13 +42,19 @@ function flush(   b) {
   }
 }
 $1 == "FILE"       { flush(); run = 1; wj = wt = dj = fin = ov = ""; wc = 0; files = rw = 0; next }
-$2 == "workflow"   { wj = val($3); wc = val($4) + 0; wt = val($5) }
+$2 == "workflow"   { wj = val($3); wc = val($4) + 0; wt = val($5); pc[$6 != "" ? val($6) : "unrecorded"]++ }
 $2 == "difficulty" { dj = val($3) }
 $2 == "outcome"    { fin = val($3); ov = val($4); files = val($5) + 0; rw = val($6) + 0 }
 END {
   flush()
   printf "Routing logs: %d runs, %d closed\n", runs, closed
   printf "Workflow: %d decisions, %d unavailable\n", wn, wu
+  # Per provider, sorted by name, so a change of provider shows in the totals.
+  np = 0
+  for (p in pc) { i = ++np; while (i > 1 && pn[i - 1] > p) { pn[i] = pn[i - 1]; i-- } pn[i] = p }
+  line = "Providers:"
+  for (i = 1; i <= np; i++) line = line " " pn[i] "=" pc[pn[i]]
+  print (np ? line : "Providers: none")
   print  "  band       n  agrees-final  agrees-team"
   split(">=0.80|0.50-0.79|<0.50", name, "|")
   for (b = 1; b <= 3; b++)

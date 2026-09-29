@@ -56,8 +56,9 @@ sent() { [ -e "$tmp/log/called" ]; }
 printf 'fix the login bug\n' > "$state"
 printf 'jev=granted 2026-09-29\n' > "$consent"
 
-# 1. no key: nothing sent, nothing printed
-unset TYPESAFE_API_KEY
+# 1. no key: nothing sent, nothing printed. A consent line without a provider
+#    (the shape written before providers existed) means the default one.
+unset TYPESAFE_API_KEY OPENROUTER_API_KEY
 reset; ask workflow "$state"
 [ -z "$out" ] || fail "no key: printed output"
 sent && fail "no key: curl was called"
@@ -124,6 +125,46 @@ n="$(sed -n 's/.*"state":"\(a*\)".*/\1/p' "$tmp/log/body" 2>/dev/null | tr -d '\
 rm -f "$consent"; reset; ask probe
 sent || fail "probe: curl was not called"
 grep -qF '"state":"probe"' "$tmp/log/body" 2>/dev/null || fail "probe: unexpected body"
+
+# 9. providers: consent names who receives the text, and only that
+#    provider's key, endpoint and model are used
+printf 'fix the login bug\n' > "$state"
+export OPENROUTER_API_KEY=or-key-456
+printf 'jev=granted openrouter 2026-09-30\n' > "$consent"
+reset; ask workflow "$state"
+sent || fail "openrouter: curl was not called"
+grep -qx 'https://openrouter.ai/api/v1/systemone' "$tmp/log/args" 2>/dev/null \
+  || fail "openrouter: not sent to the openrouter endpoint"
+grep -qF '"model":"typesafe/jev-1.13"' "$tmp/log/body" 2>/dev/null || fail "openrouter: wrong model id"
+grep -qF 'Authorization: Bearer or-key-456' "$tmp/log/headers" 2>/dev/null || fail "openrouter: wrong key"
+grep -qF 'test-key-123' "$tmp/log/headers" 2>/dev/null && fail "openrouter: the typesafe key was sent"
+grep -qF 'or-key-456' "$tmp/log/args" 2>/dev/null && fail "openrouter: the key is on the command line"
+
+# consent for openrouter with only the typesafe key set: nothing is sent
+unset OPENROUTER_API_KEY
+reset; ask workflow "$state"; sent && fail "openrouter consent, no openrouter key: curl was called"
+
+# consent for typesafe with only the openrouter key set: nothing is sent
+export OPENROUTER_API_KEY=or-key-456; unset TYPESAFE_API_KEY
+printf 'jev=granted typesafe 2026-09-30\n' > "$consent"
+reset; ask workflow "$state"; sent && fail "typesafe consent, no typesafe key: curl was called"
+
+# with both keys set from here on, only the consent line can stop a request
+export TYPESAFE_API_KEY=test-key-123
+
+# a provider the manifest does not declare: nothing is sent
+printf 'jev=granted elsewhere 2026-09-30\n' > "$consent"
+reset; ask workflow "$state"; sent && fail "undeclared provider: curl was called"
+
+# the last line for the service wins, so a later decline revokes
+printf 'jev=granted openrouter 2026-09-30\njev=declined 2026-10-01\n' > "$consent"
+reset; ask workflow "$state"; sent && fail "later decline: curl was called"
+
+# probe takes the provider as its argument
+rm -f "$consent"; reset; ask probe openrouter
+grep -qx 'https://openrouter.ai/api/v1/systemone' "$tmp/log/args" 2>/dev/null \
+  || fail "probe openrouter: not sent to the openrouter endpoint"
+reset; ask probe elsewhere; sent && fail "probe of an undeclared provider: curl was called"
 
 [ "$status" -eq 0 ] && echo "jev client: ok"
 exit "$status"

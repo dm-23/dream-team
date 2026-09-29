@@ -190,7 +190,7 @@
     }
   ],
   "servicePolicy": {
-    "consent": "A service sends data off this machine, so having its credential is not consent. /team-setup fix asks per service, naming what is sent and where, and records the answer in .claude-tracking/.service-consent (machine-local, never committed). The client refuses to send anything without a granted line there.",
+    "consent": "A service sends data off this machine, so having its credential is not consent. /team-setup fix asks per service and per provider, naming what is sent and who receives it, and records the answer in .claude-tracking/.service-consent (machine-local, never committed) as {name}=granted {provider} {date} or {name}=declined {date}; the last line for a service wins. Consent to one provider is not consent to another, because the recipients differ. The client refuses to send anything without a granted line, and uses only the credential, endpoint and model of the provider that line names.",
     "egress": "Only the fields named in an entry's dataSent ever leave the machine. Code, diffs, knowledge files, task files and paths never do.",
     "degradation": "Same as pluginPolicy.degradation: without the service, or when it is slow or failing, the team does the same work the same way, and no output mentions the service's absence.",
     "brokering": "Only the orchestrator calls a service, and only through the entry's script. Subagents never do.",
@@ -203,14 +203,28 @@
       "vendor": "TypeSafe AI",
       "required": false,
       "consent": "ask",
-      "credential": "TYPESAFE_API_KEY in the environment Claude Code runs in; set by the user, never written by the team",
-      "endpoint": "https://api.typesafe.ai/v1/systemone",
-      "pinnedModel": "jev-1.13.0",
+      "credentialNote": "Each provider's credential names an environment variable in the environment Claude Code runs in. The user sets it; the team never writes it anywhere.",
+      "defaultProvider": "typesafe",
+      "providers": {
+        "typesafe": {
+          "endpoint": "https://api.typesafe.ai/v1/systemone",
+          "model": "jev-1.13.0",
+          "credential": "TYPESAFE_API_KEY",
+          "recipients": "TypeSafe AI",
+          "retention": "TypeSafe does not train on customer data. Zero retention is offered to enterprise customers only; otherwise its data processing agreement applies."
+        },
+        "openrouter": {
+          "endpoint": "https://openrouter.ai/api/v1/systemone",
+          "model": "typesafe/jev-1.13",
+          "credential": "OPENROUTER_API_KEY",
+          "recipients": "OpenRouter, which passes the request to TypeSafe AI: two companies receive the text",
+          "retention": "OpenRouter's own privacy terms apply on top of TypeSafe's. Its retention for this endpoint was not confirmed when this entry was written; say so and let the user check before agreeing."
+        }
+      },
       "script": "tools/jev-decide.sh",
       "questions": "templates/jev",
       "dataSent": "The user's task text as typed, cut to 8000 characters, and one fixed question set from templates/jev. Nothing else.",
-      "retention": "The vendor does not train on customer data. Zero retention is offered to enterprise customers only; otherwise its data processing agreement applies. Say this when asking for consent.",
-      "detect": "TYPESAFE_API_KEY is set, consent is granted, and bash tools/jev-decide.sh probe prints a response",
+      "detect": "the chosen provider's credential is set, consent names that provider, and bash tools/jev-decide.sh probe {provider} prints a response",
       "brokeredBy": "orchestrator",
       "usedBy": ["orchestrator"],
       "mode": "shadow",

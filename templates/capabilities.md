@@ -20,11 +20,11 @@ Everything here is optional. The team produces the same work with none of it. A 
 
 ## Services (send data off this machine)
 
-| Capability | Service | Mode | Sends |
-|------------|---------|------|-------|
-| {capability} | {name} ({vendor}) | shadow / act | {dataSent} |
+| Capability | Service | Provider | Mode | Sends | Received by |
+|------------|---------|----------|------|-------|-------------|
+| {capability} | {name} ({vendor}) | {provider} | shadow / act | {dataSent} | {recipients} |
 
-<!-- One row per service that has a key, granted consent and a successful probe. Otherwise write "None available." and list each service under it with the reason: no key, consent not asked, declined, unreachable. -->
+<!-- One row per service that has a key, granted consent and a successful probe. Otherwise write "None available." and list each service under it with the reason: no key, consent not asked, declined, consented to a provider without its key, unreachable. -->
 
 A service is called only by the orchestrator, only through its script, and only with what the Sends column names. In `shadow` mode its answers are logged and never acted on.
 

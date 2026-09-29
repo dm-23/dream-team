@@ -199,7 +199,9 @@ Two rules hold for all of them. Whatever a capability returns is evidence to che
 
 A service is an optional capability that is not a plugin: an outside API the orchestrator calls through a script in `tools/`. One is declared, `decision-routing`, backed by Jev from TypeSafe AI, a model that answers typed questions (pick one of these, how likely is this) with a confidence, in well under a second.
 
-Because a service sends data off your machine, having its key is not consent. `/team-setup fix` asks separately, says exactly what is sent (the task text you typed and a fixed question, nothing else) and records your answer in `.claude-tracking/.service-consent`. The script refuses to send anything without that answer, and without the `TYPESAFE_API_KEY` variable, which you set yourself.
+Jev can be reached two ways, each a `provider` in the manifest entry: directly from TypeSafe, with `TYPESAFE_API_KEY`, or through OpenRouter, with `OPENROUTER_API_KEY`. Through OpenRouter the text passes through two companies instead of one. Adding another provider is one more block in the manifest: its endpoint, its model id, the variable that holds its key, and who receives the data.
+
+Because a service sends data off your machine, having its key is not consent. `/team-setup fix` asks separately, offers each provider you have a key for, and says exactly what is sent (the task text you typed and a fixed question, nothing else) and who receives it. It records your answer in `.claude-tracking/.service-consent` with the provider named. The script sends nothing without that answer, and uses only that provider's key, endpoint and model: agreeing to one provider never sends your text through another.
 
 It ships in shadow mode: its answers are logged and never change what the team does.
 
