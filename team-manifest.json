@@ -226,6 +226,8 @@
     "roleConsistency": "bash checks/verify-role-consistency.sh",
     "textEncoding": "bash checks/verify-text-encoding.sh",
     "jevClient": "bash checks/verify-jev-decide.sh",
+    "routingSummary": "bash checks/verify-routing-summary.sh",
+    "routingSummaryReport": "bash .claude/checks/summarize-routing.sh — run from the project root; prints the decision-routing shadow numbers from every run's routing.log",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
     "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge"

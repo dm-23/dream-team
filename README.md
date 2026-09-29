@@ -203,6 +203,12 @@ Because a service sends data off your machine, having its key is not consent. `/
 
 It ships in shadow mode: its answers are logged and never change what the team does.
 
+### Decision routing
+
+With `decision-routing` available, the orchestrator asks the service, for every run, which workflow the task needs, and for a Bug Fix or Small Change how big it is. It then decides exactly as it would have anyway. Both answers are written to `routing.log` in the run's tracking directory, and so is what actually happened at the close of the run: the final workflow, whether you overrode it, how many files changed and how many review rounds it took.
+
+Nothing the service says changes a run while it is in shadow mode. The point is to find out, on your own tasks, whether its confident answers are right. `bash .claude/checks/summarize-routing.sh`, run from the project root, prints the running totals. Once 150 answered workflow decisions are logged, at least 50 of them confident and in closed runs, and those confident answers match the final workflow at least 95% of the time, it is worth deciding whether to let it act: ask you when it is unsure, and pick a cheaper model for a small fix.
+
 ## Stack cards
 
 A card is one file per language in `templates/standards/`, with a fixed set of twelve sections: how to detect the language, its toolchain, layout, naming, errors, concurrency, testing, dependencies, security, anti-patterns, review checks and sources. Run `ls templates/standards` to see which ship today.

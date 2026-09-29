@@ -84,7 +84,7 @@ Detect from the task (any language): analysis verbs → Analyze; "update the rea
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, plus `git diff` for the Docs workflow's own verification step, are the only shell commands you run — all three read-only, and none of them a build, a test or a lint. Then write the sticky-mode marker.
+Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), and the service script under "Decision routing (shadow mode)" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker.
 
 ## Learnings check (every workflow except Docs, before any Brainstorm or research)
 
@@ -120,6 +120,22 @@ Where each one fits, when present:
   - Tester and the per-batch Reviewer: the highest `Complexity` among the tasks the call covers (in Change Set, the one Tester call covers every item).
 
 Everything else omits `model`: calls without a task file (Analyze, Docs, Bug Fix, Small Change), the wide research pass, and the final review, which judges the whole diff. Never choose a model outside this table and never lower one on your own estimate. The table is the whole policy. When a call is routed to something other than `default`, add a line to status.md → "Decisions log": `{task} {role} → {model} (Complexity {level})`.
+
+## Decision routing (shadow mode)
+
+Applies only when `CAPABILITIES.md` lists `decision-routing` as available. Otherwise skip this section entirely and never mention it. The service's mode in `team-manifest.json → services` is `shadow`: you ask it, you log what it said, and **nothing it says changes what you do** — not the workflow, not a model, not a question to the user. Do not show its answers to the user.
+
+1. **Workflow.** In Step 0, after creating the run directory, write the user's task text exactly as typed to `routing/task.txt` in it, and run `bash .claude/tools/jev-decide.sh workflow .claude-tracking/{context_id}/routing/task.txt`. Decide the workflow yourself as if the service did not exist.
+2. **Difficulty.** For Bug Fix and Small Change only, run the same script with `difficulty` and the same file.
+3. **Log.** Append one line per call to `routing.log` in the run directory, fields separated by a single tab, in the shapes below. From the JSON it prints, take `answers.{name}.choice` and `answers.{name}.confidence` (two decimals). When it prints nothing, write `jev=unavailable` and `conf=-`. Never retry.
+   - `{YYYY-MM-DD}	workflow	jev={choice}	conf={confidence}	team={your workflow}`
+   - `{YYYY-MM-DD}	difficulty	jev={choice}	conf={confidence}`
+4. **Outcome.** When the run closes as `[DONE]`, before marking it, append:
+   - `{YYYY-MM-DD}	outcome	workflow={workflow the run finished as}	override={yes if the user switched the workflow, else no}	files={N}	rework={N}`
+   - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer returned `needs rework` or `manual` findings.
+   - A run that is stopped or discarded gets no outcome line.
+
+Workflow keys are the workflow names lowercased with spaces as underscores: `analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`. The only text that leaves the machine is `routing/task.txt`; never put anything but the user's own words there. `bash .claude/checks/summarize-routing.sh` turns the logs into the numbers the owner uses to decide whether the service may ever act.
 
 ## Quorum (Brainstorm ×3)
 
