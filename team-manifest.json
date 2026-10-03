@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "3.4.0",
+    "version": "3.5.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -20,16 +20,54 @@
     "team-setup"
   ],
   "modelRouting": {
-    "_comment": "The model the orchestrator passes on an Agent call, keyed by the task's Complexity (low | medium | high) from its task file. default = pass no model, so the role's own file decides. A role mapped to one value is never routed. Calls with no task file (Bug Fix, Small Change, Analyze, Docs, wide research, final review) always use default. The floors are deliberate: a misjudged low costs one tier at most, and the Reviewer never drops below sonnet.",
-    "aliases": ["haiku", "sonnet", "opus", "fable", "default"],
-    "roles": {
-      "brainstorm": "default",
-      "researcher-explorer": { "low": "haiku", "medium": "default", "high": "default" },
-      "architect": "default",
-      "developer": { "low": "sonnet", "medium": "default", "high": "default" },
-      "doc-writer": "default",
-      "tester": { "low": "haiku", "medium": "default", "high": "default" },
-      "reviewer": { "low": "sonnet", "medium": "sonnet", "high": "default" }
+    "_comment": "The model for each Agent call: the cell for its workflow and call (by the task's Complexity where the cell is low/medium/high), one tier up when the orchestrator judged the run hard, then raised to the role's floor and capped at the session model; the ceiling wins over the floor. ceiling = the session model, passed by omitting model, which is why every agent file declares model: inherit. A call key's suffix marks a second kind of call to one role (researcher-explorer:wide = the wide research pass, reviewer:final = the review of the whole diff); its floor is the role's. Layout is read line by line: each workflow opens on its own line, one call per line, a low/medium/high object inline.",
+    "tiers": ["haiku", "sonnet", "opus", "fable"],
+    "floors": {
+      "brainstorm": "opus",
+      "researcher-explorer": "haiku",
+      "architect": "opus",
+      "developer": "sonnet",
+      "doc-writer": "sonnet",
+      "tester": "haiku",
+      "reviewer": "sonnet"
+    },
+    "workflows": {
+      "analyze": {
+        "researcher-explorer": "sonnet"
+      },
+      "docs": {
+        "doc-writer": "sonnet"
+      },
+      "bug_fix": {
+        "researcher-explorer": "sonnet",
+        "brainstorm": "opus",
+        "developer": "sonnet",
+        "reviewer": "sonnet"
+      },
+      "small_change": {
+        "researcher-explorer": "sonnet",
+        "brainstorm": "opus",
+        "developer": "sonnet",
+        "reviewer": "sonnet"
+      },
+      "change_set": {
+        "researcher-explorer": "sonnet",
+        "brainstorm": "opus",
+        "developer": { "low": "sonnet", "medium": "opus", "high": "opus" },
+        "doc-writer": "sonnet",
+        "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
+        "reviewer": "opus"
+      },
+      "full_feature": {
+        "brainstorm": "opus",
+        "researcher-explorer:wide": "sonnet",
+        "researcher-explorer": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
+        "architect": "ceiling",
+        "developer": { "low": "sonnet", "medium": "opus", "high": "opus" },
+        "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
+        "reviewer": { "low": "sonnet", "medium": "opus", "high": "opus" },
+        "reviewer:final": "ceiling"
+      }
     }
   },
   "knowledge": {

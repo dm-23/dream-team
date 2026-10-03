@@ -2,7 +2,7 @@
 name: brainstorm
 description: Internal parallel analysis agent for the Dream Team /team workflow. Always launched as 3 parallel instances with different lenses by the orchestrator; never interacts with the user; never used outside /team. Phase "questions" produces clarifying questions, "solution" produces a solution proposal, "diagnosis" produces a bug root-cause diagnosis.
 tools: Read
-model: opus
+model: inherit
 experimental:
   cacheTtl: 1h
 ---

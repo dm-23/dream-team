@@ -97,57 +97,122 @@ if [ "$readme_rows" != "$role_count" ]; then
   status=1
 fi
 
-# --- model routing: one row per role, every tier a known alias ----------------
-# The orchestrator picks each Agent call's model from this table, so a role
-# without a row silently runs on its file's default, and a misspelt alias
-# fails the call at run time. The block must occur once; an ambiguous manifest
-# is refused, as in verify-manifest-budgets.sh.
+# --- model routing: floors, matrix and agent files agree ---------------------
+# The orchestrator computes every Agent call's model from this block: the
+# cell for its workflow and call, one tier up for a hard run, then the role's
+# floor and the session ceiling. A role without a floor, a workflow without a
+# block or a misspelt tier silently changes the model a call gets, so each is
+# refused here. The block must occur once; an ambiguous manifest is refused,
+# as in verify-manifest-budgets.sh. Every value is taken raw, whatever it
+# looks like, and must then be a quoted tier: a pattern that only matched
+# well-formed values would skip "Opus", "sonnet-4" or a bare number.
 mr_count="$(grep -c '"modelRouting"[[:space:]]*:' team-manifest.json)"
 if [ "$mr_count" != 1 ]; then
   echo "FAIL: team-manifest.json has $mr_count modelRouting blocks, expected 1" >&2
   status=1
 else
   mr_block="$(awk '/"modelRouting"[[:space:]]*:/{f=1} f{print} f && /^  }/{exit}' team-manifest.json | tr -d '\r')"
-  mr_aliases="$(echo "$mr_block" | sed -n 's/.*"aliases"[[:space:]]*:[[:space:]]*\[\(.*\)\].*/\1/p' \
-    | grep -o '"[a-z]*"' | tr -d '"' | sort)"
-  mr_lines="$(echo "$mr_block" | grep -E '^[[:space:]]*"[a-z][a-z-]*"[[:space:]]*:[[:space:]]*[{"]' \
-    | grep -v -E '^[[:space:]]*"(modelRouting|roles)"')"
-  mr_roles="$(echo "$mr_lines" | sed 's/^[[:space:]]*"\([a-z-]*\)".*/\1/' | grep -v '^$' | sort)"
+  mr_tiers="$(echo "$mr_block" | sed -n 's/.*"tiers"[[:space:]]*:[[:space:]]*\[\(.*\)\].*/\1/p' \
+    | grep -o '"[a-z]*"' | tr -d '"')"
+  [ -n "$mr_tiers" ] || { echo "FAIL: modelRouting.tiers is empty or unreadable" >&2; status=1; }
 
-  [ -n "$mr_aliases" ] || { echo "FAIL: modelRouting.aliases is empty or unreadable" >&2; status=1; }
-  if [ "$mr_roles" != "$dir_roles" ]; then
-    echo "FAIL: modelRouting.roles and agents/*.md disagree" >&2
-    echo "  routing: $(echo "$mr_roles" | tr '\n' ' ')" >&2
-    echo "  files:   $(echo "$dir_roles" | tr '\n' ' ')" >&2
+  # tier_of VALUE ALLOW_CEILING -> prints the bare tier, or nothing if VALUE is
+  # not a quoted tier (or "ceiling" where that is allowed).
+  tier_of() {
+    local a
+    a="$(echo "$1" | sed 's/^[[:space:]]*//; s/[[:space:]]*,\{0,1\}[[:space:]]*$//' | sed -n 's/^"\([a-z]*\)"$/\1/p')"
+    [ -n "$a" ] || return 0
+    if echo "$mr_tiers" | grep -qx "$a" || { [ "$2" = yes ] && [ "$a" = ceiling ]; }; then echo "$a"; fi
+  }
+
+  # floors: exactly one per role, each a tier
+  mr_floors="$(echo "$mr_block" | awk '/"floors"[[:space:]]*:/{f=1; next} f && /}/{exit} f')"
+  floor_roles="$(echo "$mr_floors" | sed -n 's/^[[:space:]]*"\([^"]*\)"[[:space:]]*:.*/\1/p' | sort)"
+  if [ "$floor_roles" != "$dir_roles" ]; then
+    echo "FAIL: modelRouting.floors and agents/*.md disagree" >&2
+    echo "  floors: $(echo "$floor_roles" | tr '\n' ' ')" >&2
+    echo "  files:  $(echo "$dir_roles" | tr '\n' ' ')" >&2
     status=1
   fi
-
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    r="$(echo "$line" | sed 's/^[[:space:]]*"\([a-z-]*\)".*/\1/')"
-    rest="${line#*:}"
-    # Every value is taken raw, whatever it looks like, and must then be a
-    # quoted alias from the list: a pattern that only matched well-formed
-    # values would skip "Opus", "sonnet-4" or a bare number without a word.
-    case "$rest" in
+    r="$(echo "$line" | sed -n 's/^[[:space:]]*"\([^"]*\)".*/\1/p')"
+    v="$(echo "${line#*:}" | sed 's/^[[:space:]]*//; s/[[:space:]]*,\{0,1\}[[:space:]]*$//')"
+    [ -n "$(tier_of "$v" no)" ] \
+      || { echo "FAIL: modelRouting.floors.$r is not a tier: $v" >&2; status=1; }
+  done <<< "$mr_floors"
+
+  # workflows: one block per workflow in the enum, one call per line.
+  # awk prints "workflow<TAB>call<TAB>raw value", or "!layout<TAB>line" for a
+  # line that is not a call inside a workflow that opened on its own line.
+  mr_calls="$(echo "$mr_block" | awk '
+    /"workflows"[[:space:]]*:/ { f=1; next }
+    !f { next }
+    wf == "" && /^[[:space:]]*}/ { exit }
+    wf == "" && /^[[:space:]]*"[^"]*"[[:space:]]*:[[:space:]]*\{[[:space:]]*$/ {
+      wf = $0; sub(/^[[:space:]]*"/, "", wf); sub(/".*/, "", wf); print wf "\t\t"; next }
+    wf != "" && /^[[:space:]]*},?[[:space:]]*$/ { wf = ""; next }
+    wf != "" && /^[[:space:]]*"[^"]*"[[:space:]]*:/ {
+      k = $0; sub(/^[[:space:]]*"/, "", k); sub(/".*/, "", k)
+      v = $0; sub(/^[[:space:]]*"[^"]*"[[:space:]]*:/, "", v); print wf "\t" k "\t" v; next }
+    /^[[:space:]]*$/ { next }
+    { print "!layout\t" $0 }')"
+
+  mr_wfs="$(echo "$mr_calls" | awk -F'\t' '$1 != "!layout" && $2 == "" {print $1}' | sort)"
+  enum_wfs="$(norm "$wf_marker" | tr 'A-Z ' 'a-z_' | sort)"
+  if [ "$mr_wfs" != "$enum_wfs" ]; then
+    echo "FAIL: modelRouting.workflows and the workflow enum disagree" >&2
+    echo "  routing: $(echo "$mr_wfs" | tr '\n' ' ')" >&2
+    echo "  enum:    $(echo "$enum_wfs" | tr '\n' ' ')" >&2
+    status=1
+  fi
+  dup="$(echo "$mr_calls" | awk -F'\t' '$1 != "!layout" && $2 != "" {print $1 "." $2}' | sort | uniq -d)"
+  [ -z "$dup" ] || { echo "FAIL: modelRouting.workflows repeats a call: $(echo "$dup" | tr '\n' ' ')" >&2; status=1; }
+
+  while IFS="$(printf '\t')" read -r wf call val; do
+    [ -n "$wf" ] || continue
+    if [ "$wf" = "!layout" ]; then
+      echo "FAIL: modelRouting.workflows: a workflow opens on its own line and holds one call per line:$call" >&2
+      status=1; continue
+    fi
+    [ -n "$call" ] || continue
+    role="${call%%:*}"
+    echo "$dir_roles" | grep -qx "$role" \
+      || { echo "FAIL: modelRouting.workflows.$wf.$call names no role in agents/" >&2; status=1; }
+    case "$call" in
+      *:*) case "$call" in researcher-explorer:wide|reviewer:final) ;;
+             *) echo "FAIL: modelRouting.workflows.$wf.$call: the only suffixes are researcher-explorer:wide and reviewer:final" >&2; status=1 ;;
+           esac ;;
+    esac
+    case "$val" in
       *"{"*)
-        inner="$(echo "$rest" | sed 's/^[^{]*{//; s/}.*$//')"
+        case "$wf" in change_set|full_feature) ;;
+          *) echo "FAIL: modelRouting.workflows.$wf.$call: low/medium/high only in change_set and full_feature" >&2; status=1 ;;
+        esac
+        inner="$(echo "$val" | sed 's/^[^{]*{//; s/}.*$//')"
         keys="$(echo "$inner" | tr ',' '\n' | sed -n 's/^[[:space:]]*"\([^"]*\)"[[:space:]]*:.*/\1/p' \
           | sort | tr '\n' ' ')"
         [ "$keys" = "high low medium " ] \
-          || { echo "FAIL: modelRouting.roles.$r must map exactly low, medium, high (has: $keys)" >&2; status=1; }
-        vals="$(echo "$inner" | tr ',' '\n' | sed 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*$//')" ;;
-      *)
-        vals="$(echo "$rest" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/,$//; s/[[:space:]]*$//')" ;;
+          || { echo "FAIL: modelRouting.workflows.$wf.$call must map exactly low, medium, high (has: $keys)" >&2; status=1; }
+        vals="$(echo "$inner" | tr ',' '\n' | sed 's/^[^:]*:[[:space:]]*//')" ;;
+      *) vals="$val" ;;
     esac
     while IFS= read -r v; do
+      v="$(echo "$v" | sed 's/^[[:space:]]*//; s/[[:space:]]*,\{0,1\}[[:space:]]*$//')"
       [ -n "$v" ] || continue
-      a="$(echo "$v" | sed -n 's/^"\([a-z]*\)"$/\1/p')"
-      [ -n "$a" ] && echo "$mr_aliases" | grep -qx "$a" \
-        || { echo "FAIL: modelRouting.roles.$r uses unknown alias $v" >&2; status=1; }
+      [ -n "$(tier_of "$v" yes)" ] \
+        || { echo "FAIL: modelRouting.workflows.$wf.$call uses unknown tier $v" >&2; status=1; }
     done <<< "$vals"
-  done <<< "$mr_lines"
+  done <<< "$mr_calls"
 fi
+
+# --- agent files: every role inherits the session model ----------------------
+# A call that omits model must land exactly on the ceiling, so no agent file
+# may pin a model of its own: a pin above the session model would exceed it.
+for r in $dir_roles; do
+  m="$(awk -F': ' '/^model: /{print $2; exit}' "agents/$r.md" | tr -d '\r')"
+  [ "$m" = inherit ] || { echo "FAIL: agents/$r.md declares model: $m, expected inherit" >&2; status=1; }
+done
 
 [ "$status" -eq 0 ] && echo "role consistency: ok"
 exit "$status"

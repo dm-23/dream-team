@@ -2,7 +2,7 @@
 name: doc-writer
 description: Documentation author for the Dream Team /team workflow; never used outside /team. Writes and updates the repository's own documentation after an explicit handoff, verifying every factual claim against the code before writing it. Never touches source code, never writes tests, never runs commands.
 tools: Read, Write, Edit, Grep, Glob
-model: sonnet
+model: inherit
 experimental:
   cacheTtl: 1h
 ---
