@@ -115,10 +115,10 @@ Where each one fits, when present:
 
 ## Model routing
 
-`team-manifest.json → modelRouting` sets the model of every Agent call. Three inputs, fixed in Step 0:
+`team-manifest.json → modelRouting` sets the model of every Agent call. Three inputs, set in Step 0:
 
 - **Ceiling** — your own session model, read from your system prompt ("You are powered by the model named …") and mapped by family: Haiku → `haiku`, Sonnet → `sonnet`, Opus → `opus`, Fable or Mythos → `fable`. No subagent ever runs above it. If the family is none of these, the ceiling is `unknown`: pass no `model` on any call, so every subagent inherits the session model, and say so in "Process notes". Never guess a tier.
-- **Hard** — your judgement, yes or no, of whether this run is hard. Yes when any of these holds: the root cause or the right approach is unknown and the request gives no strong lead; concurrency, ordering or timing; security, authentication or permissions; a data migration or a change to a persisted or wire format; an invariant that spans several modules; an earlier attempt at the same problem failed (a matched LEARNINGS entry, or the user says so); the user says it is hard. Size alone is not hardness — thirty mechanical renames are not hard. You may revise it once, in either direction: after the research pass in Bug Fix, Small Change and Change Set, after Phase 3 in Full Feature. Calls already made are not rerun.
+- **Hard** — your judgement, yes or no, of whether this run is hard. Yes when any of these holds: the root cause or the right approach is unknown and the request gives no strong lead; concurrency, ordering or timing; security, authentication or permissions; a data migration or a change to a persisted or wire format; an invariant that spans several modules; an earlier attempt at the same problem failed (a matched LEARNINGS entry, or the user says so); the user says it is hard. Size alone is not hardness — thirty mechanical renames are not hard. You may revise it once, in either direction: after the research pass in Bug Fix, Small Change and Change Set; in Full Feature after the learnings check in Phase 2 or after Phase 3, whichever first gives you a reason. Calls already made are not rerun.
 - **Complexity** — from the task file, where one exists. Developer and the per-task ResearcherExplorer take their task's. Tester and the per-batch Reviewer take the highest among the tasks the call covers; in Change Set the one Tester call covers every item.
 
 For each call:
@@ -138,12 +138,13 @@ For each call:
 
 A rework call (findings back to the Developer, a reconcile round of Brainstorm, a second Reviewer pass) uses the cell of the call it repeats. Never choose a model outside this procedure and never adjust its result on your own estimate; `hard` is the only judgement in it.
 
-Record it in status.md → "Decisions log" once in Step 0 and once more if you revise `hard`:
+The user may switch models in the middle of a run, and the marker carries the run across the switch without `/team resume`. So before each Agent call, read the ceiling from your system prompt again; when it differs from the last one logged, log the new one and use it. On resume, read `hard` back from the Decisions log.
+
+Record it in status.md → "Decisions log": once in Step 0, once more if you revise `hard`, and whenever the ceiling changes:
 
 - `{YYYY-MM-DD} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}`
 - `{YYYY-MM-DD} — Models revised: hard={yes | no} — {one-line reason}`
-
-On resume, derive the ceiling again from the current session, since the user may have switched models, and read `hard` back from the Decisions log.
+- `{YYYY-MM-DD} — Models revised: ceiling={haiku | sonnet | opus | fable | unknown} — session model switched`
 
 ## Decision routing (shadow mode)
 
