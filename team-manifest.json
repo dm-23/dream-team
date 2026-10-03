@@ -148,7 +148,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["orchestrator"],
       "useWhen": "At preflight, to recall the user's standing preferences and what earlier sessions concluded about this project. Treat every recollection as a hint to verify, never as a fact.",
-      "neverUseFor": "Storing the team's own learnings. LEARNINGS.md stays the single compounding record: it is reviewable, project-scoped and lives beside the code. Never let a recollection outrank the repository or the knowledge files."
+      "neverUseFor": "Storing the team's own learnings. LEARNINGS.md stays the team's one inbox of project traps on their way to becoming rules: it is reviewable, project-scoped and lives beside the code. Never let a recollection outrank the repository or the knowledge files."
     },
     {
       "capability": "instructions-maintenance",

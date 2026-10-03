@@ -117,7 +117,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Developer | read, edit, write, formatter and compile check | Implements exactly one task | Writes or runs tests |
 | DocWriter | read, search, edit, write — no shell | Writes documentation, verifying every claim against the code first | Touches source code or tests |
 | Tester | read, edit, write, runs only its own tests | Decides what needs tests and writes them | Touches production code |
-| Reviewer | read, search, edit, write, full toolchain | Reviews against the generated checklist, runs format, lint, build and tests, records the learning | Adds features |
+| Reviewer | read, search, edit, write, full toolchain | Reviews against the generated checklist, runs format, lint, build and tests, classifies what the run taught | Adds features |
 
 The orchestrator is the only role that talks to you. It never writes code and never runs a build.
 
