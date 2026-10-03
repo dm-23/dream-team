@@ -1,6 +1,6 @@
 ---
 name: generate-knowledge
-description: Use when the user explicitly asks to (re)generate or check the Dream Team knowledge base for this repository — first run on a new project, after major architecture changes, or when LEARNINGS.md has [STALE-CHECK] marks. Produces project documentation AND coding standards/toolchain/review-checklist files under .claude/knowledge/. Never auto-invoke.
+description: Use when the user explicitly asks to (re)generate or check the Dream Team knowledge base for this repository — first run on a new project, after major architecture changes, or when the LEARNINGS inbox has [PROMOTE] or [STALE-CHECK] marks or has outgrown its budget. Produces project documentation AND coding standards/toolchain/review-checklist files under .claude/knowledge/. Never auto-invoke.
 argument-hint: "[check | fix | all | <FILE-NAME.md> ...]"
 disable-model-invocation: true
 user-invocable: true
@@ -26,7 +26,7 @@ Output language: the language of the user's request; file contents in English (a
    project documentation: skip anything under `.claude/docs/superpowers/`, which
    belongs to the team that was deployed here and says nothing about this project.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
-5. `.claude/knowledge/LEARNINGS.md` → all `[STALE-CHECK]` lines not yet marked resolved.
+5. `.claude/knowledge/LEARNINGS.md` and every entry file in `learnings/` → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; with `all`, every entry (see "Triage the learnings inbox"). From all of `.claude/knowledge/`, searched recursively with topic directories included, the items ending `— source: learnings …` (see "Items promoted from learnings").
 6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
 
 ## Stack detection
@@ -216,15 +216,53 @@ Sources: CLAUDE.md, README, CI, .claude/PROJECT.md, .claude/docs (cite each)
 - path — what it tracks — who updates it (team run: yes/no)
 ```
 
-Extract only rules that are actually written in the sources; do not invent.
+Extract only rules that are actually written in the sources; do not invent. The one exception is an item promoted from learnings — see "Items promoted from learnings".
 
 ### LEARNINGS.md (persistent)
 
-If missing, create it from `team-manifest.json → knowledge.persistentTemplates`. If present, never rewrite entries. After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change that line's prefix to `[STALE-CHECK RESOLVED YYYY-MM-DD]` and, if the claim was true, make sure the regenerated file reflects it.
+If missing, create it from `team-manifest.json → knowledge.persistentTemplates`. It is an inbox, not a generated file: it is never regenerated from the repository, and an entry's text is never reworded except under the consent "Triage the learnings inbox" describes.
+
+After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change that line's prefix to `[STALE-CHECK RESOLVED YYYY-MM-DD]` and, if the claim was true, make sure the regenerated file reflects it. This holds for a run naming files too. Everything else that touches the inbox — `[PROMOTE]` lines and removing entries — happens only in `all`, under the triage below.
+
+### Items promoted from learnings
+
+A rule promoted from the inbox lives only in a generated file; its entry is gone. So when regenerating any file, carry over every item that ends `— source: learnings <date> <title>` — searching all of `.claude/knowledge/` recursively, topic directories included, because a `subset` file keeps its items in topics its index only names: keep it, re-verify it against the repository, and keep the suffix. An item the repository now contradicts or no longer needs is listed in the report and removed only with the user's consent — asked with the triage question when `all` runs, on its own otherwise. Its source is a real run's finding, recorded by the Reviewer and accepted by the user, which is why it is the one exception to extracting only what the sources say. It counts toward its file's budget like any other line.
+
+## Triage the learnings inbox (`all` only)
+
+A step of `all` (or no argument), after the knowledge files are written and before the cross-check. A run naming files skips it.
+
+1. **Skip when `.claude-tracking/.team-mode` exists**: a live run is reading the inbox. Say which run is open and that triage was skipped; the rest of `all` proceeds.
+2. **Classify every entry**, in `learnings/` and any still inline below the index:
+   - `rule` — carries an unresolved `[PROMOTE]`, or states a constraint checkable from a diff or a `TOOLCHAIN.md` command, or describes the same trap as another entry (those entries become one rule);
+   - `fact` — carries an unresolved `[STALE-CHECK]`, or states something about the project a knowledge file should say;
+   - `trap` — non-obvious, reusable, not yet a rule: it stays;
+   - `summary` — what a run did or what passed;
+   - `team` — a defect of the team itself rather than of the project;
+   - `obsolete` — the code, file or behaviour it describes is gone from the repository;
+   - `covered` — every mark it carries is resolved, in this run (step 9 of "Process" resolves `[STALE-CHECK]` lines before triage) or earlier, and it is not a trap worth keeping on its own: the knowledge files now hold what it said.
+
+   This mode reads the repository, so `fact` and `obsolete` are verified, not guessed.
+3. **Ask once**, one AskUserQuestion call with up to three multi-select questions, each option naming its count and target, and only classes that have members:
+   - "Write into the knowledge files": "Promote N rules into <files>", "Fold N facts into <files>".
+   - "Remove from the inbox": "N run summaries", "N team defects (listed in the report)", "N obsolete entries", "N covered entries".
+   - "Shorten N traps over `learningsEntryLines`" — only when kept traps exceed it; shortening is a rewrite.
+
+   An option not selected leaves its entries exactly as they are. Nothing selected → report the classification and end the step.
+4. **Back up** `.claude/knowledge/` to `.claude-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` before the first write and name the path in the report. Entries have no version-controlled copy anywhere.
+5. **Apply what was accepted.**
+   - A rule becomes one item in its target file, worded as an imperative and ending `— source: learnings <date> <title>`; its `[PROMOTE]` lines become `[PROMOTE RESOLVED YYYY-MM-DD]`. A rule placed in `PROJECT-RULES.md` also gets its `REVIEW-CHECKLIST.md` item, as every obligation does.
+   - A fact the repository confirms is reflected in its file; one it contradicts is reported as false. Either way its `[STALE-CHECK]` lines become `[STALE-CHECK RESOLVED YYYY-MM-DD]`.
+   - An entry consumed or removed loses its file and its index row together.
+   - A shortened trap keeps its heading and every field; only text past the limit is cut.
+6. **Refresh the template prose** of `LEARNINGS.md` from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace only the prose above `## Index` and the template's own sections below the index table; keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is `fix`'s consented rewrite, and an inline entry is not template text.
+7. **Verify** with `checks.learningsInbox`, run as `checks.learningsInboxRunFrom` spells out, and report its output verbatim. Exit 1 after triage is expected only for what the user declined; say which.
+
+Report: entries per class before, what was applied, entries left, the backup path, and the team defects verbatim so the user can pass them to the team's maintainers.
 
 ## Check mode (`check`)
 
-For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Write nothing.
+For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
 
 ## Fix mode (`fix`)
 
@@ -252,7 +290,7 @@ alongside the budget:
 **Order of work.**
 
 1. Refuse if a run is open.
-2. Measure every file; build the size table.
+2. Measure every file; build the size table. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out. Exit 1 → the report gets one line: the learnings inbox needs `/generate-knowledge all`, with the reasons the check printed. Exit 2 → the report carries its message verbatim. Neither is a trigger: an inbox that is due is content, not shape, so it never counts as out of shape or over budget, and `fix` never triages entries. The line is in the report whether or not step 3 stops.
 3. Report: file, class, measured tokens, budget, and the proposal for it. For a split, list the topics you would create, from the file's own `##` sections. Every file already in the target shape **and** inside its budget → report that and stop: nothing to back up, nothing to apply.
 
    Shape and size are separate triggers, and testing only the size would skip work
@@ -276,7 +314,7 @@ alongside the budget:
 
 ## Process
 
-1. Read inputs 1–6.
+1. Read inputs 1–6, including the items promoted from learnings in the existing files.
 2. Detect stack.
 3. Trace architecture through real files.
 4. Draft TOOLCHAIN.md and verify commands.
@@ -284,10 +322,10 @@ alongside the budget:
 6. Annotate cards → CODING-STANDARDS.md.
 7. Derive PROJECT-RULES.md from human documentation.
 8. Compose REVIEW-CHECKLIST.md last (it depends on all others).
-9. Resolve STALE-CHECK lines.
+9. Resolve STALE-CHECK lines; with `all`, triage the learnings inbox.
 10. Cross-check consistency across files (same paths, same commands).
 11. Report to the user: files written, active cards, unverified commands, conflicts
-    needing a decision, discrepancies found in human documentation (do NOT edit human
+    needing a decision, the inbox triage (with `all`), discrepancies found in human documentation (do NOT edit human
     documentation), and the size table below.
 
 ## Size table
@@ -302,5 +340,5 @@ this run, not a note for later — say so plainly rather than burying it.
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
-- `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode you also write the backup directory under `.claude-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode and in the inbox triage of `all` you also write the backup directory under `.claude-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
 - Every file is inside the budget its class gives it, and the size table proves it.

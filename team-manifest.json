@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "3.3.0",
+    "version": "3.4.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -55,6 +55,8 @@
       "learningsIndexRowTokens": 45,
       "learningsIndexRowTitleChars": 80,
       "learningsIndexRowMaxTags": 6,
+      "learningsIndexMaxRows": 30,
+      "learningsEntryLines": 25,
       "overrides": {
         "REVIEW-CHECKLIST.md": 14000
       }
@@ -146,7 +148,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["orchestrator"],
       "useWhen": "At preflight, to recall the user's standing preferences and what earlier sessions concluded about this project. Treat every recollection as a hint to verify, never as a fact.",
-      "neverUseFor": "Storing the team's own learnings. LEARNINGS.md stays the single compounding record: it is reviewable, project-scoped and lives beside the code. Never let a recollection outrank the repository or the knowledge files."
+      "neverUseFor": "Storing the team's own learnings. LEARNINGS.md stays the team's one inbox of project traps on their way to becoming rules: it is reviewable, project-scoped and lives beside the code. Never let a recollection outrank the repository or the knowledge files."
     },
     {
       "capability": "instructions-maintenance",
@@ -248,6 +250,9 @@
     "routingSummaryReport": "bash .claude/checks/summarize-routing.sh — run from the project root; prints the decision-routing shadow numbers from every run's routing.log",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
-    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge"
+    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge",
+    "learningsInbox": "bash checks/verify-learnings-inbox.sh",
+    "learningsInboxArgs": "<knowledge-dir>; exit 0 = inbox clean, 1 = /generate-knowledge all is due, 2 = could not read what it needs",
+    "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge"
   }
 }

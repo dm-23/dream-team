@@ -1,6 +1,10 @@
-# Dream Team Learnings Log
+# Dream Team Learnings Inbox
 
-Compounding knowledge for `/team`. Append-only. Written by the `reviewer` subagent after every Bug Fix, Change Set and Full Feature (and after a Small Change when a real defect was found). Read by the `/team` orchestrator at preflight (index first, full entries on match).
+Known traps in this project that have not yet earned a rule. The rules every agent follows live in `PROJECT-RULES.md`, `REVIEW-CHECKLIST.md`, `CODING-STANDARDS.md`, `TESTING-CONVENTIONS.md` and `TOOLCHAIN.md`; this file is consulted by matching a task or a finding against its index, never read for its own sake.
+
+Written only by the `reviewer` subagent, and only when a run taught something a later run needs: a trap, or a mark asking for a rule or a fact to be written into a knowledge file. A run that taught nothing leaves nothing here. Emptied only by `/generate-knowledge all`, which writes marked rules and facts into the knowledge files and, with the user's consent and after a backup, removes entries that are covered, obsolete, or never belonged here. The index stays small because entries leave.
+
+Read by the `/team` orchestrator at preflight (index first, full entries on match), and by the reviewer before it writes, to find the entry it would otherwise write a second time.
 
 ## Index
 
@@ -15,6 +19,8 @@ Compounding knowledge for `/team`. Append-only. Written by the `reviewer` subage
        whole row — learningsIndexRowTokens
        Title     — learningsIndexRowTitleChars, no parenthetical asides
        Tags      — learningsIndexRowMaxTags, each one word or one hyphenated term
+       the table — learningsIndexMaxRows rows; past it, the orchestrator asks for
+                   /generate-knowledge all, which empties the inbox
      Workflow, symptom, cause and file paths belong in the entry file, never in this table. -->
 
 ## Entry format
@@ -27,12 +33,15 @@ Compounding knowledge for `/team`. Append-only. Written by the `reviewer` subage
 - **Fix pattern:** reusable shape of the fix, max 5 lines
 - **Files touched:** key paths
 - **Tags:** comma-separated keywords, at most `learningsIndexRowMaxTags` of them, each one word or one hyphenated term
-[STALE-CHECK] {knowledge file} — {why it may be outdated}   <- only if a knowledge claim is contradicted
+[PROMOTE] {knowledge file} — {the rule, one imperative sentence}   <- only for a rule, or a trap seen a second time
+[STALE-CHECK] {knowledge file} — {the claim it contradicts or lacks}   <- only for a fact a knowledge file gets wrong or omits
 ```
 
-Entry length limit: 25 lines. Put long narratives into `.claude-tracking/{context_id}/status.md`, not here.
+Entry length limit: `learningsEntryLines` in `team-manifest.json → knowledge.budgets`. Put long narratives into `.claude-tracking/{context_id}/status.md`, not here.
 
-`[STALE-CHECK]` lines are consumed by `/generate-knowledge`, which rewrites them to `[STALE-CHECK RESOLVED YYYY-MM-DD]` after regenerating the affected file.
+Two things are never entries. A summary of what a run did or what passed is the review report in `status.md`. A defect of the team itself — a role, a permission, a handoff, a subagent's report — goes to `status.md → Process notes` and the run's final report.
+
+`[PROMOTE]` and `[STALE-CHECK]` lines are consumed by `/generate-knowledge all`, which rewrites them to `[PROMOTE RESOLVED YYYY-MM-DD]` / `[STALE-CHECK RESOLVED YYYY-MM-DD]` when it writes the rule or the fact, and then removes the entry unless it is still a trap worth keeping. Regenerating a named file resolves the `[STALE-CHECK]` lines that name it, as before.
 
 ---
 
@@ -56,4 +65,4 @@ guess: a date carries as many entries as that day produced, and guessing picks t
 wrong one silently.
 
 This file is the index and only the index. It is read on every `/team` run, so a row
-is held to the budget keys named above.
+is held to the budget keys named above and the table to `learningsIndexMaxRows`.

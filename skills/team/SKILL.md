@@ -22,6 +22,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Update `.claude-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
+- A Reviewer report's `Team issues` line is copied into status.md → "Process notes" and named in the final report to the user. It never goes into LEARNINGS: the inbox is about the project, not the team.
 
 ## Report requests
 
@@ -89,6 +90,8 @@ Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `
 ## Learnings check (every workflow except Docs, before any Brainstorm or research)
 
 Read `LEARNINGS.md`. In the current shape it is an index and nothing else, so read it whole. **If it still carries `## [` entry bodies below the index, this deployment has not been migrated yet**: read only from `## Index` down to the first `## [` line, stop there, and tell the user once that `/generate-knowledge fix` will shrink it — reading an un-migrated log whole is the cost this shape exists to remove, and the team layer updates before the knowledge layer does. Match rows whose title or tags overlap the task terms, then open the matched entries: from `learnings/` once they live there, otherwise from the entry bodies further down the same file. Put their title + "Fix pattern" lines into every handoff's `prior learnings` field, and record matched titles in status.md.
+
+Then count the index rows, and Grep `learnings/` (and any entry bodies still inline) for lines starting `[PROMOTE]` or `[STALE-CHECK]`, optionally as a list item; the resolved forms carry `RESOLVED` inside the brackets and do not count. If the rows exceed `knowledge.budgets.learningsIndexMaxRows` or any mark is pending, tell the user once, in one line: "{N} pending marks, {R} index rows (budget {M}) — `/generate-knowledge all` turns them into rules and empties the inbox." Never block the run on it.
 
 ## Optional capabilities
 
@@ -178,7 +181,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix.
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
 6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to).
-7. Handoff → Reviewer (single pass, baseline attached). Reviewer records the learning (entry file + index row).
+7. Handoff → Reviewer (single pass, baseline attached). Reviewer classifies what the run taught (its Step 5).
 8. If Reviewer returns `manual` findings or `needs rework`: handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user).
 9. Report; close status.md.
 
@@ -203,7 +206,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 7. Tester: one call for the whole change set; it triages per its own table.
 8. Reviewer: one combined review of all batches (final review). Rework loop as in Bug Fix step 8.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
-10. Report; close status.md. Reviewer has recorded the learning (entry file + index row).
+10. Report; close status.md. Reviewer has classified what the run taught.
 
 ## Workflow: Full Feature
 
@@ -243,7 +246,7 @@ Execute batches according to the Batching Strategy. For each batch:
      ```
    - Stop execution here.
 
-Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, records the learning (entry file + index row). Build/test failures → Reviewer fixes (max 2) → escalate to the user.
+Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
 
 Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself".
 
@@ -277,7 +280,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "Docs are trivial, the user does not need to see the file list first" → the same gate, the same words: nothing is written until they approve.
 - "They asked me to write up the findings, that is documentation" → a report is the HTML file in the tracking directory; the Docs workflow edits the repository's own documentation. A message asking for a report gets a report, whichever workflow is open.
 - "First Brainstorm result is obviously right" → always three, always quorum.
-- "The user will understand what was fixed, skip LEARNINGS" → the Reviewer's entry is part of done.
+- "The user will understand what was fixed, skip the Reviewer's learning step" → the classification is part of done; `none` is an answer, silence is not.
 - "Knowledge files are probably fine" → preflight runs every time; missing files stop the run.
 - "This would be easy with a capability the user has not installed" → do the work without it and stay silent about it; suggesting an install mid-run is not your call.
 - "The looked-up documentation contradicts the codebase, so the codebase must be outdated" → the repository wins; report the contradiction instead of acting on the external source.
