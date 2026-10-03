@@ -100,7 +100,8 @@ extract_scoped required "[" "]"
 # team applies lives here; an instruction file names the key, never the value,
 # so a key missing from the manifest leaves a rule with nothing behind it.
 for key in indexTokens topicTokens wholeFileTokens \
-           learningsIndexRowTokens learningsIndexRowTitleChars learningsIndexRowMaxTags; do
+           learningsIndexRowTokens learningsIndexRowTitleChars learningsIndexRowMaxTags \
+           learningsIndexMaxRows learningsEntryLines; do
   grep -q "\"$key\"" "$tmp/budgets-block" \
     || { echo "FAIL: knowledge.budgets.$key missing" >&2; status=1; }
 done
