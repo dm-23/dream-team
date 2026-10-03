@@ -114,7 +114,14 @@ else
   mr_block="$(awk '/"modelRouting"[[:space:]]*:/{f=1} f{print} f && /^  }/{exit}' team-manifest.json | tr -d '\r')"
   mr_tiers="$(echo "$mr_block" | sed -n 's/.*"tiers"[[:space:]]*:[[:space:]]*\[\(.*\)\].*/\1/p' \
     | grep -o '"[a-z]*"' | tr -d '"')"
-  [ -n "$mr_tiers" ] || { echo "FAIL: modelRouting.tiers is empty or unreadable" >&2; status=1; }
+  # "One tier up" for a hard run reads this list in order, so a reordered
+  # list would move a hard run down.
+  if [ -z "$mr_tiers" ]; then
+    echo "FAIL: modelRouting.tiers is empty or unreadable" >&2; status=1
+  elif [ "$(echo $mr_tiers)" != "haiku sonnet opus fable" ]; then
+    echo "FAIL: modelRouting.tiers must be haiku, sonnet, opus, fable in that order (has: $(echo $mr_tiers))" >&2
+    status=1
+  fi
 
   # tier_of VALUE ALLOW_CEILING -> prints the bare tier, or nothing if VALUE is
   # not a quoted tier (or "ceiling" where that is allowed).
@@ -125,22 +132,27 @@ else
     if echo "$mr_tiers" | grep -qx "$a" || { [ "$2" = yes ] && [ "$a" = ceiling ]; }; then echo "$a"; fi
   }
 
-  # floors: exactly one per role, each a tier
-  mr_floors="$(echo "$mr_block" | awk '/"floors"[[:space:]]*:/{f=1; next} f && /}/{exit} f')"
-  floor_roles="$(echo "$mr_floors" | sed -n 's/^[[:space:]]*"\([^"]*\)"[[:space:]]*:.*/\1/p' | sort)"
-  if [ "$floor_roles" != "$dir_roles" ]; then
-    echo "FAIL: modelRouting.floors and agents/*.md disagree" >&2
-    echo "  floors: $(echo "$floor_roles" | tr '\n' ' ')" >&2
-    echo "  files:  $(echo "$dir_roles" | tr '\n' ' ')" >&2
+  # floors: exactly one per role, each a tier, one role per line
+  if echo "$mr_block" | grep -qE '^[[:space:]]*"floors"[[:space:]]*:[[:space:]]*\{[[:space:]]*[^[:space:]]'; then
+    echo "FAIL: modelRouting.floors: open the object on its own line, one role per line" >&2
     status=1
+  else
+    mr_floors="$(echo "$mr_block" | awk '/"floors"[[:space:]]*:/{f=1; next} f && /}/{exit} f')"
+    floor_roles="$(echo "$mr_floors" | sed -n 's/^[[:space:]]*"\([^"]*\)"[[:space:]]*:.*/\1/p' | sort)"
+    if [ "$floor_roles" != "$dir_roles" ]; then
+      echo "FAIL: modelRouting.floors and agents/*.md disagree" >&2
+      echo "  floors: $(echo "$floor_roles" | tr '\n' ' ')" >&2
+      echo "  files:  $(echo "$dir_roles" | tr '\n' ' ')" >&2
+      status=1
+    fi
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      r="$(echo "$line" | sed -n 's/^[[:space:]]*"\([^"]*\)".*/\1/p')"
+      v="$(echo "${line#*:}" | sed 's/^[[:space:]]*//; s/[[:space:]]*,\{0,1\}[[:space:]]*$//')"
+      [ -n "$(tier_of "$v" no)" ] \
+        || { echo "FAIL: modelRouting.floors.$r is not a tier: $v" >&2; status=1; }
+    done <<< "$mr_floors"
   fi
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    r="$(echo "$line" | sed -n 's/^[[:space:]]*"\([^"]*\)".*/\1/p')"
-    v="$(echo "${line#*:}" | sed 's/^[[:space:]]*//; s/[[:space:]]*,\{0,1\}[[:space:]]*$//')"
-    [ -n "$(tier_of "$v" no)" ] \
-      || { echo "FAIL: modelRouting.floors.$r is not a tier: $v" >&2; status=1; }
-  done <<< "$mr_floors"
 
   # workflows: one block per workflow in the enum, one call per line.
   # awk prints "workflow<TAB>call<TAB>raw value", or "!layout<TAB>line" for a

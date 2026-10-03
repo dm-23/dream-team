@@ -226,7 +226,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
 6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
 7. Tester: one call for the whole change set; it triages per its own table.
-8. Reviewer: one combined review of all batches (final review). Rework loop as in Bug Fix step 8.
+8. Reviewer: one combined review of all batches; it judges the whole diff, and its model comes from the cell `change_set.reviewer`. Rework loop as in Bug Fix step 8.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
 10. Report; close status.md. Reviewer has classified what the run taught.
 
