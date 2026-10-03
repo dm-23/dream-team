@@ -26,7 +26,7 @@ Output language: the language of the user's request; file contents in English (a
    project documentation: skip anything under `.claude/docs/superpowers/`, which
    belongs to the team that was deployed here and says nothing about this project.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
-5. `.claude/knowledge/LEARNINGS.md` and every entry file in `learnings/` → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; with `all`, every entry (see "Triage the learnings inbox"). From every existing knowledge file, the items ending `— source: learnings …` (see "Items promoted from learnings").
+5. `.claude/knowledge/LEARNINGS.md` and every entry file in `learnings/` → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; with `all`, every entry (see "Triage the learnings inbox"). From all of `.claude/knowledge/`, searched recursively with topic directories included, the items ending `— source: learnings …` (see "Items promoted from learnings").
 6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
 
 ## Stack detection
@@ -226,7 +226,7 @@ After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change
 
 ### Items promoted from learnings
 
-A rule promoted from the inbox lives only in a generated file; its entry is gone. So when regenerating any file, carry over every item that ends `— source: learnings <date> <title>`: keep it, re-verify it against the repository, and keep the suffix. An item the repository now contradicts or no longer needs is listed in the report and removed only with the user's consent — asked with the triage question when `all` runs, on its own otherwise. Its source is a real run's finding, recorded by the Reviewer and accepted by the user, which is why it is the one exception to extracting only what the sources say. It counts toward its file's budget like any other line.
+A rule promoted from the inbox lives only in a generated file; its entry is gone. So when regenerating any file, carry over every item that ends `— source: learnings <date> <title>` — searching all of `.claude/knowledge/` recursively, topic directories included, because a `subset` file keeps its items in topics its index only names: keep it, re-verify it against the repository, and keep the suffix. An item the repository now contradicts or no longer needs is listed in the report and removed only with the user's consent — asked with the triage question when `all` runs, on its own otherwise. Its source is a real run's finding, recorded by the Reviewer and accepted by the user, which is why it is the one exception to extracting only what the sources say. It counts toward its file's budget like any other line.
 
 ## Triage the learnings inbox (`all` only)
 
@@ -239,12 +239,13 @@ A step of `all` (or no argument), after the knowledge files are written and befo
    - `trap` — non-obvious, reusable, not yet a rule: it stays;
    - `summary` — what a run did or what passed;
    - `team` — a defect of the team itself rather than of the project;
-   - `obsolete` — the code, file or behaviour it describes is gone from the repository.
+   - `obsolete` — the code, file or behaviour it describes is gone from the repository;
+   - `covered` — every mark it carries is resolved, in this run (step 9 of "Process" resolves `[STALE-CHECK]` lines before triage) or earlier, and it is not a trap worth keeping on its own: the knowledge files now hold what it said.
 
    This mode reads the repository, so `fact` and `obsolete` are verified, not guessed.
 3. **Ask once**, one AskUserQuestion call with up to three multi-select questions, each option naming its count and target, and only classes that have members:
    - "Write into the knowledge files": "Promote N rules into <files>", "Fold N facts into <files>".
-   - "Remove from the inbox": "N run summaries", "N team defects (listed in the report)", "N obsolete entries".
+   - "Remove from the inbox": "N run summaries", "N team defects (listed in the report)", "N obsolete entries", "N covered entries".
    - "Shorten N traps over `learningsEntryLines`" — only when kept traps exceed it; shortening is a rewrite.
 
    An option not selected leaves its entries exactly as they are. Nothing selected → report the classification and end the step.
@@ -254,7 +255,7 @@ A step of `all` (or no argument), after the knowledge files are written and befo
    - A fact the repository confirms is reflected in its file; one it contradicts is reported as false. Either way its `[STALE-CHECK]` lines become `[STALE-CHECK RESOLVED YYYY-MM-DD]`.
    - An entry consumed or removed loses its file and its index row together.
    - A shortened trap keeps its heading and every field; only text past the limit is cut.
-6. **Refresh the template prose** of `LEARNINGS.md` — everything except the index rows — from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them.
+6. **Refresh the template prose** of `LEARNINGS.md` from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace only the prose above `## Index` and the template's own sections below the index table; keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is `fix`'s consented rewrite, and an inline entry is not template text.
 7. **Verify** with `checks.learningsInbox`, run as `checks.learningsInboxRunFrom` spells out, and report its output verbatim. Exit 1 after triage is expected only for what the user declined; say which.
 
 Report: entries per class before, what was applied, entries left, the backup path, and the team defects verbatim so the user can pass them to the team's maintainers.
@@ -289,10 +290,8 @@ alongside the budget:
 **Order of work.**
 
 1. Refuse if a run is open.
-2. Measure every file; build the size table.
+2. Measure every file; build the size table. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out. Exit 1 → the report gets one line: the learnings inbox needs `/generate-knowledge all`, with the reasons the check printed. Exit 2 → the report carries its message verbatim. Neither is a trigger: an inbox that is due is content, not shape, so it never counts as out of shape or over budget, and `fix` never triages entries. The line is in the report whether or not step 3 stops.
 3. Report: file, class, measured tokens, budget, and the proposal for it. For a split, list the topics you would create, from the file's own `##` sections. Every file already in the target shape **and** inside its budget → report that and stop: nothing to back up, nothing to apply.
-
-   Also run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out. Exit 1 → add one line to the report: the learnings inbox needs `/generate-knowledge all`, with the reasons the check printed. Exit 2 → report its message verbatim. Neither is a trigger: an inbox that is due is content, not shape, so it never counts as out of shape or over budget, and `fix` never triages entries.
 
    Shape and size are separate triggers, and testing only the size would skip work
    that has nothing to do with size. A young project's `LEARNINGS.md` can sit under
