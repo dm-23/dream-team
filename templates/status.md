@@ -22,7 +22,7 @@
 - [ ] 6 Tests (Tester: {run | skipped — reason})
 - [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework})
 - [ ] 8 Docs sync (PROJECT-RULES.md obligations: {done | n/a})
-- [ ] 9 LEARNINGS entry (entry file + index row: {written | not required})
+- [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes})
 
 ## Batches / tasks (Change Set and Full Feature only)
 
