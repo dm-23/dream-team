@@ -85,7 +85,7 @@ Detect from the task (any language): analysis verbs → Analyze; "update the rea
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), and the service script under "Decision routing (shadow mode)" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker.
+Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), and the service script under "Decision routing (shadow mode)" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
 
 ## Learnings check (every workflow except Docs, before any Brainstorm or research)
 
@@ -115,14 +115,35 @@ Where each one fits, when present:
 
 ## Model routing
 
-`team-manifest.json → modelRouting` sets the model for Agent calls whose work is described by a task file. Look the role up in `modelRouting.roles`:
+`team-manifest.json → modelRouting` sets the model of every Agent call. Three inputs, fixed in Step 0:
 
-- A single value: never routed. Omit `model`; the role's own file decides.
-- A `low / medium / high` row: pass the value for the task's `Complexity` as the Agent call's `model`, or omit `model` where the value is `default`.
-  - Developer, and a per-task targeted ResearcherExplorer: that task file's `Complexity`.
-  - Tester and the per-batch Reviewer: the highest `Complexity` among the tasks the call covers (in Change Set, the one Tester call covers every item).
+- **Ceiling** — your own session model, read from your system prompt ("You are powered by the model named …") and mapped by family: Haiku → `haiku`, Sonnet → `sonnet`, Opus → `opus`, Fable or Mythos → `fable`. No subagent ever runs above it. If the family is none of these, the ceiling is `unknown`: pass no `model` on any call, so every subagent inherits the session model, and say so in "Process notes". Never guess a tier.
+- **Hard** — your judgement, yes or no, of whether this run is hard. Yes when any of these holds: the root cause or the right approach is unknown and the request gives no strong lead; concurrency, ordering or timing; security, authentication or permissions; a data migration or a change to a persisted or wire format; an invariant that spans several modules; an earlier attempt at the same problem failed (a matched LEARNINGS entry, or the user says so); the user says it is hard. Size alone is not hardness — thirty mechanical renames are not hard. You may revise it once, in either direction: after the research pass in Bug Fix, Small Change and Change Set, after Phase 3 in Full Feature. Calls already made are not rerun.
+- **Complexity** — from the task file, where one exists. Developer and the per-task ResearcherExplorer take their task's. Tester and the per-batch Reviewer take the highest among the tasks the call covers; in Change Set the one Tester call covers every item.
 
-Everything else omits `model`: calls without a task file (Analyze, Docs, Bug Fix, Small Change), the wide research pass, and the final review, which judges the whole diff. Never choose a model outside this table and never lower one on your own estimate. The table is the whole policy. When a call is routed to something other than `default`, add a line to status.md → "Decisions log": `{task} {role} → {model} (Complexity {level})`.
+For each call:
+
+1. Look up `workflows.{workflow}.{call}`. The workflow key is the workflow's name lowercased with spaces as underscores (`bug_fix`, `full_feature`). The call is the role's name, except `researcher-explorer:wide` for the wide research pass and `reviewer:final` for the Full Feature final review. Where the cell is `low / medium / high`, take the entry for the Complexity.
+2. If the run is hard, move one tier up in `tiers`. The top tier and `ceiling` stay where they are.
+3. Raise the result to `floors.{role}`, where the role is the call without its suffix.
+4. Cap it at the ceiling. The ceiling wins over the floor.
+5. If the result equals the ceiling, omit `model`: the subagent then inherits the session model exactly, version and context variant included, which an alias would not. Otherwise pass the tier as the Agent call's `model`.
+
+| Session | Call | Cell | Hard | Floor | Result |
+|---------|------|------|------|-------|--------|
+| opus | Bug Fix developer | sonnet | no | sonnet | `model: sonnet` |
+| opus | Bug Fix developer | sonnet | yes | sonnet | opus = ceiling → omit `model` |
+| sonnet | Small Change brainstorm | opus | no | opus | capped to sonnet = ceiling → omit `model` |
+| fable | Full Feature developer, Complexity high | opus | yes | sonnet | fable = ceiling → omit `model` |
+
+A rework call (findings back to the Developer, a reconcile round of Brainstorm, a second Reviewer pass) uses the cell of the call it repeats. Never choose a model outside this procedure and never adjust its result on your own estimate; `hard` is the only judgement in it.
+
+Record it in status.md → "Decisions log" once in Step 0 and once more if you revise `hard`:
+
+- `{YYYY-MM-DD} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}`
+- `{YYYY-MM-DD} — Models revised: hard={yes | no} — {one-line reason}`
+
+On resume, derive the ceiling again from the current session, since the user may have switched models, and read `hard` back from the Decisions log.
 
 ## Decision routing (shadow mode)
 
@@ -308,4 +329,4 @@ To keep subagent token usage minimal and context lean:
   2. The path to the exploration report.
   3. The `prior learnings` lines (if matches exist).
 
-  Never the exploration text itself. Three instances run in parallel on the strongest model, so pasted research is paid for three times over; the path costs one line.
+  Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.

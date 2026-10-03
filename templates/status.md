@@ -31,6 +31,7 @@
 
 ## Decisions log
 
+- {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}
 - {date} — {decision, who/what decided it}
 
 ## Process notes (deviations from SKILL.md, for the next retrospective)
