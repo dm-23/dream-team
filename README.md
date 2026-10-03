@@ -123,9 +123,9 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question.
 
-**Model.** Four roles pin one in their own file: Brainstorm pins the strongest model; ResearcherExplorer, Tester and DocWriter pin a cheaper one. Architect, Developer and Reviewer inherit the session's. Brainstorm's line is the main cost lever, because three instances run on every phase that uses it — lower it there first if a run costs more than it is worth to you. The other three pins are already at the cheap end; raise one only if you find its output thin.
+**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm and Architect opus; Developer, Reviewer and DocWriter sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
-**Model routing.** Work that comes with a task file — every Full Feature and Change Set task — also carries a `Complexity` of low, medium or high, and `team-manifest.json → modelRouting` turns that into the model for the Developer, Tester, Reviewer and per-task research calls. A low task runs its Developer and Reviewer on the mid tier and its Tester and research on the cheapest; medium and high keep each role's own model. The Reviewer never drops below the mid tier, and the final review always keeps its own. Edit the table to change the policy; `checks/verify-role-consistency.sh` fails if a role has no row or a tier is misspelt.
+**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer and Reviewer on sonnet. Change Set and Full Feature tasks go by their `Complexity`. The Architect and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block, a tier is misspelt, or an agent file pins a model.
 
 ## The six workflows
 
@@ -242,7 +242,7 @@ Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `
 
 **Plugins.** The `plugins` array declares the optional capabilities described above. Each entry names a capability, the plugin that provides it, its marketplace and install command, who uses it, and the rules for when it may and may not be used. `pluginPolicy` above the array states the three invariants: consent per plugin, equal quality without any of them, and brokering through the orchestrator. Add your own entries the same way.
 
-**Model routing.** The `modelRouting` block maps each role and task complexity to a model; see "The seven roles".
+**Model routing.** The `modelRouting` block holds the tiers, each role's floor and the workflow-by-call matrix the orchestrator picks models from; see "The seven roles".
 
 **Services.** The `services` array and `servicePolicy` declare outside APIs the orchestrator may call; see "Services" above.
 
