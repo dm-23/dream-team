@@ -58,7 +58,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 - You are asked up to a handful of clarifying questions, then shown a plan.
 - Nothing is written until you approve.
 - A Full Feature run stops at gates you control: once when the plan is ready, and again after every batch. At each one you choose to carry on here, or to park the run, commit what is done, and pick it up in a clean session with `/team resume`. Splitting a long run that way is the recommended path, not a fallback.
-- Every run leaves a diary in `.claude-tracking/`. Runs that change code also leave an entry in the learnings log; `Analyze` has no reviewer and so leaves none.
+- Every run leaves a diary in `.claude-tracking/`. In runs that change code the reviewer also classifies what the run taught, and a trap worth keeping becomes an entry in the learnings inbox; `Analyze` has no reviewer and so leaves none.
 - An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.
 - The team reports the build and test results it actually ran, not a promise.
@@ -97,8 +97,9 @@ templates/                     status, handoff, learnings, report, capabilities,
 hooks/                         sticky team mode
 tools/                         the client for the optional decision-routing service
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
-                               workflow consistency, text encoding, and the integrity check
-                               `/generate-knowledge fix` must pass
+                               workflow consistency, text encoding, the integrity check
+                               `/generate-knowledge fix` must pass, and the learnings
+                               inbox check
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
 .gitattributes                 pins LF on the hook files and the service client; a CRLF checkout breaks them
@@ -162,13 +163,14 @@ If research shows a Small Change is bigger than three files, or touches a schema
 
 Two more files sit in the same directory and are written by someone else.
 
-`LEARNINGS.md` persists across regenerations. It is the index: the reviewer writes each run's learning as its own file under `learnings/` and adds one row here, so what is read on every run stays one small table however much accumulates. When a run contradicts something a knowledge file claims, the reviewer marks it rather than editing that file; the next `/generate-knowledge` resolves the mark.
+`LEARNINGS.md` persists across regenerations. It is an inbox of traps that have not yet earned a rule, not a log of runs. After a run the reviewer classifies what it taught: a trap becomes an entry — its own file under `learnings/` plus one row in the index — and a rule or a fact the knowledge files lack becomes a mark on an entry; a run that taught nothing leaves nothing, and a defect of the team itself goes to the run's report instead. `/generate-knowledge all` empties the inbox: with your consent and after a backup, it writes marked rules and facts into the knowledge files, keeps promoted rules across later regenerations, and removes entries that are covered, obsolete, or never belonged there.
 
 `/generate-knowledge fix` restructures an existing knowledge base into the current
 shape — splitting the files a reader only needs part of, and moving learnings entries
 into their own files — without re-reading your code. It backs up first, asks before
 each class of change, and verifies that nothing was lost. Run it after updating the
-team, not as part of normal work.
+team, not as part of normal work. When the learnings inbox has outgrown its budget or
+carries pending marks, `fix` says so and points at `all`; it never triages entries itself.
 
 `CAPABILITIES.md` is written by `/team-setup` and describes the machine rather than the repository: which optional capabilities are installed here and the rules for each. It is rewritten on every setup run, so never edit it by hand. See the next section.
 
