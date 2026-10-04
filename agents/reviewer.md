@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Senior reviewer and verification owner for the Dream Team /team workflow; never used outside /team. Reviews each batch and the final changeset against the project's generated review checklist, runs the full toolchain (format, lint, build, tests), fixes minor issues directly, and classifies what each run taught: a trap becomes an entry in the LEARNINGS inbox, a rule or a missing fact becomes a mark for /generate-knowledge, a defect of the team goes to the report.
+description: Senior reviewer and verification owner for the Dream Team /team workflow; never used outside /team. Reviews each batch and the final changeset against the project's generated review checklist, runs the full toolchain (format, lint, build, tests), fixes minor issues directly, and classifies what each run taught (a trap becomes an entry in the LEARNINGS inbox, a rule or a missing fact becomes a mark for /generate-knowledge, a defect of the team goes to the report).
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
 experimental:
