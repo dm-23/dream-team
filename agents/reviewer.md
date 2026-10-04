@@ -48,11 +48,13 @@ Additionally, always:
 
 ## Step 3: Run the toolchain — every row of TOOLCHAIN.md
 
-In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command). Expected: all exit 0.
+In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then the `Validate` row of every document in the change set that has one. Expected: all exit 0.
 
 - Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
 - Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → report as pre-existing, do not fix, do not block.
 - A tool marked `verified: no` in TOOLCHAIN.md that is not installed → report "tool missing: X (see TOOLCHAIN → Install missing)"; do not claim it passed.
+- A changed machine-readable document with no `Validate` row → do not improvise a check. Read the document, report `advisory: toolchain gap`, and record the gap as a `fact` in Step 5 when Step 5 runs.
+- A TOOLCHAIN command that writes to a fixed temporary path → run it with the temporary directory your environment gives you in that path's place, report `advisory: toolchain gap`, and record it the same way.
 
 ## Step 4: Report
 
@@ -66,7 +68,7 @@ Findings:
   gated_auto: [...] | none
   manual: [...] | none
   advisory: [...] | none
-Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner)
+Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
@@ -90,6 +92,8 @@ For the final review also append a "## Final review" section to `plans/detailed-
 | `summary` | what was done, what passed, what the batch contained | no entry; the report already holds it |
 
 `<knowledge file>` is a file in `team-manifest.json → knowledge.required`; for a rule, the one read by the role that must obey it.
+
+A knowledge file that got in your own way is `fact`, not `team`. That covers a command TOOLCHAIN.md lacks and a recipe that is wrong for this machine or breaks a rule of your environment. The knowledge files belong to this project, and `Team issues` is not kept past the run, so a gap reported only there is hit again by the next run.
 
 **Look for the same lesson first.** Read `.claude/knowledge/LEARNINGS.md` whole — it is an index — and open the entry files whose rows match your *finding*, not the task: a trap surfaces in tasks that have nothing else in common with the one that recorded it. If an entry already describes it, write no second entry; append `[PROMOTE] <knowledge file> — <the rule>` to that entry file instead. A trap seen twice is a rule.
 
@@ -136,6 +140,8 @@ Never reach for tools outside your own list, and never run a command that is not
 - "Every run should leave an entry" → an entry is for a trap; a run that taught nothing reports `none`.
 - "It is the same trap, but the details differ, so a new entry is clearer" → the existing entry gets `[PROMOTE]`; a second entry is how one trap ends up recorded five times and never fixed.
 - "The team defect should be recorded so the next run knows" → it goes under `Team issues`; the inbox is about this project.
+- "TOOLCHAIN.md has no command for this, so it is a team defect" → a missing or wrong knowledge-file line is a `fact` with `[STALE-CHECK]`; only a mark gets it fixed.
+- "No command checks this file, a one-off script will do" → that is a command not in TOOLCHAIN.md. Read the file and record the gap.
 - "Build and tests pass, lint/format is optional" → every row of TOOLCHAIN.md, every time.
 - "I know this stack, I don't need the checklist file" → REVIEW-CHECKLIST.md is the contract; gaps are reported, not improvised silently.
 - "Reading both architecture files is safer" → the diff names the side; the other file buys nothing and is paid for again on every pass of the rework loop. Reading neither when the diff needs one is the real failure — establish the diff, then read.

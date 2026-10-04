@@ -142,16 +142,18 @@ Repository topology (entry points, API surface, logic, data, user interface, tes
 ```markdown
 # Toolchain
 All commands run from: `<directory>`. Agents may run ONLY commands listed here.
+`<scratch>` in a command stands for the temporary directory your environment gives you; substitute it, and never a fixed system path.
 
 | Purpose | Command | Verified | Source | Cost |
 |---------|---------|----------|--------|------|
-| Format (check) | ... | yes/no | CI file / README / card | cheap/expensive |
+| Format (check) | ... | yes/no | CI file / README / card / derived here | cheap/expensive |
 | Format (apply) | ... |
 | Lint | ... |
 | Build | ... |
 | Test all | ... |
 | Test one | ... |
 | Additional test runners | ... (for example a separate user-interface test command) |
+| Validate `<document>` | ... (one row per document; see below) |
 | Run | ... |
 | Install missing | ... |
 
@@ -163,6 +165,10 @@ All commands run from: `<directory>`. Agents may run ONLY commands listed here.
 ```
 
 Procedure: take candidates from CI/pipeline files first, then task runners/README, then the active stack card's `## Toolchain`. Execute the cheap read-only ones (format check, lint, build, test) if the user has not forbidden it; mark `Verified: yes` only after a real run. Mark "Cost: cheap" only when measured under about one minute.
+
+**Where a command may write.** Only to the repository paths its purpose names, and to standard output. Feed a tool its input through a pipe or standard input instead of staging a copy. When a tool can only write a file, the command writes it under `<scratch>`. Never name a fixed temporary path such as `/tmp/...`, `%TEMP%` or `$TMP`: it is shared between runs, it means different things in different shells, and the agent's environment may forbid writing there.
+
+**Validate rows.** Every document the team edits by hand that has a machine-readable format (a specification, a schema, a configuration file) gets a `Validate` row. `PROJECT-RULES.md → Documents to keep in sync` lists these documents. Without a listed command, an agent either skips the check or improvises one, and both break the rule that agents run only what this file lists. Take the command from the repository's own tooling or CI first. Otherwise build it from a parser already present on this machine (a runtime's standard library, or a library already in the dependency cache, never a new download), run it on the current file, and record it as `derived here`. If nothing here can parse the format, write the row as `none — the Reviewer checks it by reading`. That way the absence is a recorded decision, not a gap. PROJECT-RULES.md is written after this file, so step 10 of "Process" confirms that every such document has its row.
 
 ### CODING-STANDARDS.md
 
@@ -262,7 +268,7 @@ Report: entries per class before, what was applied, entries left, the backup pat
 
 ## Check mode (`check`)
 
-For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
+For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
 
 ## Fix mode (`fix`)
 
@@ -323,7 +329,9 @@ alongside the budget:
 7. Derive PROJECT-RULES.md from human documentation.
 8. Compose REVIEW-CHECKLIST.md last (it depends on all others).
 9. Resolve STALE-CHECK lines; with `all`, triage the learnings inbox.
-10. Cross-check consistency across files (same paths, same commands).
+10. Cross-check consistency across files (same paths, same commands), and that every
+    machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its
+    `Validate` row in TOOLCHAIN.md.
 11. Report to the user: files written, active cards, unverified commands, conflicts
     needing a decision, the inbox triage (with `all`), discrepancies found in human documentation (do NOT edit human
     documentation), and the size table below.
