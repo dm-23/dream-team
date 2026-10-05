@@ -54,7 +54,7 @@ write_cache() {
     [ -n "$2" ] && printf 'latest=%s\n' "$2"
     [ -n "$3" ] && printf 'skipped=%s\n' "$3"
     :
-  } > "$CACHE.tmp" 2>/dev/null && mv -f "$CACHE.tmp" "$CACHE" 2>/dev/null
+  } 2>/dev/null > "$CACHE.tmp" && mv -f "$CACHE.tmp" "$CACHE" 2>/dev/null
   rm -f "$CACHE.tmp" 2>/dev/null
 }
 

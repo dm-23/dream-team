@@ -273,7 +273,7 @@ Existing knowledge files stay valid unless the manifest gained a required file, 
 
 The team can tell you when a newer version exists. It is off until you turn it on: `/team-setup fix` asks once, says what is sent, and records your answer in `.claude-tracking/.service-consent`. What is sent is one HTTPS request for this repository's public `team-manifest.json` on GitHub; no task text, code or paths leave the machine, and GitHub sees your IP address and the time.
 
-When it is on, `/team` asks at the start of a new run, at most once a day, and only when there is something newer. You choose:
+When it is on, `/team` looks up the newest version at most once a day. While a newer one is known, it asks at the start of every new run. You choose:
 
 - **Continue** on the version you have.
 - **Park and update** — the run is left open at its first phase and the team shows the update command above. Run it, reopen the session so the new prompts are loaded, run `/team-setup check`, then `/team resume`. The team never updates itself, and an update cannot take effect in the session that is already open.

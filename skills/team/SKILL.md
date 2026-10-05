@@ -97,10 +97,10 @@ Run `bash .claude/tools/update-check.sh`. It decides on its own whether the user
 - **No output:** say nothing and never mention the check.
 - **Output `L R`** (the version this project runs, then the newer one): ask via AskUserQuestion, in the task's language: "Team version R is available; this project runs L. Changes: {`updateCheck.repository` from the manifest}". Options:
   1. **Continue on L** — the run proceeds.
-  2. **Park and update** — delete the marker exactly as `stop` does, leave `status.md` at phase 0, show `updateCheck.instructions` from the manifest verbatim, and stop. You never run the update yourself.
+  2. **Park and update** — first add `Team update L → R available: parked` to status.md → "Process notes", since resuming depends on that line; then delete the marker exactly as `stop` does, leave `status.md` at phase 0, show `updateCheck.instructions` from the manifest verbatim, and stop. You never run the update yourself.
   3. **Skip R** — run `bash .claude/tools/update-check.sh skip R`; the run proceeds. R is not mentioned again; a later version is.
 
-Whatever the choice, add one line to status.md → "Process notes": `Team update L → R available: continued | parked | skipped`.
+For options 1 and 3, add one line to status.md → "Process notes": `Team update L → R available: continued` or `… skipped`.
 
 ## Learnings check (every workflow except Docs, before any Brainstorm or research)
 

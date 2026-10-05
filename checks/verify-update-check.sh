@@ -146,13 +146,20 @@ fresh; printf 'checked=abc\nlatest=x.y.z\nskipped=;rm -rf /\n\377\376\n' > "$cac
 [ "$(calls)" = 1 ] || fail "corrupt cache: curl was not called"
 [ "$out" = "3.9.0 4.0.0" ] || fail "corrupt cache: printed '$out'"
 
+# 9b. a cache that cannot be written: the answer is still printed, and
+#     nothing reaches stderr
+fresh; mkdir "$cache.tmp"; remote 4.0.0; run
+[ "$out" = "3.9.0 4.0.0" ] || fail "unwritable cache: printed '$out'"
+rmdir "$cache.tmp"
+
 # 10. probe ignores a fresh cache and prints the remote version alone
 remote 4.2.0; rm -f "$tmp/log/"*; run probe
 [ "$(calls)" = 1 ] || fail "probe: curl was not called"
 [ "$out" = "4.2.0" ] || fail "probe: printed '$out'"
 
 # 11. a source that is not https: nothing fetched
-sed -i 's#https://example.invalid#http://example.invalid#' "$tmp/team/team-manifest.json"
+sed 's#https://example.invalid#http://example.invalid#' "$tmp/team/team-manifest.json" > "$tmp/m.json" \
+  && mv "$tmp/m.json" "$tmp/team/team-manifest.json"
 fresh; remote 4.0.0; run; run probe
 [ "$(calls)" = 0 ] || fail "http source: curl was called"
 
