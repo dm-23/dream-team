@@ -23,7 +23,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
 - A Reviewer report's `Team issues` line is copied into status.md → "Process notes" and named in the final report to the user. It never goes into LEARNINGS: the inbox is about the project, not the team.
-- Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch: task lines when the plan is approved, Reviewer lines after each review. The final report names each of them, or says there are none. A verdict `approved — N unverified` or `fixed — N unverified` is an approval: it does not start the rework loop and does not count as rework.
+- Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch, each item once — a rework pass or the final review that reports it again adds nothing: task lines when the plan is approved, Reviewer lines after each review. The final report names each of them, or says there are none. A verdict `approved — N unverified` or `fixed — N unverified` is an approval: it does not start the rework loop and does not count as rework.
 
 ## Report requests
 
