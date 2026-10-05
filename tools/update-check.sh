@@ -94,7 +94,7 @@ interval="$(one_value "$(printf '%s\n' "$manifest" \
 case "$source" in https://?*) ;; *) exit 0 ;; esac
 
 checked="$(cache_value checked)"
-[[ $checked =~ ^[0-9]+$ ]] || checked=""
+[[ $checked =~ ^[0-9]{1,18}$ ]] || checked=""
 latest="$(cache_value latest)"
 is_version "$latest" || latest=""
 skipped="$(cache_value skipped)"

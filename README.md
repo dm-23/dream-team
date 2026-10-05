@@ -102,7 +102,7 @@ checks/                        the scripts the manifest's checks run: manifest b
                                inbox check
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
-.gitattributes                 pins LF on the hook files and the service client; a CRLF checkout breaks them
+.gitattributes                 pins LF on the hook files and the clients under tools/; a CRLF checkout breaks them
 ```
 
 ## The seven roles

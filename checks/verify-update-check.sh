@@ -146,6 +146,11 @@ fresh; printf 'checked=abc\nlatest=x.y.z\nskipped=;rm -rf /\n\377\376\n' > "$cac
 [ "$(calls)" = 1 ] || fail "corrupt cache: curl was not called"
 [ "$out" = "3.9.0 4.0.0" ] || fail "corrupt cache: printed '$out'"
 
+# 9a. a checked value too large for shell arithmetic counts as no cache
+fresh; printf 'checked=99999999999999999999999\n' > "$cache"; remote 4.0.0; run
+[ "$(calls)" = 1 ] || fail "overflowing checked: curl was not called"
+[ "$out" = "3.9.0 4.0.0" ] || fail "overflowing checked: printed '$out'"
+
 # 9b. a cache that cannot be written: the answer is still printed, and
 #     nothing reaches stderr
 fresh; mkdir "$cache.tmp"; remote 4.0.0; run
