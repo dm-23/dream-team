@@ -37,7 +37,7 @@ Additionally, always:
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring.
 
-A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5 records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
+A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5 records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
 
 ## Step 2: Classify every finding
 
@@ -89,7 +89,7 @@ For the final review also append a "## Final review" section to `plans/detailed-
 | Class | Test | Outcome |
 |-------|------|---------|
 | `rule` | a constraint later work must obey, checkable by reading a diff or running a `TOOLCHAIN.md` command | an entry carrying `[PROMOTE] <knowledge file> — <the rule, one imperative sentence>` |
-| `fact` | something about this project that a knowledge file gets wrong or does not say, checked as below | an entry carrying `[STALE-CHECK] <knowledge file> — <evidence>; actually <claim> (<repo path>)`, evidence as below |
+| `fact` | something about this project that a knowledge file gets wrong or does not say, checked as below | an entry carrying `[STALE-CHECK] <knowledge file> — <evidence>; actually <claim> (<repo path or environment>)`, evidence as below |
 | `trap` | non-obvious and reusable, not yet expressible as a rule: an agent working in this area would likely repeat the mistake without it | a plain entry |
 | `team` | a defect of the team itself — a role, a permission, a handoff, a subagent's report | no entry; list it under `Team issues` in the report |
 | `summary` | what was done, what passed, what the batch contained | no entry; the report already holds it |
@@ -100,11 +100,11 @@ A knowledge file that got in your own way is `fact`, not `team`. That covers a c
 
 **Before writing a `fact`**, check it in three steps:
 
-1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it, or confirm with Grep that the file says nothing about the subject.
-2. Open the repository path that shows the true state.
+1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it, or confirm with Grep over the file and its topic directory that it says nothing about the subject. The mark names the file from `knowledge.required`, even when the quote comes from one of its topics.
+2. Open the repository path that shows the true state. When the truth is a property of this machine or your environment rather than of a file — a forbidden path, a missing tool — record what you observed instead.
 3. Check where the wrong claim came from. A claim seen only in exploration notes, a task file or a subagent's report is not a knowledge-file claim. If the knowledge file is right, there is no `fact`: the research handed on a wrong claim, and that goes under `Team issues`. If the knowledge file is silent and the fact is worth having, it is still a `fact`, written as `says nothing about`. Both can hold at once.
 
-The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote>"; actually <claim> (<repo path>)`, or `[STALE-CHECK] <knowledge file> — says nothing about <subject>; actually <claim> (<repo path>)`. `/generate-knowledge` looks for the quote; a mark without one costs a search, and one whose quote is not in the file is reported as unfounded.
+The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote>"; actually <claim> (<repo path>)`, or `[STALE-CHECK] <knowledge file> — says nothing about <subject>; actually <claim> (<repo path>)`; for a fact about the environment, `(environment: <what was observed>)` takes the place of `(<repo path>)`. `/generate-knowledge` looks for the quote; a mark without one costs a search, and one whose quote is not in the file has its evidence reported as not matching while its claim is still checked.
 
 **Look for the same lesson first.** Read `.claude/knowledge/LEARNINGS.md` whole — it is an index — and open the entry files whose rows match your *finding*, not the task: a trap surfaces in tasks that have nothing else in common with the one that recorded it. If an entry already describes it, write no second entry; append `[PROMOTE] <knowledge file> — <the rule>` to that entry file instead. A trap seen twice is a rule.
 

@@ -230,7 +230,7 @@ If missing, create it from `team-manifest.json → knowledge.persistentTemplates
 
 After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change that line's prefix to `[STALE-CHECK RESOLVED YYYY-MM-DD]` and, if the claim was true, make sure the regenerated file reflects it. This holds for a run naming files too. Everything else that touches the inbox — `[PROMOTE]` lines and removing entries — happens only in `all`, under the triage below.
 
-A mark's text names its evidence: `says "<quote>"` or `says nothing about <subject>`, then the true claim and the repository path behind it. Look for the quote first. A mark without that evidence — written before the Reviewer had to give it — or one whose quote the file does not contain is still checked against the repository the same way, and the report says its evidence did not match.
+A mark's text names its evidence: `says "<quote>"` or `says nothing about <subject>`, then the true claim and either the repository path behind it or `environment: <what was observed>`. Check the evidence while reading input 5, before this run writes anything: look for the quote in the named file and its topic directory as they stand then, because regenerating the file removes the very line a correct mark quotes. A mark without that evidence — written before the Reviewer had to give it — or one whose quote is not there is still checked against the repository the same way, and the report says its evidence did not match.
 
 ### Items promoted from learnings
 

@@ -34,7 +34,7 @@ Read by the `/team` orchestrator at preflight (index first, full entries on matc
 - **Files touched:** key paths
 - **Tags:** comma-separated keywords, at most `learningsIndexRowMaxTags` of them, each one word or one hyphenated term
 [PROMOTE] {knowledge file} — {the rule, one imperative sentence}   <- only for a rule, or a trap seen a second time
-[STALE-CHECK] {knowledge file} — says "{quote}" | says nothing about {subject}; actually {claim} ({repo path})   <- only for a fact a knowledge file gets wrong or omits, after reading both
+[STALE-CHECK] {knowledge file} — says "{quote}" | says nothing about {subject}; actually {claim} ({repo path} | environment: {what was observed})   <- only for a fact a knowledge file gets wrong or omits, after reading both
 ```
 
 Entry length limit: `learningsEntryLines` in `team-manifest.json → knowledge.budgets`. Put long narratives into `.claude-tracking/{context_id}/status.md`, not here.

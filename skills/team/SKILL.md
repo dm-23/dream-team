@@ -23,7 +23,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
 - A Reviewer report's `Team issues` line is copied into status.md → "Process notes" and named in the final report to the user. It never goes into LEARNINGS: the inbox is about the project, not the team.
-- Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch. The final report names each of them, or says there are none. A verdict `approved — N unverified` or `fixed — N unverified` is an approval: it does not start the rework loop and does not count as rework.
+- Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch: task lines when the plan is approved, Reviewer lines after each review. The final report names each of them, or says there are none. A verdict `approved — N unverified` or `fixed — N unverified` is an approval: it does not start the rework loop and does not count as rework.
 
 ## Report requests
 
@@ -223,7 +223,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
 3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
-4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses, including its split: `Acceptance Criteria` only what the diff or a TOOLCHAIN.md command confirms, everything else under `Verify by hand`) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
+4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria, verify by hand; and `tasks/task-{N}-*.md` per item (same format the Architect uses, including its split: `Acceptance Criteria` only what the diff or a TOOLCHAIN.md command confirms, everything else under `Verify by hand`) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
 6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
 7. Tester: one call for the whole change set; it triages per its own table.
