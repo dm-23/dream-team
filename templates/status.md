@@ -20,7 +20,7 @@
 - [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected})
 - [ ] 5 Implementation
 - [ ] 6 Tests (Tester: {run | skipped — reason})
-- [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework})
+- [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; unverified: {N | none})
 - [ ] 8 Docs sync (PROJECT-RULES.md obligations: {done | n/a})
 - [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes})
 
@@ -33,6 +33,12 @@
 
 - {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}
 - {date} — {decision, who/what decided it}
+
+## Verify by hand
+
+Checks the team may not run — from the tasks' `Verify by hand` lines and the Reviewer's `Unverified` line. Shown to the user at every batch gate and in the final report.
+
+- {none | task or batch — what to run or look at — what to expect}
 
 ## Process notes (deviations from SKILL.md, for the next retrospective)
 
