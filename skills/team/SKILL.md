@@ -23,6 +23,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
 - A Reviewer report's `Team issues` line is copied into status.md → "Process notes" and named in the final report to the user. It never goes into LEARNINGS: the inbox is about the project, not the team.
+- Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch. The final report names each of them, or says there are none. A verdict `approved — N unverified` or `fixed — N unverified` is an approval: it does not start the rework loop and does not count as rework.
 
 ## Report requests
 
@@ -157,7 +158,7 @@ Applies only when `CAPABILITIES.md` lists `decision-routing` as available. Other
    - `{YYYY-MM-DD}	difficulty	jev={choice}	conf={confidence}	provider={provider}`
 4. **Outcome.** When the run closes as `[DONE]`, before marking it, append:
    - `{YYYY-MM-DD}	outcome	workflow={workflow the run finished as}	override={yes if the user switched the workflow, else no}	files={N}	rework={N}`
-   - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer returned `needs rework` or `manual` findings.
+   - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer returned `needs rework` or `manual` findings; an `Unverified` line alone is not rework.
    - A run that is stopped or discarded gets no outcome line.
 
 Workflow keys are the workflow names lowercased with spaces as underscores: `analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`. The only text that leaves the machine is `routing/task.txt`; never put anything but the user's own words there. `bash .claude/checks/summarize-routing.sh` turns the logs into the numbers the owner uses to decide whether the service may ever act.
@@ -222,7 +223,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
 3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
-4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
+4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria; and `tasks/task-{N}-*.md` per item (same format the Architect uses, including its split: `Acceptance Criteria` only what the diff or a TOOLCHAIN.md command confirms, everything else under `Verify by hand`) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
 6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
 7. Tester: one call for the whole change set; it triages per its own table.
@@ -251,7 +252,7 @@ If Option 1 ("Approve and PAUSE") is selected:
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
 1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer.
-2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. Ask via AskUserQuestion:
+2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. If status.md → "Verify by hand" holds items for this batch, list them in the question text before the options. Ask via AskUserQuestion:
    - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
    - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start the next batch in a fresh session.
    - **Option 3 (Custom):** Wait for user instructions.
