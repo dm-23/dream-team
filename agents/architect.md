@@ -79,8 +79,10 @@ task-001-name.md, ...
 **Insertion Points:** `Symbol` in `path` (~line N) — what to add or change, one line each; or the single line `not established — targeted research required`
 
 **Acceptance Criteria:**
-- [ ] testable criterion
+- [ ] criterion checkable by reading the diff or by a command TOOLCHAIN.md lists
 - [ ] (if the task adds/changes an interface, route, schema or configuration) documentation obligation from PROJECT-RULES.md satisfied: [which]
+
+**Verify by hand:** what the user runs or looks at, and what they should see — one line each; or `none`
 
 **Dependencies:** task numbers or "none"
 
@@ -92,6 +94,8 @@ task-001-name.md, ...
 ```
 
 Fill `Insertion Points` from `## Repository Analysis & Batch Suggestions` wherever the wide pass already located the symbol and the place. Write `not established — targeted research required` only where it genuinely did not: that line is what makes the orchestrator spend a research pass on the task, and a guess written in its place sends a Developer at the wrong symbol with no one left to catch it.
+
+The Reviewer runs only what `TOOLCHAIN.md` lists, so a criterion is one it can confirm by reading the diff or by one of those commands. A check that needs anything else — a live database, a running service, fault injection, a deployed environment, a manual click-through — goes under `Verify by hand`, never under `Acceptance Criteria`. The orchestrator hands those lines to the user; written as a criterion, the same check either stalls the Reviewer or tempts it to run what it may not.
 
 ## Task Granularity
 
@@ -114,6 +118,7 @@ Never reach for tools outside your own list. If the design turns on external doc
 
 - No production code; no files outside `.claude-tracking/{context_id}/`.
 - Every task has `RecommendedBatch`, `Files` and `Insertion Points`.
+- Every `Acceptance Criteria` item is checkable from the diff or a TOOLCHAIN.md command; every other check is a `Verify by hand` line.
 - Cite existing paths for every pattern; never invent patterns.
 - `## Simplicity Justification` and `## Documentation Obligations` are mandatory.
 - Zero TODOs in the plan.
@@ -123,3 +128,4 @@ Never reach for tools outside your own list. If the design turns on external doc
 - "An interface now will help later" → only when a second implementation exists.
 - "This decision is too small to justify" → the section is mandatory at every size.
 - "Research probably missed something but the picture is clear" → halt and request the missing research instead.
+- "A test against the live database is still a testable criterion" → testable by whom: the Reviewer runs only TOOLCHAIN.md, so it is `Verify by hand`.
