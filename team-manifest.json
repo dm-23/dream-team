@@ -276,6 +276,18 @@
       "neverUseFor": "Anything security-relevant, any decision that needs the code, review verdicts, Brainstorm quorum, skipping or softening a gate, and sending anything beyond dataSent."
     }
   ],
+  "updateCheck": {
+    "_comment": "Optional, off by default. /team-setup fix asks and records update-check=granted|declined {date} in .claude-tracking/.service-consent; the client sends nothing without a granted line. /team runs the client once at the start of a new run; it asks source at most once per intervalHours and caches the answer in .claude-tracking/.update-check. The team never updates itself: instructions is shown to the user verbatim.",
+    "script": "tools/update-check.sh",
+    "source": "https://raw.githubusercontent.com/dm-23/dream-team/main/team-manifest.json",
+    "repository": "https://github.com/dm-23/dream-team",
+    "intervalHours": 24,
+    "consentKey": "update-check",
+    "default": "off",
+    "dataSent": "One HTTPS GET of a public file. No task text, code or paths; GitHub sees the machine's IP address and the time of the request.",
+    "recipients": "GitHub",
+    "instructions": "From the project root, in bash: git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team — then reopen the session, run /team-setup check, and run /team resume to continue the parked run."
+  },
   "checks": {
     "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
@@ -284,6 +296,7 @@
     "roleConsistency": "bash checks/verify-role-consistency.sh",
     "textEncoding": "bash checks/verify-text-encoding.sh",
     "jevClient": "bash checks/verify-jev-decide.sh",
+    "updateCheckClient": "bash checks/verify-update-check.sh",
     "routingSummary": "bash checks/verify-routing-summary.sh",
     "routingSummaryReport": "bash .claude/checks/summarize-routing.sh — run from the project root; prints the decision-routing shadow numbers from every run's routing.log",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
