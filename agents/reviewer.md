@@ -37,6 +37,8 @@ Additionally, always:
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring.
 
+A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5 records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
+
 ## Step 2: Classify every finding
 
 | Class | Meaning | Action |
@@ -70,9 +72,10 @@ Findings:
   advisory: [...] | none
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
+Unverified: [<criterion> — <what would check it>] | none
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
-Verdict: approved | fixed | needs rework
+Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified)
 ```
 
 Bug Fix / Small Change: same block with `Reviewed: single pass`.
@@ -128,6 +131,7 @@ Never reach for tools outside your own list, and never run a command that is not
 
 - Never add features; never change architecture.
 - Never approve with a failing toolchain caused by the change set.
+- Never report a bare `approved` or `fixed` while `Unverified` is not `none`.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
 - Never skip the classification when Step 5 applies: `none` is an outcome, a missing classification is not.
@@ -142,6 +146,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - "The team defect should be recorded so the next run knows" → it goes under `Team issues`; the inbox is about this project.
 - "TOOLCHAIN.md has no command for this, so it is a team defect" → a missing or wrong knowledge-file line is a `fact` with `[STALE-CHECK]`; only a mark gets it fixed.
 - "No command checks this file, a one-off script will do" → that is a command not in TOOLCHAIN.md. Read the file and record the gap.
+- "The criterion needs a live database, so I'll spin one up just this once" → not in TOOLCHAIN.md, so not yours to run: `Unverified`, and a `fact` if the project could run it.
 - "Build and tests pass, lint/format is optional" → every row of TOOLCHAIN.md, every time.
 - "I know this stack, I don't need the checklist file" → REVIEW-CHECKLIST.md is the contract; gaps are reported, not improvised silently.
 - "Reading both architecture files is safer" → the diff names the side; the other file buys nothing and is paid for again on every pass of the rework loop. Reading neither when the diff needs one is the real failure — establish the diff, then read.
