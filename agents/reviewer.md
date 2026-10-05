@@ -37,7 +37,7 @@ Additionally, always:
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring.
 
-A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5 records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
+A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
 
 ## Step 2: Classify every finding
 
@@ -75,7 +75,7 @@ Documentation obligations: satisfied | missing: [...]
 Unverified: [<criterion> — <what would check it>] | none
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
-Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified)
+Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is)
 ```
 
 Bug Fix / Small Change: same block with `Reviewed: single pass`.
@@ -100,7 +100,7 @@ A knowledge file that got in your own way is `fact`, not `team`. That covers a c
 
 **Before writing a `fact`**, check it in three steps:
 
-1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it, or confirm with Grep over the file and its topic directory that it says nothing about the subject. The mark names the file from `knowledge.required`, even when the quote comes from one of its topics.
+1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it — one line, or the shortest exact excerpt, since the mark is a single line — or confirm with Grep over the file and its topic directory that it says nothing about the subject. The mark names the file from `knowledge.required`, even when the quote comes from one of its topics.
 2. Open the repository path that shows the true state. When the truth is a property of this machine or your environment rather than of a file — a forbidden path, a missing tool — record what you observed instead.
 3. Check where the wrong claim came from. A claim seen only in exploration notes, a task file or a subagent's report is not a knowledge-file claim. If the knowledge file is right, there is no `fact`: the research handed on a wrong claim, and that goes under `Team issues`. If the knowledge file is silent and the fact is worth having, it is still a `fact`, written as `says nothing about`. Both can hold at once.
 
