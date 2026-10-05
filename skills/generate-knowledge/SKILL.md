@@ -230,6 +230,8 @@ If missing, create it from `team-manifest.json → knowledge.persistentTemplates
 
 After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change that line's prefix to `[STALE-CHECK RESOLVED YYYY-MM-DD]` and, if the claim was true, make sure the regenerated file reflects it. This holds for a run naming files too. Everything else that touches the inbox — `[PROMOTE]` lines and removing entries — happens only in `all`, under the triage below.
 
+A mark's text names its evidence: `says "<quote>"` or `says nothing about <subject>`, then the true claim and the repository path behind it. Look for the quote first. A mark without that evidence — written before the Reviewer had to give it — or one whose quote the file does not contain is still checked against the repository the same way, and the report says its evidence did not match.
+
 ### Items promoted from learnings
 
 A rule promoted from the inbox lives only in a generated file; its entry is gone. So when regenerating any file, carry over every item that ends `— source: learnings <date> <title>` — searching all of `.claude/knowledge/` recursively, topic directories included, because a `subset` file keeps its items in topics its index only names: keep it, re-verify it against the repository, and keep the suffix. An item the repository now contradicts or no longer needs is listed in the report and removed only with the user's consent — asked with the triage question when `all` runs, on its own otherwise. Its source is a real run's finding, recorded by the Reviewer and accepted by the user, which is why it is the one exception to extracting only what the sources say. It counts toward its file's budget like any other line.

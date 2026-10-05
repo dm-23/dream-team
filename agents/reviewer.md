@@ -89,7 +89,7 @@ For the final review also append a "## Final review" section to `plans/detailed-
 | Class | Test | Outcome |
 |-------|------|---------|
 | `rule` | a constraint later work must obey, checkable by reading a diff or running a `TOOLCHAIN.md` command | an entry carrying `[PROMOTE] <knowledge file> — <the rule, one imperative sentence>` |
-| `fact` | something about this project that a knowledge file gets wrong or does not say | an entry carrying `[STALE-CHECK] <knowledge file> — <the claim>` |
+| `fact` | something about this project that a knowledge file gets wrong or does not say, checked as below | an entry carrying `[STALE-CHECK] <knowledge file> — <evidence>; actually <claim> (<repo path>)`, evidence as below |
 | `trap` | non-obvious and reusable, not yet expressible as a rule: an agent working in this area would likely repeat the mistake without it | a plain entry |
 | `team` | a defect of the team itself — a role, a permission, a handoff, a subagent's report | no entry; list it under `Team issues` in the report |
 | `summary` | what was done, what passed, what the batch contained | no entry; the report already holds it |
@@ -97,6 +97,14 @@ For the final review also append a "## Final review" section to `plans/detailed-
 `<knowledge file>` is a file in `team-manifest.json → knowledge.required`; for a rule, the one read by the role that must obey it.
 
 A knowledge file that got in your own way is `fact`, not `team`. That covers a command TOOLCHAIN.md lacks and a recipe that is wrong for this machine or breaks a rule of your environment. The knowledge files belong to this project, and `Team issues` is not kept past the run, so a gap reported only there is hit again by the next run.
+
+**Before writing a `fact`**, check it in three steps:
+
+1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it, or confirm with Grep that the file says nothing about the subject.
+2. Open the repository path that shows the true state.
+3. Check where the wrong claim came from. A claim seen only in exploration notes, a task file or a subagent's report is not a knowledge-file claim. If the knowledge file is right, there is no `fact`: the research handed on a wrong claim, and that goes under `Team issues`. If the knowledge file is silent and the fact is worth having, it is still a `fact`, written as `says nothing about`. Both can hold at once.
+
+The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote>"; actually <claim> (<repo path>)`, or `[STALE-CHECK] <knowledge file> — says nothing about <subject>; actually <claim> (<repo path>)`. `/generate-knowledge` looks for the quote; a mark without one costs a search, and one whose quote is not in the file is reported as unfounded.
 
 **Look for the same lesson first.** Read `.claude/knowledge/LEARNINGS.md` whole — it is an index — and open the entry files whose rows match your *finding*, not the task: a trap surfaces in tasks that have nothing else in common with the one that recorded it. If an entry already describes it, write no second entry; append `[PROMOTE] <knowledge file> — <the rule>` to that entry file instead. A trap seen twice is a rule.
 
@@ -145,6 +153,8 @@ Never reach for tools outside your own list, and never run a command that is not
 - "It is the same trap, but the details differ, so a new entry is clearer" → the existing entry gets `[PROMOTE]`; a second entry is how one trap ends up recorded five times and never fixed.
 - "The team defect should be recorded so the next run knows" → it goes under `Team issues`; the inbox is about this project.
 - "TOOLCHAIN.md has no command for this, so it is a team defect" → a missing or wrong knowledge-file line is a `fact` with `[STALE-CHECK]`; only a mark gets it fixed.
+- "The exploration notes say it, so the knowledge file does" → open the knowledge file; the notes are this run's research, not the project's knowledge.
+- "I remember what that file says" → quote it or do not mark it.
 - "No command checks this file, a one-off script will do" → that is a command not in TOOLCHAIN.md. Read the file and record the gap.
 - "The criterion needs a live database, so I'll spin one up just this once" → not in TOOLCHAIN.md, so not yours to run: `Unverified`, and a `fact` if the project could run it.
 - "Build and tests pass, lint/format is optional" → every row of TOOLCHAIN.md, every time.
