@@ -69,7 +69,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 2. If `LEARNINGS.md` is missing, create it from `knowledge.persistentTemplates`.
 3. Read `TOOLCHAIN.md → Missing on this machine`. If it lists tools, warn the user once (they may continue).
 3b. Read `CAPABILITIES.md` if it exists (see "Optional capabilities"). Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
-4. Resume check: read the marker at `hooks.marker` if it exists, and list `.claude-tracking/*/status.md` whose first line does not start with `[DONE]`. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase.
+4. Resume check: read the marker at `hooks.marker` if it exists, and list `.claude-tracking/*/status.md` whose first line does not start with `[DONE]`. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase. If its "Process notes" carry `Team update … parked` and no phase after 0 is checked, first re-take `Baseline` (`git rev-parse --short HEAD`, `git status --porcelain`) and rebuild `status.md` from the current template, carrying over the task, language, workflow, context id, `Started`, Decisions log and Process notes: the update changed the team's own files under `.claude/`, and a baseline taken before it would put them in the run's diff.
 
 ## Step 0: Workflow selection and context
 
@@ -86,7 +86,21 @@ Detect from the task (any language): analysis verbs → Analyze; "update the rea
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), and the service script under "Decision routing (shadow mode)" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
+Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), the service script under "Decision routing (shadow mode)" and the client under "Update check" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then run the update check.
+
+## Update check (new runs only)
+
+Run it once, in Step 0 of a new run, and never again inside that run. Skip it entirely for `stop`, `status` and `resume`, for a run continued through the marker or the injected `<TEAM-MODE-ACTIVE>` block, and when the user chose to resume an open run in Step -1.
+
+Run `bash .claude/tools/update-check.sh`. It decides on its own whether the user agreed to the check and whether it is due, and it never asks the network more than once a day.
+
+- **No output:** say nothing and never mention the check.
+- **Output `L R`** (the version this project runs, then the newer one): ask via AskUserQuestion, in the task's language: "Team version R is available; this project runs L. Changes: {`updateCheck.repository` from the manifest}". Options:
+  1. **Continue on L** — the run proceeds.
+  2. **Park and update** — first add `Team update L → R available: parked` to status.md → "Process notes", since resuming depends on that line; then delete the marker exactly as `stop` does, leave `status.md` at phase 0, show `updateCheck.instructions` from the manifest verbatim, and stop. You never run the update yourself.
+  3. **Skip R** — run `bash .claude/tools/update-check.sh skip R`; the run proceeds. R is not mentioned again; a later version is.
+
+For options 1 and 3, add one line to status.md → "Process notes": `Team update L → R available: continued` or `… skipped`.
 
 ## Learnings check (every workflow except Docs, before any Brainstorm or research)
 

@@ -33,7 +33,7 @@ Open Claude Code in the project and run three commands in order.
 
 | Step | Command | What it does |
 |------|---------|--------------|
-| 1 | `/team-setup fix` | Checks the install, hides generated files from version control, wires the sticky-mode hook, and asks about each optional capability separately before installing anything |
+| 1 | `/team-setup fix` | Checks the install, hides generated files from version control, wires the sticky-mode hook, asks about each optional capability separately before installing anything, and asks whether to check for new team versions |
 | 2 | `/generate-knowledge` | Explores your repository and writes the ten knowledge files the team reads |
 | 3 | `/team <task>` | Runs the workflow |
 
@@ -95,14 +95,14 @@ agents/                        seven role prompts
 skills/                        three commands
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
-tools/                         the client for the optional decision-routing service
+tools/                         the clients for the optional decision-routing service and update check
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
                                workflow consistency, text encoding, the integrity check
                                `/generate-knowledge fix` must pass, and the learnings
                                inbox check
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
-.gitattributes                 pins LF on the hook files and the service client; a CRLF checkout breaks them
+.gitattributes                 pins LF on the hook files and the clients under tools/; a CRLF checkout breaks them
 ```
 
 ## The seven roles
@@ -125,7 +125,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm and Architect opus; Developer, Reviewer and DocWriter sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
-**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer and Reviewer on sonnet. Change Set and Full Feature tasks go by their `Complexity`. The Architect and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block, a tier is misspelt, or an agent file pins a model.
+**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer and Reviewer on sonnet. Change Set and Full Feature tasks follow their `Complexity`. The Architect and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block, a tier is misspelt, or an agent file pins a model.
 
 ## The six workflows
 
@@ -246,6 +246,8 @@ Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `
 
 **Services.** The `services` array and `servicePolicy` declare outside APIs the orchestrator may call; see "Services" above.
 
+**Update check.** The `updateCheck` block names the client, where the newest version number is read from, how often, what is sent and to whom, and the update instructions `/team` shows; see "Updating the team".
+
 ## Neutrality check
 
 The manifest carries a search pattern that must produce no output when run from the team root. It fails if any role prompt, command or this file names a language, a framework, a tool or a build command. Stack knowledge belongs in the cards and in generated knowledge, nowhere else. `/team-setup` runs this check and reports a hit as a defect in the team, not in your project.
@@ -266,6 +268,18 @@ cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team
 A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
 
 Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
+
+### Update check
+
+The team can tell you when a newer version exists. It is off until you turn it on: `/team-setup fix` asks once, says what is sent, and records your answer in `.claude-tracking/.service-consent`. What is sent is one HTTPS request for this repository's public `team-manifest.json` on GitHub; no task text, code or paths leave the machine, and GitHub sees your IP address and the time.
+
+When it is on, `/team` looks up the newest version at most once a day. While a newer one is known, it asks at the start of every new run. You choose:
+
+- **Continue** on the version you have.
+- **Park and update** — the run is left open at its first phase and the team shows the update command above. Run it, reopen the session so the new prompts are loaded, run `/team-setup check`, then `/team resume`. The team never updates itself, and an update cannot take effect in the session that is already open.
+- **Skip this version** — you are not asked about it again; you are asked about the next one.
+
+It never runs on `/team resume`, `status` or `stop`, or in the middle of a run. Without bash, without a network or without an answer from GitHub it stays silent. `/team-setup check` shows whether it is on and whether you are up to date.
 
 ## Troubleshooting
 
