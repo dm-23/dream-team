@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "3.7.0",
+    "version": "3.8.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
