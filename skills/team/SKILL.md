@@ -19,6 +19,8 @@ Answer in the language the task is written in. Record that language in status.md
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
 - A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
+- Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you go on as if it were.
+- When a review finding or a user decision changes what `detailed-plan.md`, `change-set.md` or a task file says, correct that file in the same step and log it in "Decisions log". Later batches and resumed sessions work from those files, not from the review.
 - Update `.claude-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
@@ -265,7 +267,9 @@ If Option 1 ("Approve and PAUSE") is selected:
 
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
-1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer.
+1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer. A task whose files are all documentation goes to the DocWriter instead of a Developer; the Batching Strategy has already placed it after the code it describes, so the DocWriter checks its claims against that code.
+   Rework: if the Reviewer returns `manual` findings or `needs rework`, loop as in Bug Fix step 8 inside this batch. Any change made after the batch review — a finding, a user decision — goes back through the Reviewer before the gate; the final review never stands in for it.
+   Batches the Batching Strategy marks parallel-safe with each other may run as one wave; the gate below then comes once, after every batch of the wave is approved. Record the wave in "Process notes".
 2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. If status.md → "Verify by hand" holds items for this batch, list them in the question text before the options. Ask via AskUserQuestion:
    - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
    - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start the next batch in a fresh session.
@@ -333,6 +337,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 
 To keep subagent token usage minimal and context lean:
 - **Strictly Isolated Context:** Never pass chat history, prior subagent conversations, or raw research logs in the handoff envelope.
+- **Full Paths:** Every path in a handoff is written from the repository root — `.claude-tracking/{context_id}/plans/draft-plan.md`, never `plans/draft-plan.md`. The shorthand in this skill is for you; the subagent starts at the repository root and does not know the tracking directory.
 - **File Reference Over Text:** Pass file paths instead of file contents (e.g., tell Developer "Read `.claude-tracking/{context_id}/tasks/task-001.md`" rather than embedding the entire task text into the prompt).
 - **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
 - **For Developers:** Include ONLY:

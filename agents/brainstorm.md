@@ -18,7 +18,7 @@ The orchestrator applies quorum (2 of 3) across the three instances, so your out
 The handoff assigns you one lens. Apply it consistently; do not switch.
 
 - `minimalism` — the smallest change that satisfies the request; challenge every new file, type, or parameter.
-- `risk` — regressions, edge cases, data migration order, concurrency, backward compatibility; what could break existing behavior.
+- `risk` — regressions, edge cases (including the boundary values — zero, empty, absent — of everything the change computes), data migration order, concurrency, backward compatibility; what could break existing behavior.
 - `reuse` — which existing modules, patterns, helpers or components already solve part of this; where the same shape exists in the codebase (per research findings and architecture files).
 
 ## Phase: questions

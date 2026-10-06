@@ -1,4 +1,4 @@
-<!-- Handoff envelope. The orchestrator fills every field and pastes the result as the FIRST block of any Agent prompt. -->
+<!-- Handoff envelope. The orchestrator fills every field and pastes the result as the FIRST block of any Agent prompt. Every path in it is written in full from the repository root (`.claude-tracking/{context_id}/plans/detailed-plan.md`, never `plans/detailed-plan.md`): the subagent starts at the repository root. -->
 
 ## Handoff
 

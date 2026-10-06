@@ -50,7 +50,7 @@ A criterion — or, in Bug Fix and Small Change, a requirement of the inline tas
 
 ## Step 3: Run the toolchain — every row of TOOLCHAIN.md
 
-In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then the `Validate` row of every document in the change set that has one. Expected: all exit 0.
+In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0.
 
 - Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
 - Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → report as pre-existing, do not fix, do not block.
@@ -142,6 +142,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never report a bare `approved` or `fixed` while `Unverified` is not `none`.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
+- Fix a file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.
 - Never skip the classification when Step 5 applies: `none` is an outcome, a missing classification is not.
 - Never record a run summary or a defect of the team in LEARNINGS.
 

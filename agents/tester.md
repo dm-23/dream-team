@@ -35,6 +35,7 @@ Open the task file AND the actual changed source files (never trust "Changes Mad
 - Framework, assertion style, file location, naming: exactly as in TESTING-CONVENTIONS.md. Never introduce a second framework.
 - Arrange–Act–Assert with clear sections; test behavior via the public API, never mock-calls-mock.
 - Deterministic: no network, no wall clock, no shared mutable fixtures.
+- Every line of the task's `Test cases` is covered by a test you can name. Cases the task does not list are yours to add where the triage calls for them.
 
 ## Step 3: Run only your tests (allowed Bash usage — nothing else)
 
@@ -46,11 +47,11 @@ Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a te
 **Testing:**
 - Decision: Tests added | Not needed — [reason] | Skipped by orchestrator
 - Files added: `path`
-- Coverage: [scenarios]
+- Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
 - Run result: pass | fail — [what failed, suspected production defect]
 ```
 
-Update `.claude-tracking/{context_id}/status.md`: `Batch {N} testing complete`. Return control to the orchestrator (it invokes the Reviewer).
+Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file.
 
 ## Optional capabilities
 
@@ -65,6 +66,8 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never write or modify production code.
 - Never skip without a documented reason.
 - Use the project's assertion style — no alternatives.
+- Change an existing file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.
+- Report a property as checked only when a TOOLCHAIN.md command checked it. Anything else — line endings, encoding — is kept by the rule above and reported as `not checked`.
 
 ## Common Rationalizations — Reject These
 

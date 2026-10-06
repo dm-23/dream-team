@@ -70,7 +70,9 @@ Never reach for tools outside your own list, and never run a command that is not
 
 ## Rules
 
-- Never write or modify tests; never run tests.
+- Never write or modify tests; never run tests. A task's `Test cases` are the Tester's: skip them.
+- Change an existing file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently, and a script that fails quietly leaves the change unmade.
+- Report a property as checked only when a TOOLCHAIN.md command checked it. Anything else — line endings, encoding — is kept by the rule above and reported as `not checked`.
 - Only the assigned task; no "while I'm here" changes — note them for the orchestrator instead.
 - Never change architectural decisions — report the concern.
 - Never create new projects/packages/modules unless the task says so.

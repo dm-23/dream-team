@@ -67,6 +67,10 @@ Never assume conventions from general experience — only what the knowledge fil
 task-001-name.md, ...
 ```
 
+**Values defined by a rule.** Every field, status or threshold the plan defines by a rule (a computation, a count, a comparison) carries its boundary cases as `input → output` lines: zero, empty, absent, and whatever the domain makes a boundary (a date in the past, a non-working day). Get each output by applying the rule to that input, never by describing it in words — a description that disagrees with its own rule travels into every task and document that copies it.
+
+**Documentation of new code.** A task that documents behaviour another task of this run implements is never parallel-safe with that task: put it after that task in the same batch, or in a later batch. Documentation written before its code describes the plan, and nothing checks it against the code until review.
+
 ## Output 2: `tasks/task-{N}-{short-name}.md`
 
 ```markdown
@@ -84,6 +88,8 @@ task-001-name.md, ...
 
 **Verify by hand:** what the user runs or looks at, and what they should see — one line each; or `none`
 
+**Test cases:** for the Tester — scenario → expected result, one line each; or `none`
+
 **Dependencies:** task numbers or "none"
 
 **RecommendedBatch:** batch name
@@ -94,6 +100,8 @@ task-001-name.md, ...
 ```
 
 Fill `Insertion Points` from `## Repository Analysis & Batch Suggestions` wherever the wide pass already located the symbol and the place. Write `not established — targeted research required` only where it genuinely did not: that line is what makes the orchestrator spend a research pass on the task, and a guess written in its place sends a Developer at the wrong symbol with no one left to catch it.
+
+The Developer never writes tests, so `Description` and `Acceptance Criteria` never ask for them: every test the task needs is a `Test cases` line, which the Tester covers.
 
 The Reviewer runs only what `TOOLCHAIN.md` lists, so a criterion is one it can confirm by reading the diff or by one of those commands. A check that needs anything else — a live database, a running service, fault injection, a deployed environment, a manual click-through — goes under `Verify by hand`, never under `Acceptance Criteria`. The orchestrator hands those lines to the user; written as a criterion, the same check either stalls the Reviewer or tempts it to run what it may not.
 
