@@ -1,0 +1,2 @@
+   - **Detect.**
+   - **Detect.** For each entry, decide whether its capability is actually present: check the tools available in this session against the entry's `detect` description. Report a capability as available only when you can see it, not because a server of that name appears in a configuration file.

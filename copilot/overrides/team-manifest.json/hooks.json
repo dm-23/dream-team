@@ -1,0 +1,12 @@
+  "hooks": {
+    "dir": ".github/dream-team/hooks",
+    "config": ".github/hooks/dream-team.json",
+    "script": "session-start",
+    "windowsLauncher": "session-start.ps1",
+    "events": [
+      "sessionStart"
+    ],
+    "marker": ".dream-team-tracking/.team-mode",
+    "purpose": "Sticky team mode: when a session starts while the marker file exists, the hook tells the session which run is open, so a run survives a restart. Copilot lets no hook add context on every prompt, so a model switch or a compaction inside one session is not re-announced; /team resume picks the run up.",
+    "requires": "a bash shell (Git Bash or WSL on Windows) and, in VS Code, the chat.useHooks setting; without them the hook does nothing and the reminder is simply unavailable"
+  }

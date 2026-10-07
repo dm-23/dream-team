@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "bash .github/dream-team/hooks/session-start",
+        "powershell": "powershell -NoProfile -ExecutionPolicy Bypass -File .github/dream-team/hooks/session-start.ps1",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Dream Team — sessionStart hook for GitHub Copilot (VS Code and the CLI).
+#
+# While the marker file .dream-team-tracking/.team-mode exists, a new session
+# is told that a run is open and how to continue it. Copilot lets no hook add
+# context on every prompt, so this runs once per session: inside a session the
+# orchestrator keeps the run itself, and /team resume picks it up after a
+# compaction.
+#
+# Output: one JSON object carrying the same text twice -- additionalContext
+# for the Copilot CLI, hookSpecificOutput.additionalContext for VS Code. Exit
+# 0 with no output = nothing to say. The hook must never break a session, so
+# every failure path is silent. The working directory is the repository root:
+# the hook entry sets cwd to ".".
+
+set -uo pipefail
+
+[ -t 0 ] || cat >/dev/null 2>&1 || true
+
+MARKER="$PWD/.dream-team-tracking/.team-mode"
+[ -f "$MARKER" ] || exit 0
+
+read_field() {
+  sed -n "s/^$1=//p" "$MARKER" 2>/dev/null | head -1 | tr -d '\r'
+}
+
+context_id="$(read_field context_id)"
+workflow="$(read_field workflow)"
+phase="$(read_field phase)"
+
+[ -n "$context_id" ] || exit 0
+[ -n "$workflow" ] || workflow="unknown"
+[ -n "$phase" ] || phase="unknown"
+
+escape_for_json() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+context_id="$(escape_for_json "$context_id")"
+workflow="$(escape_for_json "$workflow")"
+phase="$(escape_for_json "$phase")"
+
+context="<TEAM-MODE-ACTIVE>\n"
+context="${context}Dream Team mode is ON for this project. Run: ${context_id}. Workflow: ${workflow}. Last recorded phase: ${phase}.\n"
+context="${context}Treat the user's messages in this session as input to that run, not as standalone requests.\n"
+context="${context}1. Read .github/skills/team/SKILL.md and act as the orchestrator it describes, then read .dream-team-tracking/${context_id}/status.md before answering.\n"
+context="${context}2. Continue the existing run from its first unchecked phase. Never restart it and never open a second run in parallel.\n"
+context="${context}3. Stay in the orchestrator role: no production code, no tests, no build or test commands of your own — those belong to the Developer, Tester and Reviewer subagents.\n"
+context="${context}Handle directly, without the workflow: a slash command, a request to stop or pause team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
+context="${context}</TEAM-MODE-ACTIVE>"
+
+printf '{"additionalContext":"%s","hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "$context" "$context"

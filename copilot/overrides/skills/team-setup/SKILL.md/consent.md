@@ -1,0 +1,2 @@
+   - **Consent.**
+   - **Setup.** Every entry is optional, and this skill sets none of them up, in either mode. For each missing capability, say what it would let the team do and show the entry's `installVscode` and `installCli` lines verbatim; the user decides and does it. Never present two entries that share a `capability` as both needed: name one and give the other as its alternative.

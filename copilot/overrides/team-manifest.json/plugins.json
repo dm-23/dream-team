@@ -1,0 +1,42 @@
+  "plugins": [
+    {
+      "capability": "library-docs",
+      "name": "context7",
+      "kind": "mcp-server",
+      "installVscode": "Command Palette → MCP: Add Server → NPM Package → @upstash/context7-mcp",
+      "installCli": "In the Copilot CLI: /mcp add, name context7, type Local, command npx -y @upstash/context7-mcp",
+      "required": false,
+      "detect": "a tool whose name contains \"context7\"",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["researcher-explorer", "architect", "developer", "reviewer"],
+      "useWhen": "The task depends on a third-party library or framework and the exact current signature, option name, or version-specific behaviour is not visible in this repository. Look it up before designing or writing the call, not after it fails.",
+      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from .claude/knowledge/ and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
+    },
+    {
+      "capability": "browser-control",
+      "name": "chrome-devtools-mcp",
+      "kind": "mcp-server",
+      "installVscode": "Command Palette → MCP: Add Server → NPM Package → chrome-devtools-mcp@latest",
+      "installCli": "In the Copilot CLI: /mcp add, name chrome-devtools, type Local, command npx -y chrome-devtools-mcp@latest",
+      "required": false,
+      "detect": "a tool for navigating, inspecting or screenshotting a live browser page",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["tester", "reviewer"],
+      "useWhen": "A run changed something a person sees and the result can be observed by loading the running application: the Tester needs a check against real rendering, the Reviewer needs to confirm the change actually appears, or a diagnosis needs the real console or network behaviour.",
+      "neverUseFor": "Projects with no user interface; starting a server or opening a page without the user agreeing first; and never as a substitute for a test — a screenshot is evidence, not coverage."
+    },
+    {
+      "capability": "browser-control",
+      "name": "playwright",
+      "kind": "mcp-server",
+      "installVscode": "Command Palette → MCP: Add Server → NPM Package → @playwright/mcp@latest",
+      "installCli": "In the Copilot CLI: /mcp add, name playwright, type Local, command npx -y @playwright/mcp@latest",
+      "required": false,
+      "detect": "a tool for driving a browser through structured page data",
+      "brokeredBy": "orchestrator",
+      "usedBy": ["tester", "reviewer"],
+      "alternativeTo": "chrome-devtools-mcp",
+      "useWhen": "Same as the other browser-control entry. Install at most one of the two: two browser drivers competing for the same page waste context and produce contradictory observations.",
+      "neverUseFor": "Same exclusions as the other browser-control entry."
+    }
+  ]

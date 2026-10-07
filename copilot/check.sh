@@ -287,7 +287,120 @@ diff "$TMP/want-skill-two" "$TMP/v-out/.github/skills/demo/SKILL.md" >/dev/null 
   || fail "last list item overlay ate following text: $(diff "$TMP/want-skill-two" "$TMP/v-out/.github/skills/demo/SKILL.md" | tr '\n' ' ')"
 finish
 
-# @CASES-REAL@  (Task 2 inserts real-source cases here)
+REAL="$TMP/real-out"
+start real-build
+run_build "$REAL" "$ROOT"
+[ "$RC" = 0 ] || fail "real build exited $RC: $(head -c 2000 "$TMP/build.err")"
+(cd "$ROOT" && {
+  for f in agents/*.md; do n="${f#agents/}"; echo ".github/agents/${n%.md}.agent.md"; done
+  find skills -type f | sed 's|^|.github/|'
+  find templates -type f | sed 's|^|.github/dream-team/|'
+  for f in tools/*.sh; do echo ".github/dream-team/$f"; done
+  for c in summarize-routing.sh verify-knowledge-integrity.sh verify-learnings-inbox.sh; do
+    echo ".github/dream-team/checks/$c"
+  done
+  echo .github/dream-team/team-manifest.json
+  echo .github/dream-team/.gitignore
+  (cd copilot/files && find . -type f | sed 's|^\./|.github/|')
+} | sort) > "$TMP/real-want"
+(cd "$REAL" 2>/dev/null && find . -type f | sed 's|^\./||' | sort) > "$TMP/real-got"
+diff "$TMP/real-want" "$TMP/real-got" >/dev/null \
+  || fail "real file set differs: $(diff "$TMP/real-want" "$TMP/real-got" | tr '\n' ' ')"
+finish
+
+start real-structure
+if [ -n "$PY" ]; then
+  "$PY" - "$REAL" "$ROOT/team-manifest.json" <<'EOF' || fail "structure assertions failed"
+import glob, json, os, sys, yaml
+out, src_manifest = sys.argv[1], sys.argv[2]
+bad = []
+def front(path):
+    text = open(path, encoding="utf-8").read()
+    assert text.startswith("---\n"), path
+    return yaml.safe_load(text.split("---\n", 2)[1])
+for p in glob.glob(os.path.join(out, ".github/agents/*.agent.md")):
+    fm = front(p)
+    name = os.path.basename(p)[:-len(".agent.md")]
+    if fm.get("name") != name: bad.append(f"{p}: name {fm.get('name')!r}")
+    if not fm.get("description"): bad.append(f"{p}: no description")
+    if fm.get("user-invocable") is not False: bad.append(f"{p}: user-invocable not false")
+    if "model" in fm or "experimental" in fm: bad.append(f"{p}: model or experimental left")
+    tools = fm.get("tools")
+    if not isinstance(tools, list) or not tools or set(tools) - {"read", "search", "edit", "execute"}:
+        bad.append(f"{p}: tools {tools!r}")
+for p in glob.glob(os.path.join(out, ".github/skills/*/SKILL.md")):
+    fm = front(p)
+    if fm.get("name") != os.path.basename(os.path.dirname(p)): bad.append(f"{p}: name")
+    if not fm.get("description"): bad.append(f"{p}: no description")
+m = json.load(open(os.path.join(out, ".github/dream-team/team-manifest.json"), encoding="utf-8"))
+s = json.load(open(src_manifest, encoding="utf-8"))
+checks = {
+    "modelRouting absent": "modelRouting" not in m,
+    "version kept": m["team"]["version"] == s["team"]["version"],
+    "agents kept": m["agents"] == s["agents"],
+    "skills kept": m["skills"] == s["skills"],
+    "knowledge.dir": m["knowledge"]["dir"] == ".github/dream-team/knowledge",
+    "tracking.dir": m["tracking"]["dir"] == ".dream-team-tracking",
+    "gitExclude": m["gitExclude"] == [".github/dream-team/knowledge/", ".dream-team-tracking/"],
+    "hooks.config": m["hooks"]["config"] == ".github/hooks/dream-team.json",
+    "hooks.marker": m["hooks"]["marker"] == ".dream-team-tracking/.team-mode",
+    "plugins have both setups": all(p.get("installVscode") and p.get("installCli") for p in m["plugins"]),
+    "lint regex kept": m["checks"]["stackNeutralityLint"].startswith(
+        s["checks"]["stackNeutralityLint"].split('" agents/')[0]),
+    "only runtime checks": not {"manifestBudgets", "roleConsistency", "textEncoding", "jevClient",
+                                "updateCheckClient", "routingSummary"} & set(m["checks"]),
+}
+bad += [k for k, ok in checks.items() if not ok]
+hooks = json.load(open(os.path.join(out, ".github/hooks/dream-team.json"), encoding="utf-8"))
+if hooks.get("version") != 1 or not hooks["hooks"].get("sessionStart"): bad.append("hook config shape")
+print("\n".join(bad), file=sys.stderr)
+sys.exit(1 if bad else 0)
+EOF
+else
+  echo "skip [$CASE] no python with PyYAML" >&2
+fi
+finish
+
+start real-neutrality
+if [ -n "$PY" ]; then
+  lint="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["checks"]["stackNeutralityLint"])' \
+    "$REAL/.github/dream-team/team-manifest.json")"
+  hits="$(cd "$REAL/.github/dream-team" && eval "$lint" 2>&1)"
+  [ -z "$hits" ] || fail "neutrality lint hits in the built team: $hits"
+else
+  echo "skip [$CASE] no python" >&2
+fi
+finish
+
+start real-drift
+rm -rf "$TMP/doctored"; mkdir -p "$TMP/doctored"
+(cd "$ROOT" && tar --exclude=./.git -cf - .) | (cd "$TMP/doctored" && tar -xf -)
+sed -i 's/^## Model routing$/## Model selection/' "$TMP/doctored/skills/team/SKILL.md"
+run_build "$TMP/doctored-out" "$TMP/doctored"
+expect_build_fail "overrides/skills/team/SKILL.md/model-routing.md: anchor not found: ## Model routing"
+finish
+
+start real-hook
+HOOK="$REAL/.github/dream-team/hooks/session-start"
+hp="$TMP/hookproj"; mkdir -p "$hp"
+out="$(cd "$hp" && bash "$HOOK" < /dev/null)"; rc=$?
+[ "$rc" = 0 ] && [ -z "$out" ] || fail "no marker: exit $rc, output '$out'"
+mkdir -p "$hp/.dream-team-tracking"
+printf 'context_id=bug_fix_x_2026-10-07\nworkflow=Bug Fix\nphase=3 "quoted" \\ back\n' > "$hp/.dream-team-tracking/.team-mode"
+out="$(cd "$hp" && bash "$HOOK" < /dev/null)"
+if [ -n "$PY" ]; then
+  printf '%s' "$out" | "$PY" -c '
+import json, sys
+d = json.load(sys.stdin)
+a = d["additionalContext"]; h = d["hookSpecificOutput"]
+assert h["hookEventName"] == "SessionStart", h
+assert h["additionalContext"] == a
+assert "bug_fix_x_2026-10-07" in a and "TEAM-MODE-ACTIVE" in a and "\"quoted\"" in a
+' || fail "hook output is not the expected JSON: $out"
+else
+  case "$out" in *bug_fix_x_2026-10-07*SessionStart*) ;; *) fail "hook output: $out" ;; esac
+fi
+finish
 # @CASES-INSTALL@  (Task 3 inserts install cases here)
 
 [ "$fails" -eq 0 ] || { echo "$fails failure(s)" >&2; exit 1; }

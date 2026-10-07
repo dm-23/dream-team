@@ -1,0 +1,67 @@
+# file-glob<TAB>from<TAB>to. Applied top to bottom, after the overlays; \n and \t in from/to are a newline and a tab.
+# A rule that matches nothing in the files its glob selects fails the build: the source changed under it.
+#
+# generate-knowledge: the project's own documents keep their .claude/ paths (restored by the last rule)
+skills/generate-knowledge/SKILL.md	root `CLAUDE.md`, `README*`,	root `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `.github/instructions/`, `README*`,
+skills/generate-knowledge/SKILL.md	Sources: CLAUDE.md, README,	Sources: AGENTS.md, CLAUDE.md, .github/copilot-instructions.md, README,
+skills/generate-knowledge/SKILL.md	.claude/PROJECT.md	@KEEP-CLAUDE@PROJECT.md
+skills/generate-knowledge/SKILL.md	.claude/docs	@KEEP-CLAUDE@docs
+skills/generate-knowledge/SKILL.md	`.claude/agents/*.md`	`.github/agents/*.agent.md`
+skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS`	Arguments: the text the user typed after the command
+skills/generate-knowledge/SKILL.md	one AskUserQuestion call	one question-tool call
+#
+# orchestrator
+skills/team/SKILL.md	`.claude/agents/`	`.github/agents/`
+skills/team/SKILL.md	Task: $ARGUMENTS	Task: the text the user typed after the command
+skills/team/SKILL.md	 Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.	
+skills/team/SKILL.md	never a published Artifact.	never a page published to a hosting service.
+skills/team/SKILL.md	Never publish a report through the Artifact tool:	Never publish a report to a hosting service:
+skills/team/SKILL.md	- "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.\n	
+skills/team/SKILL.md	run in parallel on opus or above, so	run in parallel, so
+skills/team/SKILL.md	while you go on as if it were	while you carry on as if it were
+skills/team/SKILL.md	3. AskUserQuestion:	3. Ask through the question tool:
+skills/team/SKILL.md	5. AskUserQuestion:	5. Ask through the question tool:
+#
+# setup
+skills/team-setup/SKILL.md	Mode from `$ARGUMENTS`:	Mode from the text the user typed after the command:
+skills/team-setup/SKILL.md	after AskUserQuestion confirmation	after confirmation through the question tool
+skills/team-setup/SKILL.md	unavailable ones with their install commands	unavailable ones with their `installVscode` and `installCli` lines
+skills/team-setup/SKILL.md	→ re-copy the team into .claude/	→ run copilot/install.sh again from a fresh copy of the team's repository
+skills/team-setup/SKILL.md	Capabilities: available: [...] | none detected | installed this run: [...] | declined: [...]	Capabilities: available: [...] | none detected | missing, set up by the user: [...]
+skills/team-setup/SKILL.md	v{R} available → README "Updating the team"	v{R} available → updateCheck.instructions in the manifest
+skills/team-setup/SKILL.md	Sticky mode: wired via project settings | NOT wired (run fix) — bash: found|absent	Sticky mode: session hook installed | missing (run copilot/install.sh again) — bash: found|absent — VS Code: needs chat.useHooks
+skills/team-setup/SKILL.md	- Never install, enable or disable a plugin the user did not explicitly agree to in this run.	- Never install, enable or disable a capability. The user sets them up; this skill reports how.
+skills/team-setup/SKILL.md	the manifest lint, `claude plugin list/install`, a bash availability check	the manifest lint, a bash availability check
+skills/team-setup/SKILL.md	the version-control exclude file, the project settings hooks entry, the persistent knowledge files, a stale marker, `.claude-tracking/.service-consent`, and plugins the user picked may also change	the version-control exclude file, the persistent knowledge files, a stale marker and `.claude-tracking/.service-consent` may also change
+#
+# templates
+templates/status.md	- {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}\n	
+templates/handoff.md	any Agent prompt	any subagent prompt
+templates/capabilities.md	{install command from the manifest}	{installVscode} (VS Code) / {installCli} (CLI)
+templates/capabilities.md	4. Never install, enable or disable anything. Only `/team-setup` does that, and only after the user agrees to that specific plugin.	4. Never install, enable or disable anything. The user sets capabilities up; `/team-setup` only reports how.
+templates/capabilities.md	`agents/{role}.md`	`.github/agents/{role}.agent.md`
+#
+# clients: Copilot runs commands from the repository root and sets no project-dir variable
+tools/*.sh	${CLAUDE_PROJECT_DIR:-$PWD}	$PWD
+#
+# manifest
+team-manifest.json	Stack-agnostic multi-agent development team for Claude Code.	Stack-agnostic multi-agent development team for GitHub Copilot (VS Code and the Copilot CLI).
+team-manifest.json	Put the key in the env block of your user settings, ~/.claude/settings.json: \"env\": { \"{credential}\": \"<key>\" }. Claude Code passes it to every shell it starts, on every OS. A variable exported from your shell profile, or set with setx on Windows, works too. Never put it in the project's .claude/settings.json, which is committed, and never paste it into the chat. Restart Claude Code, then run /team-setup again.	Set {credential} in the environment VS Code or the Copilot CLI starts from: export it from your shell profile, or on Windows run setx {credential} \"<key>\" and open a new terminal. Never put it in a file inside the project, which may be committed, and never paste it into the chat. Restart VS Code or the CLI, then run /team-setup again.
+team-manifest.json	cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team — then reopen the session,	bash /tmp/dream-team/copilot/install.sh . && rm -rf /tmp/dream-team — then reopen VS Code or restart the Copilot CLI,
+team-manifest.json	"runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into"	"runFrom": "the team root, which is .github/dream-team/ in the project"
+team-manifest.json	 agents/*.md skills/*/SKILL.md README.md"	 ../agents/brainstorm.agent.md ../agents/researcher-explorer.agent.md ../agents/architect.agent.md ../agents/developer.agent.md ../agents/doc-writer.agent.md ../agents/tester.agent.md ../agents/reviewer.agent.md ../skills/team/SKILL.md ../skills/generate-knowledge/SKILL.md ../skills/team-setup/SKILL.md"
+team-manifest.json	    "manifestBudgets": "bash checks/verify-manifest-budgets.sh",\n	
+team-manifest.json	    "roleConsistency": "bash checks/verify-role-consistency.sh",\n	
+team-manifest.json	    "textEncoding": "bash checks/verify-text-encoding.sh",\n	
+team-manifest.json	    "jevClient": "bash checks/verify-jev-decide.sh",\n	
+team-manifest.json	    "updateCheckClient": "bash checks/verify-update-check.sh",\n	
+team-manifest.json	    "routingSummary": "bash checks/verify-routing-summary.sh",\n	
+#
+# everywhere
+*	AskUserQuestion	the question tool
+*	Agent tool	subagent tool
+*	Agent call	subagent call
+*	Claude Code	Copilot
+*	.claude-tracking	.dream-team-tracking
+*	.claude/	.github/dream-team/
+skills/generate-knowledge/SKILL.md	@KEEP-CLAUDE@	.claude/

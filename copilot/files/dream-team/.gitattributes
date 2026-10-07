@@ -1,0 +1,6 @@
+# Lands at .github/dream-team/.gitattributes. The hook and the clients are run
+# through bash, and a CRLF checkout breaks them, so pin LF on exactly those
+# files. A blanket rule would also reach the generated knowledge files.
+hooks/session-start text eol=lf
+tools/*.sh text eol=lf
+checks/*.sh text eol=lf

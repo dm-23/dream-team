@@ -1,0 +1,6 @@
+  "pluginPolicy": {
+    "consent": "Every capability in this list is optional and is set up by the user, following its installVscode or installCli line. /team-setup reports what is missing and how to set it up; /team, /team-setup and the subagents never install, enable or disable anything.",
+    "degradation": "The team must produce the same quality of work with none of these set up. A capability is an accelerator, never a prerequisite. An agent that cannot see a capability proceeds without it and never tells the user something was impossible because a capability was absent.",
+    "brokering": "Subagents run with the tool list in their own frontmatter, which does not include tools an MCP server contributes. By default the orchestrator uses a capability itself and passes the result into the handoff. A team owner who wants an agent to call a capability directly must add that server's tools (server/*) to the agent's frontmatter; /team-setup reports which agents would need that and never edits them.",
+    "verification": "Setup steps were written from the VS Code and Copilot CLI documentation in October 2026. Re-check before relying on one; /team-setup reports what is actually present rather than trusting this file."
+  }

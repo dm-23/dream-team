@@ -1,0 +1,4 @@
+# target-path-glob<TAB>exact string the residual scan ignores in that file.
+# generate-knowledge reads the project's own .claude/ documents: they are project files, not the team's.
+.github/skills/generate-knowledge/SKILL.md	.claude/PROJECT.md
+.github/skills/generate-knowledge/SKILL.md	.claude/docs
