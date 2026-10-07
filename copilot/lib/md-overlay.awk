@@ -31,6 +31,16 @@ END {
   stop = NR + 1
   for (i = start + 1; i <= NR; i++) {
     if (code[i]) continue
+    if (kind == "li" && line[i] ~ /^[ \t]*$/) {
+      # A blank line ends the item when prose that is not a continuation
+      # follows: the next non-blank line is no deeper than the anchor.
+      for (j = i + 1; j <= NR && line[j] ~ /^[ \t]*$/; j++) ;
+      if (j <= NR && !code[j]) {
+        match(line[j], /^ */)
+        if (RLENGTH <= aindent && line[j] !~ /^ *([0-9]+\.|-) / && line[j] !~ /^#+ /) { stop = i; break }
+      }
+      continue
+    }
     if (kind == "p") { if (line[i] ~ /^[ \t]*$/) { stop = i; break } ; continue }
     if (match(line[i], /^#+ /)) {
       if (kind == "li" || RLENGTH - 1 <= alevel) { stop = i; break }
@@ -41,6 +51,8 @@ END {
       if (RLENGTH <= aindent) { stop = i; break }
     }
   }
+  # Blank lines at the end of a list item stay outside the block.
+  if (kind == "li") while (stop - 1 > start && line[stop - 1] ~ /^[ \t]*$/) stop--
   n = 0
   while ((getline l < ov) > 0) { sub(/\r$/, "", l); rep[++n] = l }
   close(ov)

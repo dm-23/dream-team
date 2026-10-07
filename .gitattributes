@@ -12,3 +12,8 @@ hooks/run-hook.cmd text eol=lf
 hooks/team-mode-prompt text eol=lf
 tools/jev-decide.sh text eol=lf
 tools/update-check.sh text eol=lf
+# copilot/ builds the GitHub Copilot edition; its scripts and awk programs run
+# through bash and awk, which a CRLF checkout breaks the same way.
+copilot/*.sh text eol=lf
+copilot/lib/*.awk text eol=lf
+copilot/files/dream-team/hooks/session-start text eol=lf

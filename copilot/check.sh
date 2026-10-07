@@ -277,6 +277,16 @@ if grep -rlq $'\r' "$TMP/v-out" 2>/dev/null; then fail "CR reached the output"; 
 diff "$TMP/want-skill" "$TMP/v-out/.github/skills/demo/SKILL.md" >/dev/null || fail "CRLF skill output differs"
 finish
 
+start engine-overlay-list-item-keeps-following-prose
+variant
+printf '%s\n' '2. **Two.**' '2. **Two.** replaced' > "$TMP/v/copilot/overrides/skills/demo/SKILL.md/two.md"
+run_build "$TMP/v-out" "$TMP/v"
+[ "$RC" = 0 ] || fail "build exited $RC: $(cat "$TMP/build.err")"
+sed 's/^2\. \*\*Two\.\*\* second item$/2. **Two.** replaced/' "$TMP/want-skill" > "$TMP/want-skill-two"
+diff "$TMP/want-skill-two" "$TMP/v-out/.github/skills/demo/SKILL.md" >/dev/null \
+  || fail "last list item overlay ate following text: $(diff "$TMP/want-skill-two" "$TMP/v-out/.github/skills/demo/SKILL.md" | tr '\n' ' ')"
+finish
+
 # @CASES-REAL@  (Task 2 inserts real-source cases here)
 # @CASES-INSTALL@  (Task 3 inserts install cases here)
 
