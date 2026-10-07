@@ -402,7 +402,7 @@ else
 fi
 finish
 run_install() { bash "$INSTALL" "$@" > "$TMP/inst.out" 2> "$TMP/inst.err"; RC=$?; }
-new_project() { local p="$TMP/$1"; mkdir -p "$p" && git -C "$p" init -q && printf '%s' "$p"; }
+new_project() { local p="$TMP/$1"; mkdir -p "$p" && (cd "$p" && git init -q) && printf '%s' "$p"; }
 team_state() { # every installed path: hash mtime path
   (cd "$1" && find .github -type f 2>/dev/null | sort | while IFS= read -r f; do
     printf '%s %s %s\n' "$(git hash-object -- "$f")" "$(stat -c %Y -- "$f")" "$f"; done)
@@ -475,6 +475,8 @@ echo "local edit" >> "$P/.github/agents/developer.agent.md"
 run_install "$P"
 [ "$RC" = 1 ] || fail "edited file did not stop the install (exit $RC)"
 grep -qF 'edited by hand' "$TMP/inst.err" || fail "refusal message: $(cat "$TMP/inst.err")"
+grep -q 'local edit' "$P/.github/agents/developer.agent.md" || fail "refused run changed the edited file"
+ls -d "$P"/.dream-team-tracking/install-backup-* >/dev/null 2>&1 && fail "refused run wrote a backup"
 run_install "$P" --force
 [ "$RC" = 0 ] || fail "--force exit $RC: $(cat "$TMP/inst.err")"
 cmp -s "$P/.github/agents/developer.agent.md" "$REAL/.github/agents/developer.agent.md" || fail "not replaced"
@@ -505,9 +507,12 @@ grep -q '^add \.github/agents/developer\.agent\.md$' "$TMP/inst.out" || fail "pl
 finish
 
 start install-space-path
-P="$(new_project 'with space')"
+P="$(new_project "with space [x] 'q'")"
 run_install "$P"
 [ "$RC" = 0 ] && [ -f "$P/.github/skills/team/SKILL.md" ] || fail "path with a space: exit $RC $(cat "$TMP/inst.err")"
+run_install "$P"
+[ "$RC" = 0 ] && grep -qE '^  update 0$' "$TMP/inst.out" && grep -qE '^  modified 0$' "$TMP/inst.out" \
+  || fail "rerun on a special-character path: exit $RC $(cat "$TMP/inst.out" "$TMP/inst.err")"
 finish
 
 start install-relative
@@ -534,6 +539,30 @@ run_install "$P"
 [ "$RC" = 2 ] || fail "tampered record: expected exit 2, got $RC"
 grep -qF "outside the team's paths" "$TMP/inst.err" || fail "message: $(cat "$TMP/inst.err")"
 [ "$(cat "$k")" = caps ] || fail "knowledge file touched"
+grep -v 'knowledge/CAPABILITIES' "$P/.github/dream-team/.installed" > "$TMP/rec.clean" && cp "$TMP/rec.clean" "$P/.github/dream-team/.installed"
+printf '%s %s\n' "$(git hash-object "$k")" ".github/dream-team/templates/../knowledge/CAPABILITIES.md" >> "$P/.github/dream-team/.installed"
+run_install "$P"
+[ "$RC" = 2 ] || fail "dot-dot record path: expected exit 2, got $RC"
+grep -qF "outside the team's paths" "$TMP/inst.err" || fail "dot-dot message: $(cat "$TMP/inst.err")"
+[ "$(cat "$k")" = caps ] || fail "knowledge file deleted through a dot-dot path"
+finish
+
+start install-remove-role
+P="$(new_project oldrole)"
+run_install "$P"
+im="$P/.github/dream-team/team-manifest.json"
+rec="$P/.github/dream-team/.installed"
+awk '{ print } /^  "agents": \[/ { print "    \"old-role\"," }' "$im" > "$TMP/im.new" && cp "$TMP/im.new" "$im"
+grep -v ' \.github/dream-team/team-manifest\.json$' "$rec" > "$TMP/rec.new"
+printf '%s %s\n' "$(git hash-object "$im")" .github/dream-team/team-manifest.json >> "$TMP/rec.new"
+echo "role" > "$P/.github/agents/old-role.agent.md"
+printf '%s %s\n' "$(git hash-object "$P/.github/agents/old-role.agent.md")" .github/agents/old-role.agent.md >> "$TMP/rec.new"
+cp "$TMP/rec.new" "$rec"
+run_install "$P"
+[ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
+[ ! -e "$P/.github/agents/old-role.agent.md" ] || fail "dropped role kept"
+grep -qF 'remove .github/agents/old-role.agent.md' "$TMP/inst.out" || fail "remove not planned: $(cat "$TMP/inst.out")"
+cmp -s "$im" "$REAL/.github/dream-team/team-manifest.json" || fail "installed manifest not restored"
 finish
 
 [ "$fails" -eq 0 ] || { echo "$fails failure(s)" >&2; exit 1; }

@@ -48,26 +48,47 @@ bash "$HERE/build.sh" "$B" > "$TMP/build.log" \
   || { echo "install: build failed; $P was not touched" >&2; exit 1; }
 M="$B/.github/dream-team/team-manifest.json"
 
-hash_of() { git hash-object -- "$1"; }
-list_of() { # top-level array of the built manifest → one value per line
+hash_of() { # via stdin: native git.exe mishandles some characters in path arguments
+  local h
+  h="$(git hash-object --stdin < "$1")" && [ -n "$h" ] \
+    || { echo "install: could not hash $1" >&2; return 1; }
+  printf '%s\n' "$h"
+}
+list_of() { # $1 = array name, $2 = manifest; top-level array → one value per line
   awk -v k="$1" 'index($0, "  \"" k "\": [") == 1 { f = 1; next }
     f && /^  \]/ { exit }
-    f { gsub(/[",[:space:]]/, ""); if ($0 != "") print }' "$M"
+    f { gsub(/[",[:space:]]/, ""); if ($0 != "") print }' "$2"
 }
-AGENTS=" $(list_of agents | tr '\n' ' ') "
-SKILLS=" $(list_of skills | tr '\n' ' ') "
+AGENTS=" $(list_of agents "$M" | tr '\n' ' ') "
+SKILLS=" $(list_of skills "$M" | tr '\n' ' ') "
 VERSION="$(sed -n 's/^    "version": "\([^"]*\)".*/\1/p' "$M" | head -1)"
 [ -n "$VERSION" ] && [ "$AGENTS" != "  " ] && [ "$SKILLS" != "  " ] \
   || { echo "install: internal error: the built manifest has no version, agents or skills" >&2; exit 2; }
+# Record-side paths may also name roles and skills the installed version shipped.
+AGENTS_REC="$AGENTS" SKILLS_REC="$SKILLS"
+IM="$P/.github/dream-team/team-manifest.json"
+if [ -f "$IM" ]; then
+  AGENTS_REC="$AGENTS $(list_of agents "$IM" | tr '\n' ' ') "
+  SKILLS_REC="$SKILLS $(list_of skills "$IM" | tr '\n' ' ') "
+fi
 
-allowed() {
+allowed() { # $1 = relative path, $2 = "rec" to accept names from the installed manifest too
+  local agents="$AGENTS" skills="$SKILLS" seg rest="$1"
+  [ "${2:-}" = rec ] && { agents="$AGENTS_REC"; skills="$SKILLS_REC"; }
+  case "$1" in ""|/*|*//*|*\*) return 1 ;; esac
+  while :; do
+    seg="${rest%%/*}"
+    case "$seg" in ""|.|..) return 1 ;; esac
+    [ "$seg" = "$rest" ] && break
+    rest="${rest#*/}"
+  done
   case "$1" in
     .github/dream-team/knowledge|.github/dream-team/knowledge/*|"$RECORD") return 1 ;;
     .github/dream-team/*|.github/hooks/dream-team.json) return 0 ;;
     .github/agents/*.agent.md)
-      local a="${1#.github/agents/}"; a="${a%.agent.md}"; [[ $AGENTS == *" $a "* ]] ;;
+      local a="${1#.github/agents/}"; a="${a%.agent.md}"; [ -n "$a" ] && [[ $agents == *" $a "* ]] ;;
     .github/skills/*/*)
-      local s="${1#.github/skills/}"; s="${s%%/*}"; [[ $SKILLS == *" $s "* ]] ;;
+      local s="${1#.github/skills/}"; s="${s%%/*}"; [ -n "$s" ] && [[ $skills == *" $s "* ]] ;;
     *) return 1 ;;
   esac
 }
@@ -86,7 +107,7 @@ while IFS= read -r p; do
   if [ ! -e "$cur" ]; then st=add
   elif [ ! -f "$cur" ]; then st=conflict
   else
-    hc="$(hash_of "$cur")"; hn="$(hash_of "$B/$p")"; hr="$(rec_hash "$p")"
+    hc="$(hash_of "$cur")" || exit 2; hn="$(hash_of "$B/$p")" || exit 2; hr="$(rec_hash "$p")"
     if [ "$hc" = "$hn" ]; then st=unchanged
     elif [ -z "$hr" ]; then st=conflict
     elif [ "$hc" = "$hr" ]; then st=update
@@ -96,9 +117,10 @@ while IFS= read -r p; do
 done < "$TMP/new"
 while IFS=' ' read -r hr p; do
   grep -qxF -- "$p" "$TMP/new" && continue
-  allowed "$p" || { echo "install: internal error: $RECORD names $p, outside the team's paths; remove that line and run again" >&2; exit 2; }
+  allowed "$p" rec || { echo "install: internal error: $RECORD names $p, outside the team's paths; remove that line and run again" >&2; exit 2; }
   [ -f "$P/$p" ] || continue
-  if [ "$(hash_of "$P/$p")" = "$hr" ]; then st=remove; else st=orphan-modified; fi
+  hc="$(hash_of "$P/$p")" || exit 2
+  if [ "$hc" = "$hr" ]; then st=remove; else st=orphan-modified; fi
   printf '%s %s\n' "$st" "$p" >> "$TMP/plan"
 done < "$TMP/record"
 
@@ -134,13 +156,13 @@ while IFS=' ' read -r st p; do
       write_file "$p" ;;
     remove)
       rm -f "$P/$p"; d="$(dirname "$p")"
-      while [ "$d" != .github ] && [ "$d" != . ] && rmdir "$P/$d" 2>/dev/null; do d="$(dirname "$d")"; done ;;
+      while case "$d" in .|.github|.github/agents|.github/skills|.github/hooks|.github/dream-team) false ;; *) true ;; esac && rmdir "$P/$d" 2>/dev/null; do d="$(dirname "$d")"; done ;;
   esac
 done < "$TMP/plan"
 
 {
   echo "# dream-team $VERSION"
-  while IFS= read -r p; do printf '%s %s\n' "$(hash_of "$B/$p")" "$p"; done < "$TMP/new"
+  while IFS= read -r p; do h="$(hash_of "$B/$p")" || exit 2; printf '%s %s\n' "$h" "$p"; done < "$TMP/new"
   sed -n 's/^orphan-modified //p' "$TMP/plan" | while IFS= read -r p; do printf '%s %s\n' "$(rec_hash "$p")" "$p"; done
 } > "$TMP/record.new"
 cmp -s "$TMP/record.new" "$P/$RECORD" 2>/dev/null || cp "$TMP/record.new" "$P/$RECORD"
