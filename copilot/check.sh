@@ -401,7 +401,140 @@ else
   case "$out" in *bug_fix_x_2026-10-07*SessionStart*) ;; *) fail "hook output: $out" ;; esac
 fi
 finish
-# @CASES-INSTALL@  (Task 3 inserts install cases here)
+run_install() { bash "$INSTALL" "$@" > "$TMP/inst.out" 2> "$TMP/inst.err"; RC=$?; }
+new_project() { local p="$TMP/$1"; mkdir -p "$p" && git -C "$p" init -q && printf '%s' "$p"; }
+team_state() { # every installed path: hash mtime path
+  (cd "$1" && find .github -type f 2>/dev/null | sort | while IFS= read -r f; do
+    printf '%s %s %s\n' "$(git hash-object -- "$f")" "$(stat -c %Y -- "$f")" "$f"; done)
+}
+SEEDED=".github/dream-team/knowledge/learnings/2026-01-01-trap.md .github/dream-team/knowledge/LEARNINGS.md
+.github/dream-team/knowledge/CAPABILITIES.md .dream-team-tracking/.team-mode .dream-team-tracking/run_x/status.md
+.dream-team-tracking/.service-consent .git/info/exclude .github/copilot-instructions.md .github/agents/other.agent.md
+.vscode/settings.json"
+seed_state() {
+  local p="$1"
+  mkdir -p "$p/.github/dream-team/knowledge/learnings" "$p/.dream-team-tracking/run_x" "$p/.github/agents" "$p/.vscode"
+  echo "entry" > "$p/.github/dream-team/knowledge/learnings/2026-01-01-trap.md"
+  echo "# Learnings" > "$p/.github/dream-team/knowledge/LEARNINGS.md"
+  echo "caps" > "$p/.github/dream-team/knowledge/CAPABILITIES.md"
+  echo "context_id=run_x" > "$p/.dream-team-tracking/.team-mode"
+  echo "status" > "$p/.dream-team-tracking/run_x/status.md"
+  echo "update-check=granted 2026-10-01" > "$p/.dream-team-tracking/.service-consent"
+  echo ".github/dream-team/knowledge/" >> "$p/.git/info/exclude"
+  echo "project instructions" > "$p/.github/copilot-instructions.md"
+  printf -- '---\nname: other\ndescription: mine\n---\n' > "$p/.github/agents/other.agent.md"
+  echo '{}' > "$p/.vscode/settings.json"
+}
+seeded_state() { local f; for f in $SEEDED; do printf '%s %s\n' "$(git hash-object -- "$1/$f")" "$f"; done; }
+built_list() { (cd "$REAL" && find . -type f | sed 's|^\./||' | sort); }
+
+start install-fresh
+P="$(new_project fresh)"
+run_install "$P"
+[ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
+built_list | while IFS= read -r f; do [ -f "$P/$f" ] || echo "$f"; done > "$TMP/missing"
+[ ! -s "$TMP/missing" ] || fail "not installed: $(tr '\n' ' ' < "$TMP/missing")"
+version="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' "$ROOT/team-manifest.json" | head -1)"
+[ "$(head -1 "$P/.github/dream-team/.installed")" = "# dream-team $version" ] || fail "record header"
+[ "$(($(wc -l < "$P/.github/dream-team/.installed") - 1))" = "$(built_list | wc -l)" ] || fail "record line count"
+finish
+
+start install-second-run
+before="$(team_state "$P")"
+run_install "$P"
+[ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
+grep -qE '^  add 0$' "$TMP/inst.out" && grep -qE '^  update 0$' "$TMP/inst.out" || fail "second run changed files: $(cat "$TMP/inst.out")"
+[ "$before" = "$(team_state "$P")" ] || fail "a file's content or mtime changed on a no-op run"
+finish
+
+start install-state-untouched
+P="$(new_project seeded)"
+seed_state "$P"
+before="$(seeded_state "$P")"
+run_install "$P"
+[ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
+run_install "$P"
+[ "$before" = "$(seeded_state "$P")" ] || fail "seeded state changed: $(diff <(echo "$before") <(seeded_state "$P") | tr '\n' ' ')"
+grep -q '^\.github/dream-team/knowledge' "$P/.github/dream-team/.installed" && fail "record claims a knowledge file"
+finish
+
+start install-conflict
+P="$(new_project conflict)"
+mkdir -p "$P/.github/agents" && echo "mine" > "$P/.github/agents/developer.agent.md"
+run_install "$P"
+[ "$RC" = 1 ] || fail "expected exit 1, got $RC"
+grep -qF '.github/agents/developer.agent.md' "$TMP/inst.err" || fail "conflict not named: $(cat "$TMP/inst.err")"
+[ "$(cat "$P/.github/agents/developer.agent.md")" = mine ] || fail "foreign file changed"
+[ ! -e "$P/.github/dream-team" ] || fail "something was written despite the conflict"
+finish
+
+start install-modified
+P="$(new_project modified)"
+run_install "$P"
+echo "local edit" >> "$P/.github/agents/developer.agent.md"
+run_install "$P"
+[ "$RC" = 1 ] || fail "edited file did not stop the install (exit $RC)"
+grep -qF 'edited by hand' "$TMP/inst.err" || fail "refusal message: $(cat "$TMP/inst.err")"
+run_install "$P" --force
+[ "$RC" = 0 ] || fail "--force exit $RC: $(cat "$TMP/inst.err")"
+cmp -s "$P/.github/agents/developer.agent.md" "$REAL/.github/agents/developer.agent.md" || fail "not replaced"
+bk="$(ls -d "$P"/.dream-team-tracking/install-backup-*/.github/agents/developer.agent.md 2>/dev/null | head -1)"
+[ -n "$bk" ] && grep -q 'local edit' "$bk" || fail "no backup holding the edit"
+finish
+
+start install-remove
+rec="$P/.github/dream-team/.installed"
+echo "old" > "$P/.github/dream-team/templates/obsolete.md"
+echo "old2" > "$P/.github/dream-team/templates/obsolete2.md"
+printf '%s %s\n' "$(git hash-object "$P/.github/dream-team/templates/obsolete.md")" .github/dream-team/templates/obsolete.md \
+  "$(git hash-object "$P/.github/dream-team/templates/obsolete2.md")" .github/dream-team/templates/obsolete2.md >> "$rec"
+echo "edited" >> "$P/.github/dream-team/templates/obsolete2.md"
+run_install "$P"
+[ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
+[ ! -e "$P/.github/dream-team/templates/obsolete.md" ] || fail "obsolete file kept"
+[ -e "$P/.github/dream-team/templates/obsolete2.md" ] || fail "edited obsolete file deleted"
+grep -qF 'orphan-modified .github/dream-team/templates/obsolete2.md' "$TMP/inst.out" || fail "orphan not reported"
+finish
+
+start install-dry-run
+P="$(new_project dry)"
+run_install "$P" --dry-run
+[ "$RC" = 0 ] || fail "exit $RC"
+[ ! -e "$P/.github" ] || fail "dry run wrote files"
+grep -q '^add \.github/agents/developer\.agent\.md$' "$TMP/inst.out" || fail "plan not printed"
+finish
+
+start install-space-path
+P="$(new_project 'with space')"
+run_install "$P"
+[ "$RC" = 0 ] && [ -f "$P/.github/skills/team/SKILL.md" ] || fail "path with a space: exit $RC $(cat "$TMP/inst.err")"
+finish
+
+start install-relative
+P="$(new_project relative)"
+(cd "$P" && bash "$INSTALL" . > "$TMP/inst.out" 2> "$TMP/inst.err"); RC=$?
+[ "$RC" = 0 ] && [ -f "$P/.github/dream-team/.installed" ] || fail "install from inside with '.': exit $RC"
+finish
+
+start install-resume
+rm -f "$P/.github/dream-team/.installed"
+run_install "$P"
+[ "$RC" = 0 ] || fail "interrupted install did not finish: $(cat "$TMP/inst.err")"
+[ -f "$P/.github/dream-team/.installed" ] || fail "record not restored"
+grep -qE '^  conflict 0$' "$TMP/inst.out" || fail "identical files were treated as foreign"
+finish
+
+start install-tampered-record
+P="$(new_project tampered)"
+seed_state "$P"
+run_install "$P"
+k="$P/.github/dream-team/knowledge/CAPABILITIES.md"
+printf '%s %s\n' "$(git hash-object "$k")" .github/dream-team/knowledge/CAPABILITIES.md >> "$P/.github/dream-team/.installed"
+run_install "$P"
+[ "$RC" = 2 ] || fail "tampered record: expected exit 2, got $RC"
+grep -qF "outside the team's paths" "$TMP/inst.err" || fail "message: $(cat "$TMP/inst.err")"
+[ "$(cat "$k")" = caps ] || fail "knowledge file touched"
+finish
 
 [ "$fails" -eq 0 ] || { echo "$fails failure(s)" >&2; exit 1; }
 echo "all copilot checks passed"
