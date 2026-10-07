@@ -26,6 +26,7 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+bs=$'\x5c'
 RECORD=".github/dream-team/.installed"
 project="" dry=0 force=0
 for a in "$@"; do
@@ -73,22 +74,26 @@ if [ -f "$IM" ]; then
 fi
 
 allowed() { # $1 = relative path, $2 = "rec" to accept names from the installed manifest too
-  local agents="$AGENTS" skills="$SKILLS" seg rest="$1"
+  local agents="$AGENTS" skills="$SKILLS" seg rest="$1" lp="${1,,}"
   [ "${2:-}" = rec ] && { agents="$AGENTS_REC"; skills="$SKILLS_REC"; }
-  case "$1" in ""|/*|*//*|*\*) return 1 ;; esac
+  agents="${agents,,}" skills="${skills,,}"
+  # Shape: every segment is plain [A-Za-z0-9._-]+, never "." or "..". No empty
+  # segments, backslashes, "~" (8.3 short names), spaces or globs.
   while :; do
     seg="${rest%%/*}"
-    case "$seg" in ""|.|..) return 1 ;; esac
+    [[ $seg =~ ^[A-Za-z0-9._-]+$ ]] || return 1
+    case "$seg" in .|..) return 1 ;; esac
     [ "$seg" = "$rest" ] && break
     rest="${rest#*/}"
   done
-  case "$1" in
-    .github/dream-team/knowledge|.github/dream-team/knowledge/*|"$RECORD") return 1 ;;
+  # The file system may be case-insensitive: compare lowercased.
+  case "$lp" in
+    .github/dream-team/knowledge|.github/dream-team/knowledge/*|"${RECORD,,}") return 1 ;;
     .github/dream-team/*|.github/hooks/dream-team.json) return 0 ;;
     .github/agents/*.agent.md)
-      local a="${1#.github/agents/}"; a="${a%.agent.md}"; [ -n "$a" ] && [[ $agents == *" $a "* ]] ;;
+      local a="${lp#.github/agents/}"; a="${a%.agent.md}"; [ -n "$a" ] && [[ $agents == *" $a "* ]] ;;
     .github/skills/*/*)
-      local s="${1#.github/skills/}"; s="${s%%/*}"; [ -n "$s" ] && [[ $skills == *" $s "* ]] ;;
+      local s="${lp#.github/skills/}"; s="${s%%/*}"; [ -n "$s" ] && [[ $skills == *" $s "* ]] ;;
     *) return 1 ;;
   esac
 }
@@ -156,7 +161,7 @@ while IFS=' ' read -r st p; do
       write_file "$p" ;;
     remove)
       rm -f "$P/$p"; d="$(dirname "$p")"
-      while case "$d" in .|.github|.github/agents|.github/skills|.github/hooks|.github/dream-team) false ;; *) true ;; esac && rmdir "$P/$d" 2>/dev/null; do d="$(dirname "$d")"; done ;;
+      while case "${d,,}" in .|.github|.github/agents|.github/skills|.github/hooks|.github/dream-team|*"$bs"*) false ;; *) true ;; esac && rmdir "$P/$d" 2>/dev/null; do d="$(dirname "$d")"; done ;;
   esac
 done < "$TMP/plan"
 

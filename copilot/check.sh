@@ -547,6 +547,28 @@ grep -qF "outside the team's paths" "$TMP/inst.err" || fail "dot-dot message: $(
 [ "$(cat "$k")" = caps ] || fail "knowledge file deleted through a dot-dot path"
 finish
 
+start install-tampered-record-shapes
+P="$(new_project shapes)"
+seed_state "$P"
+run_install "$P"
+k="$P/.github/dream-team/knowledge/CAPABILITIES.md"
+rec="$P/.github/dream-team/.installed"
+cp "$rec" "$TMP/rec.orig"
+bsl=$'\x5c'
+for bad in ".github/dream-team/templates${bsl}..${bsl}knowledge${bsl}CAPABILITIES.md" \
+  ".github/dream-team/..${bsl}..${bsl}.git${bsl}info${bsl}exclude" \
+  ".github/dream-team/Knowledge/CAPABILITIES.md" ".github/dream-team/KNOWLEDGE/CAPABILITIES.md" \
+  ".github/dream-team/KNOWLE~1/CAPABILITIES.md"; do
+  cp "$TMP/rec.orig" "$rec"
+  printf '%s %s\n' "$(git hash-object "$k")" "$bad" >> "$rec"
+  run_install "$P"
+  [ "$RC" = 2 ] || fail "$bad: expected exit 2, got $RC"
+  grep -qF "outside the team's paths" "$TMP/inst.err" || fail "$bad: message: $(cat "$TMP/inst.err")"
+  [ "$(cat "$k")" = caps ] || fail "$bad: knowledge file touched"
+  [ -f "$P/.git/info/exclude" ] || fail "$bad: .git/info/exclude touched"
+done
+finish
+
 start install-remove-role
 P="$(new_project oldrole)"
 run_install "$P"
