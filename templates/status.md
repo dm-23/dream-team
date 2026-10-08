@@ -1,7 +1,7 @@
 # Status: {title}
 
 **Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
-**Context:** `.claude-tracking/{context_id}/`
+**Context:** `.dream-team-tracking/{context_id}/`
 **Started:** {YYYY-MM-DD}
 **Closed:** —
 **Baseline:** commit `{git rev-parse --short HEAD}`; pre-existing uncommitted files: {none | list from `git status --porcelain`}

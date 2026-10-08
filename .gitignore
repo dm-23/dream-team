@@ -2,7 +2,7 @@
 # where every pattern below is read relative to .claude/ — so `knowledge/` hides
 # .claude/knowledge/ without the project having to touch its own ignore file.
 #
-# .claude-tracking/ lives at the project root, outside this directory, and is
+# .dream-team-tracking/ lives at the project root, outside this directory, and is
 # hidden by /team-setup fix through .git/info/exclude (see gitExclude in
 # team-manifest.json). Both layers are generated and neither is ever committed.
 knowledge/

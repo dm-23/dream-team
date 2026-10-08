@@ -16,7 +16,7 @@ script="$(pwd)/tools/jev-decide.sh"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/bin" "$tmp/log" "$tmp/project/.claude-tracking"
+mkdir -p "$tmp/bin" "$tmp/log" "$tmp/project/.dream-team-tracking"
 
 cat > "$tmp/bin/curl" <<'EOF'
 #!/usr/bin/env bash
@@ -41,7 +41,7 @@ chmod +x "$tmp/bin/curl"
 
 export FAKE_LOG="$tmp/log" CLAUDE_PROJECT_DIR="$tmp/project" PATH="$tmp/bin:$PATH"
 export FAKE_BODY='{"answers":{"workflow":{"type":"choice","choice":"bug_fix","confidence":0.9}}}'
-consent="$tmp/project/.claude-tracking/.service-consent"
+consent="$tmp/project/.dream-team-tracking/.service-consent"
 state="$tmp/state.txt"
 status=0
 fail() { echo "FAIL: $*" >&2; status=1; }

@@ -19,7 +19,7 @@ real="$(pwd)/tools/update-check.sh"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/bin" "$tmp/log" "$tmp/team/tools" "$tmp/project/.claude-tracking"
+mkdir -p "$tmp/bin" "$tmp/log" "$tmp/team/tools" "$tmp/project/.dream-team-tracking"
 cp "$real" "$tmp/team/tools/update-check.sh"
 cat > "$tmp/team/team-manifest.json" <<'EOF'
 {
@@ -45,8 +45,8 @@ chmod +x "$tmp/bin/curl"
 
 export FAKE_LOG="$tmp/log" CLAUDE_PROJECT_DIR="$tmp/project" PATH="$tmp/bin:$PATH"
 script="$tmp/team/tools/update-check.sh"
-consent="$tmp/project/.claude-tracking/.service-consent"
-cache="$tmp/project/.claude-tracking/.update-check"
+consent="$tmp/project/.dream-team-tracking/.service-consent"
+cache="$tmp/project/.dream-team-tracking/.update-check"
 status=0
 fail() { echo "FAIL: $*" >&2; status=1; }
 remote() { export FAKE_BODY="{\"team\": {\"version\": \"$1\"}}" FAKE_EXIT=0; }

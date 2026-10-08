@@ -341,6 +341,8 @@ checks = {
     "skills kept": m["skills"] == s["skills"],
     "knowledge.dir": m["knowledge"]["dir"] == ".github/dream-team/knowledge",
     "tracking.dir": m["tracking"]["dir"] == ".dream-team-tracking",
+    "tracking.legacyDir": m["tracking"].get("legacyDir") == ".claude-tracking",
+    "tracking.migration": m["tracking"].get("migration") == "tools/migrate-tracking.sh",
     "gitExclude": m["gitExclude"] == [".github/dream-team/knowledge/", ".dream-team-tracking/"],
     "hooks.config": m["hooks"]["config"] == ".github/hooks/dream-team.json",
     "hooks.marker": m["hooks"]["marker"] == ".dream-team-tracking/.team-mode",
@@ -348,7 +350,7 @@ checks = {
     "lint regex kept": m["checks"]["stackNeutralityLint"].startswith(
         s["checks"]["stackNeutralityLint"].split('" agents/')[0]),
     "only runtime checks": not {"manifestBudgets", "roleConsistency", "textEncoding", "jevClient",
-                                "updateCheckClient", "routingSummary", "copilotPort"} & set(m["checks"]),
+                                "updateCheckClient", "routingSummary", "copilotPort", "migrateTracking"} & set(m["checks"]),
 }
 bad += [k for k, ok in checks.items() if not ok]
 hooks = json.load(open(os.path.join(out, ".github/hooks/dream-team.json"), encoding="utf-8"))
@@ -370,6 +372,13 @@ if [ -n "$PY" ]; then
 else
   echo "skip [$CASE] no python" >&2
 fi
+finish
+
+start copilot-migrate-script
+MS="$REAL/.github/dream-team/tools/migrate-tracking.sh"
+[ -f "$MS" ] || fail "migrate-tracking.sh not in the edition"
+grep -qF "'^[.]claude/'" "$MS" && grep -qF "'^[.]github/dream-team/'" "$MS" \
+  || fail "the edition's migration script lost an exclusion pattern"
 finish
 
 start real-drift

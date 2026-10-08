@@ -6,12 +6,12 @@
 # files a run touched and the rework it needed. Read-only; always exits 0.
 #
 #   bash .claude/checks/summarize-routing.sh [tracking-dir]
-#   (run from the project root; the default is .claude-tracking)
+#   (run from the project root; the default is .dream-team-tracking)
 #
 # The log shapes are defined in skills/team/SKILL.md → Decision routing.
 set -uo pipefail
 export LC_ALL=C
-dir="${1:-.claude-tracking}"
+dir="${1:-.dream-team-tracking}"
 
 {
   if [ -d "$dir" ]; then

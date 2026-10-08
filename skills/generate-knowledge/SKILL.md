@@ -240,7 +240,7 @@ A rule promoted from the inbox lives only in a generated file; its entry is gone
 
 A step of `all` (or no argument), after the knowledge files are written and before the cross-check. A run naming files skips it.
 
-1. **Skip when `.claude-tracking/.team-mode` exists**: a live run is reading the inbox. Say which run is open and that triage was skipped; the rest of `all` proceeds.
+1. **Skip when `.dream-team-tracking/.team-mode` exists**: a live run is reading the inbox. Say which run is open and that triage was skipped; the rest of `all` proceeds.
 2. **Classify every entry**, in `learnings/` and any still inline below the index:
    - `rule` — carries an unresolved `[PROMOTE]`, or states a constraint checkable from a diff or a `TOOLCHAIN.md` command, or describes the same trap as another entry (those entries become one rule);
    - `fact` — carries an unresolved `[STALE-CHECK]`, or states something about the project a knowledge file should say;
@@ -257,7 +257,7 @@ A step of `all` (or no argument), after the knowledge files are written and befo
    - "Shorten N traps over `learningsEntryLines`" — only when kept traps exceed it; shortening is a rewrite.
 
    An option not selected leaves its entries exactly as they are. Nothing selected → report the classification and end the step.
-4. **Back up** `.claude/knowledge/` to `.claude-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` before the first write and name the path in the report. Entries have no version-controlled copy anywhere.
+4. **Back up** `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` before the first write and name the path in the report. Entries have no version-controlled copy anywhere.
 5. **Apply what was accepted.**
    - A rule becomes one item in its target file, worded as an imperative and ending `— source: learnings <date> <title>`; its `[PROMOTE]` lines become `[PROMOTE RESOLVED YYYY-MM-DD]`. A rule placed in `PROJECT-RULES.md` also gets its `REVIEW-CHECKLIST.md` item, as every obligation does.
    - A fact the repository confirms is reflected in its file; one it contradicts is reported as false. Either way its `[STALE-CHECK]` lines become `[STALE-CHECK RESOLVED YYYY-MM-DD]`.
@@ -285,9 +285,9 @@ alongside the budget:
   every entry a file in `learnings/`.
 - A `whole` file is one file with no sibling directory.
 
-**Refuse to run when `.claude-tracking/.team-mode` exists.** A live run is reading these files. Report which run is open and stop.
+**Refuse to run when `.dream-team-tracking/.team-mode` exists.** A live run is reading these files. Report which run is open and stop.
 
-**Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.claude-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only, in this mode only.
+**Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only, in this mode only.
 
 **Two classes of work, consented separately.**
 
@@ -350,5 +350,5 @@ this run, not a note for later — say so plainly rather than burying it.
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
-- `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode and in the inbox triage of `all` you also write the backup directory under `.claude-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode and in the inbox triage of `all` you also write the backup directory under `.dream-team-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
 - Every file is inside the budget its class gives it, and the size table proves it.

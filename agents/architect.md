@@ -17,7 +17,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Input
 
-`.claude-tracking/{context_id}/plans/draft-plan.md` including the section `## Repository Analysis & Batch Suggestions`.
+`.dream-team-tracking/{context_id}/plans/draft-plan.md` including the section `## Repository Analysis & Batch Suggestions`.
 
 **Guard:** if that section is absent or lists no files, do not proceed — report "Wide-mode research missing from draft-plan.md".
 
@@ -124,7 +124,7 @@ Never reach for tools outside your own list. If the design turns on external doc
 
 ## Rules
 
-- No production code; no files outside `.claude-tracking/{context_id}/`.
+- No production code; no files outside `.dream-team-tracking/{context_id}/`.
 - Every task has `RecommendedBatch`, `Files` and `Insertion Points`.
 - Every `Acceptance Criteria` item is checkable from the diff or a TOOLCHAIN.md command; every other check is a `Verify by hand` line.
 - Cite existing paths for every pattern; never invent patterns.

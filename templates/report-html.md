@@ -25,11 +25,11 @@ CSP restrictions that don't apply here.
 
 | Output type | Format | Location |
 |-------------|--------|----------|
-| Analysis report | HTML | `.claude-tracking/{context_id}/reports/{topic}.html` |
-| Detailed plan presentation | HTML | `.claude-tracking/{context_id}/reports/plan-{feature}.html` |
-| Architecture explanation | HTML | `.claude-tracking/{context_id}/reports/{topic}.html` |
+| Analysis report | HTML | `.dream-team-tracking/{context_id}/reports/{topic}.html` |
+| Detailed plan presentation | HTML | `.dream-team-tracking/{context_id}/reports/plan-{feature}.html` |
+| Architecture explanation | HTML | `.dream-team-tracking/{context_id}/reports/{topic}.html` |
 | Simple status / yes-no question | Chat text | — |
-| Internal agent coordination | Markdown | `.claude-tracking/{context_id}/` |
+| Internal agent coordination | Markdown | `.dream-team-tracking/{context_id}/` |
 
 ## JS Libraries (CDN — no install)
 

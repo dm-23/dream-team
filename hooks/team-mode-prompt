@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Dream Team — UserPromptSubmit hook.
 #
-# While the marker file .claude-tracking/.team-mode exists, every user message
+# While the marker file .dream-team-tracking/.team-mode exists, every user message
 # is routed back through the /team orchestrator. This survives a model switch,
 # a long pause, a compaction and a restart, because the harness runs this hook
 # on every submitted prompt rather than relying on anything staying in context.
@@ -12,7 +12,7 @@
 set -uo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
-MARKER="${PROJECT_DIR}/.claude-tracking/.team-mode"
+MARKER="${PROJECT_DIR}/.dream-team-tracking/.team-mode"
 
 [ -f "$MARKER" ] || exit 0
 
@@ -52,10 +52,10 @@ phase="$(escape_for_json "$phase")"
 context="<TEAM-MODE-ACTIVE>\n"
 context="${context}Dream Team mode is ON for this project. Run: ${context_id}. Workflow: ${workflow}. Last recorded phase: ${phase}.\n"
 context="${context}Treat the user's message as input to that run, not as a standalone request.\n"
-context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\") and read .claude-tracking/${context_id}/status.md before answering.\n"
+context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\") and read .dream-team-tracking/${context_id}/status.md before answering.\n"
 context="${context}2. Continue the existing run from its first unchecked phase. Never restart it and never open a second run in parallel.\n"
 context="${context}3. Stay in the orchestrator role: no production code, no tests, no build or test commands of your own — those belong to the Developer, Tester and Reviewer subagents.\n"
-context="${context}Handle directly, without the workflow: a request to stop or pause team mode (delete .claude-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
+context="${context}Handle directly, without the workflow: a request to stop or pause team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
 context="${context}</TEAM-MODE-ACTIVE>"
 
 printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "UserPromptSubmit",\n    "additionalContext": "%s"\n  },\n  "suppressOutput": true\n}\n' "$context"

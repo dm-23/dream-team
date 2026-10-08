@@ -35,7 +35,7 @@ skills/team-setup/SKILL.md	v{R} available → README "Updating the team"	v{R} av
 skills/team-setup/SKILL.md	Sticky mode: wired via project settings | NOT wired (run fix) — bash: found|absent	Sticky mode: session hook installed | missing (run copilot/install.sh again) — bash: found|absent — VS Code: needs chat.useHooks
 skills/team-setup/SKILL.md	- Never install, enable or disable a plugin the user did not explicitly agree to in this run.	- Never install, enable or disable a capability. The user sets them up; this skill reports how.
 skills/team-setup/SKILL.md	the manifest lint, `claude plugin list/install`, a bash availability check	the manifest lint, a bash availability check
-skills/team-setup/SKILL.md	the version-control exclude file, the project settings hooks entry, the persistent knowledge files, a stale marker, `.claude-tracking/.service-consent`, and plugins the user picked may also change	the version-control exclude file, the persistent knowledge files, a stale marker and `.claude-tracking/.service-consent` may also change
+skills/team-setup/SKILL.md	the version-control exclude file, the project settings hooks entry, the persistent knowledge files, a stale marker, `.dream-team-tracking/.service-consent`, and plugins the user picked may also change	the version-control exclude file, the persistent knowledge files, a stale marker and `.dream-team-tracking/.service-consent` may also change
 #
 # templates
 templates/status.md	- {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}\n	
@@ -61,12 +61,12 @@ team-manifest.json	    "jevClient": "bash checks/verify-jev-decide.sh",\n
 team-manifest.json	    "updateCheckClient": "bash checks/verify-update-check.sh",\n	
 team-manifest.json	    "routingSummary": "bash checks/verify-routing-summary.sh",\n	
 team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
+team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
 #
 # everywhere
 *	AskUserQuestion	the question tool
 *	Agent tool	subagent tool
 *	Agent call	subagent call
 *	Claude Code	Copilot
-*	.claude-tracking	.dream-team-tracking
 *	.claude/	.github/dream-team/
 skills/generate-knowledge/SKILL.md	@KEEP-CLAUDE@	.claude/

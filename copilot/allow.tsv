@@ -2,3 +2,6 @@
 # generate-knowledge reads the project's own .claude/ documents: they are project files, not the team's.
 .github/skills/generate-knowledge/SKILL.md	.claude/PROJECT.md
 .github/skills/generate-knowledge/SKILL.md	.claude/docs
+# The migration script and the manifest name the legacy run-state directory on purpose.
+.github/dream-team/tools/migrate-tracking.sh	.claude-tracking
+.github/dream-team/team-manifest.json	".claude-tracking"

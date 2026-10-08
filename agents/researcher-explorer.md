@@ -28,7 +28,7 @@ Goal: give the Architect a complete, verified picture for planning and batching.
 
 Steps:
 
-1. Read `.claude-tracking/{context_id}/plans/draft-plan.md`.
+1. Read `.dream-team-tracking/{context_id}/plans/draft-plan.md`.
 2. List the domains/features the plan touches.
 3. For each domain trace the entry-point → logic → data chain using the recipes in SEARCH-PLAYBOOK.md.
 4. For each user-facing part trace UI → API call → request handler.
@@ -76,7 +76,7 @@ Steps:
 6. Note risks: signature compatibility, side effects, duplicated code paths that must change together, test gaps.
 7. Count the files in "Files to Modify" + "Files to Create" and state the total explicitly (the orchestrator uses it for scope decisions).
 
-Output — always a file, never a wall of text in your final message. Write the report to the path the handoff names under `expected output`, which is the only authority on where it belongs: `.claude-tracking/{context_id}/research/task-{N}-exploration.md` for a per-task pass of a Full Feature, `.claude-tracking/{context_id}/research/exploration.md` for Analyze, Bug Fix, Small Change and the one combined pass of a Change Set. Create `research/` if it does not exist. The report itself:
+Output — always a file, never a wall of text in your final message. Write the report to the path the handoff names under `expected output`, which is the only authority on where it belongs: `.dream-team-tracking/{context_id}/research/task-{N}-exploration.md` for a per-task pass of a Full Feature, `.dream-team-tracking/{context_id}/research/exploration.md` for Analyze, Bug Fix, Small Change and the one combined pass of a Change Set. Create `research/` if it does not exist. The report itself:
 
 ```markdown
 # Exploration: [task title]
@@ -135,7 +135,7 @@ Never reach for tools outside your own list. If a task hinges on external docume
 
 ## Rules
 
-- Never write production code; never modify source files; never create files outside `.claude-tracking/`.
+- Never write production code; never modify source files; never create files outside `.dream-team-tracking/`.
 - Write and Edit touch only the output file the handoff names, or `draft-plan.md` in wide mode. Save your report there instead of returning its text to the orchestrator to copy.
 - Exact paths only — no vague module references.
 - Wide mode appends to draft-plan.md, never replaces.

@@ -220,7 +220,14 @@ run "$P"
 grep -qF '.dream-team-tracking/bugfix_x' "$P/.dream-team-tracking/bugfix_x_2026-10-01/status.md" || fail "original not rewritten"
 grep -qF '`.dream-team-tracking/{context_id}' "$P/.claude/knowledge/LEARNINGS.md" || fail "knowledge not rewritten"
 
-# @GUARD@  (Task 2 inserts the source guard here)
+case=source-guard
+# Outside the migration script and this test, the legacy name may appear only
+# on lines that say "legacy".
+hits="$(cd "$ROOT" && grep -rnF '.claude-tracking' agents skills templates tools checks hooks README.md team-manifest.json \
+  | grep -v -e '^tools/migrate-tracking\.sh:' -e '^checks/verify-migrate-tracking\.sh:' | grep -vi 'legacy')"
+[ -z "$hits" ] || fail "legacy name outside a legacy line: $hits"
+grep -qF '"legacyDir": ".claude-tracking"' "$ROOT/team-manifest.json" || fail "manifest lacks tracking.legacyDir"
+grep -qF '"dir": ".dream-team-tracking"' "$ROOT/team-manifest.json" || fail "manifest tracking.dir is not .dream-team-tracking"
 
 [ "$status" = 0 ] && echo "verify-migrate-tracking: all cases passed"
 exit "$status"

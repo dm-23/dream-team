@@ -12,7 +12,7 @@
 # Jev is reachable directly or through a provider that relays it; the manifest
 # lists each provider's endpoint, model id and credential variable. Nothing
 # leaves the machine unless all of these hold:
-#   - The last "jev=" line of .claude-tracking/.service-consent is
+#   - The last "jev=" line of .dream-team-tracking/.service-consent is
 #     "jev=granted <provider> <date>", written by /team-setup fix after the
 #     user agreed to that provider. A line without a provider, the shape
 #     written before providers existed, means the manifest's defaultProvider.
@@ -74,7 +74,7 @@ else
   qfile="$TEAM_ROOT/templates/jev/$set_name.json"
   [ -f "$qfile" ] && [ -f "$state_file" ] || exit 0
 
-  consent_line="$(tr -d '\r' 2>/dev/null < "$PROJECT_DIR/.claude-tracking/.service-consent" \
+  consent_line="$(tr -d '\r' 2>/dev/null < "$PROJECT_DIR/.dream-team-tracking/.service-consent" \
     | grep -E '^jev=' | tail -1)"
   read -r consent_state consent_provider _ <<< "$consent_line"
   [ "${consent_state:-}" = jev=granted ] || exit 0

@@ -14,10 +14,10 @@
 # What leaves the machine: one HTTPS GET of the manifest's updateCheck.source,
 # a public file. No body, no custom header, nothing from the project. Nothing
 # is fetched unless the last "update-check=" line of
-# .claude-tracking/.service-consent is "update-check=granted <date>", written
+# .dream-team-tracking/.service-consent is "update-check=granted <date>", written
 # by /team-setup fix after the user agreed. skip sends nothing.
 #
-# The cache, .claude-tracking/.update-check, holds checked=<epoch seconds>,
+# The cache, .dream-team-tracking/.update-check, holds checked=<epoch seconds>,
 # latest=<version> and skipped=<version>. A fetch happens at most once per
 # updateCheck.intervalHours whether it succeeded or not, so an offline machine
 # pays the timeout once per interval, not once per run.
@@ -25,7 +25,7 @@ set -uo pipefail
 
 TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)" || exit 0
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
-TRACKING="$PROJECT_DIR/.claude-tracking"
+TRACKING="$PROJECT_DIR/.dream-team-tracking"
 CACHE="$TRACKING/.update-check"
 VERSION_RE='^[0-9]+\.[0-9]+\.[0-9]+$'
 

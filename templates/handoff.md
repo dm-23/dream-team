@@ -1,4 +1,4 @@
-<!-- Handoff envelope. The orchestrator fills every field and pastes the result as the FIRST block of any Agent prompt. Every path in it is written in full from the repository root (`.claude-tracking/{context_id}/plans/detailed-plan.md`, never `plans/detailed-plan.md`): the subagent starts at the repository root. -->
+<!-- Handoff envelope. The orchestrator fills every field and pastes the result as the FIRST block of any Agent prompt. Every path in it is written in full from the repository root (`.dream-team-tracking/{context_id}/plans/detailed-plan.md`, never `plans/detailed-plan.md`): the subagent starts at the repository root. -->
 
 ## Handoff
 
@@ -9,7 +9,7 @@
 - lens (brainstorm only): {minimalism | risk | reuse}
 - language: {answer in this language}
 - knowledge dir: .claude/knowledge (read the files your role prompt names; do not read others unless needed)
-- tracking dir: .claude-tracking/{context_id}
+- tracking dir: .dream-team-tracking/{context_id}
 - baseline: commit {short-sha}; pre-existing uncommitted files: {none | list}
 - inputs: {task text | task file path | draft-plan path | research notes path}
 - prior learnings: {verbatim titles + "Fix pattern" lines of matched LEARNINGS entries, or "none"}

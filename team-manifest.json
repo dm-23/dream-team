@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "3.10.0",
+    "version": "4.0.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -129,7 +129,10 @@
     }
   },
   "tracking": {
-    "dir": ".claude-tracking"
+    "dir": ".dream-team-tracking",
+    "legacyDir": ".claude-tracking",
+    "migration": "tools/migrate-tracking.sh",
+    "_comment": "Run state shared by every edition of the team. Teams before 4.0.0 kept it in legacyDir; tools/migrate-tracking.sh moves it, run by /team-setup fix after the user agrees."
   },
   "hooks": {
     "dir": ".claude/hooks",
@@ -138,7 +141,7 @@
     "events": [
       "UserPromptSubmit"
     ],
-    "marker": ".claude-tracking/.team-mode",
+    "marker": ".dream-team-tracking/.team-mode",
     "purpose": "Sticky team mode: while the marker file exists, every user prompt is routed back through the /team orchestrator, surviving model switches, pauses, compaction and restarts.",
     "requires": "a bash shell (Git Bash or WSL on Windows); without one the hook exits quietly and sticky mode is simply unavailable"
   },
@@ -152,7 +155,7 @@
   },
   "gitExclude": [
     ".claude/knowledge/",
-    ".claude-tracking/"
+    ".dream-team-tracking/"
   ],
   "pluginPolicy": {
     "consent": "Every plugin in this list is optional and is installed only after the user agrees to that specific plugin. /team-setup reports what is missing and asks before installing anything. /team and the subagents never install, enable or disable a plugin.",
@@ -230,7 +233,7 @@
     }
   ],
   "servicePolicy": {
-    "consent": "A service sends data off this machine, so having its credential is not consent. /team-setup fix asks per service and per provider, naming what is sent and who receives it, and records the answer in .claude-tracking/.service-consent (machine-local, never committed) as {name}=granted {provider} {date} or {name}=declined {date}; the last line for a service wins. Consent to one provider is not consent to another, because the recipients differ. The client refuses to send anything without a granted line, and uses only the credential, endpoint and model of the provider that line names.",
+    "consent": "A service sends data off this machine, so having its credential is not consent. /team-setup fix asks per service and per provider, naming what is sent and who receives it, and records the answer in .dream-team-tracking/.service-consent (machine-local, never committed) as {name}=granted {provider} {date} or {name}=declined {date}; the last line for a service wins. Consent to one provider is not consent to another, because the recipients differ. The client refuses to send anything without a granted line, and uses only the credential, endpoint and model of the provider that line names.",
     "egress": "Only the fields named in an entry's dataSent ever leave the machine. Code, diffs, knowledge files, task files and paths never do.",
     "degradation": "Same as pluginPolicy.degradation: without the service, or when it is slow or failing, the team does the same work the same way, and no output mentions the service's absence.",
     "brokering": "Only the orchestrator calls a service, and only through the entry's script. Subagents never do.",
@@ -277,7 +280,7 @@
     }
   ],
   "updateCheck": {
-    "_comment": "Optional, off by default. /team-setup fix asks and records update-check=granted|declined {date} in .claude-tracking/.service-consent; the client sends nothing without a granted line. /team runs the client once at the start of a new run; it asks source at most once per intervalHours and caches the answer in .claude-tracking/.update-check. The team never updates itself: instructions is shown to the user verbatim.",
+    "_comment": "Optional, off by default. /team-setup fix asks and records update-check=granted|declined {date} in .dream-team-tracking/.service-consent; the client sends nothing without a granted line. /team runs the client once at the start of a new run; it asks source at most once per intervalHours and caches the answer in .dream-team-tracking/.update-check. The team never updates itself: instructions is shown to the user verbatim.",
     "script": "tools/update-check.sh",
     "source": "https://raw.githubusercontent.com/dm-23/dream-team/main/team-manifest.json",
     "repository": "https://github.com/dm-23/dream-team",
@@ -286,7 +289,7 @@
     "default": "off",
     "dataSent": "One HTTPS GET of a public file. No task text, code or paths; GitHub sees the machine's IP address and the time of the request.",
     "recipients": "GitHub",
-    "instructions": "From the project root, in bash: git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team — then reopen the session, run /team-setup check, and run /team resume to continue the parked run."
+    "instructions": "From the project root, in bash: git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team — then reopen the session, run /team-setup fix (it moves run state left from versions before 4.0.0), and run /team resume to continue the parked run."
   },
   "checks": {
     "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
@@ -299,10 +302,11 @@
     "updateCheckClient": "bash checks/verify-update-check.sh",
     "routingSummary": "bash checks/verify-routing-summary.sh",
     "copilotPort": "bash copilot/check.sh",
+    "migrateTracking": "bash checks/verify-migrate-tracking.sh",
     "routingSummaryReport": "bash .claude/checks/summarize-routing.sh — run from the project root; prints the decision-routing shadow numbers from every run's routing.log",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
-    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .claude-tracking/knowledge-backup-<stamp> .claude/knowledge",
+    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp> .claude/knowledge",
     "learningsInbox": "bash checks/verify-learnings-inbox.sh",
     "learningsInboxArgs": "<knowledge-dir>; exit 0 = inbox clean, 1 = /generate-knowledge all is due, 2 = could not read what it needs",
     "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge"

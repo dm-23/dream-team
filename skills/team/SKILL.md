@@ -21,7 +21,7 @@ Answer in the language the task is written in. Record that language in status.md
 - A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
 - Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you carry on as if it were.
 - When a review finding or a user decision changes what `detailed-plan.md`, `change-set.md` or a task file says, correct that file in the same step and log it in "Decisions log". Later batches and resumed sessions work from those files, not from the review.
-- Update `.claude-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
+- Update `.dream-team-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
 - A Reviewer report's `Team issues` line is copied into status.md → "Process notes" and named in the final report to the user. It never goes into LEARNINGS: the inbox is about the project, not the team.
@@ -29,7 +29,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Report requests
 
-A message asking for a report — "generate a report", "make a report", "I need a report on X", "write up the findings", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.claude-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
+A message asking for a report — "generate a report", "make a report", "I need a report on X", "write up the findings", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.dream-team-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat and nothing more. Read the template before writing; never reconstruct its structure or styles from memory.
 
 This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "a short report in chat", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
 
@@ -39,7 +39,7 @@ Two prohibitions, both absolute. Never publish a report through the Artifact too
 
 While a run is open, a marker file keeps every later message inside this workflow even after a model switch, a long pause, a compaction or a restart. The harness re-reads that marker on every prompt through the hook declared in `team-manifest.json → hooks`; nothing depends on this skill staying in context.
 
-Marker path: `.claude-tracking/.team-mode` (plain text, one `key=value` per line).
+Marker path: `.dream-team-tracking/.team-mode` (plain text, one `key=value` per line).
 
 ```
 context_id={workflow}_{slug}_{YYYY-MM-DD}
@@ -71,7 +71,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 2. If `LEARNINGS.md` is missing, create it from `knowledge.persistentTemplates`.
 3. Read `TOOLCHAIN.md → Missing on this machine`. If it lists tools, warn the user once (they may continue).
 3b. Read `CAPABILITIES.md` if it exists (see "Optional capabilities"). Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
-4. Resume check: read the marker at `hooks.marker` if it exists, and list `.claude-tracking/*/status.md` whose first line does not start with `[DONE]`. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase. If its "Process notes" carry `Team update … parked` and no phase after 0 is checked, first re-take `Baseline` (`git rev-parse --short HEAD`, `git status --porcelain`) and rebuild `status.md` from the current template, carrying over the task, language, workflow, context id, `Started`, Decisions log and Process notes: the update changed the team's own files under `.claude/`, and a baseline taken before it would put them in the run's diff.
+4. Resume check: read the marker at `hooks.marker` if it exists, and list `.dream-team-tracking/*/status.md` whose first line does not start with `[DONE]`. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase. If its "Process notes" carry `Team update … parked` and no phase after 0 is checked, first re-take `Baseline` (`git rev-parse --short HEAD`, `git status --porcelain`) and rebuild `status.md` from the current template, carrying over the task, language, workflow, context id, `Started`, Decisions log and Process notes: the update changed the team's own files under `.claude/`, and a baseline taken before it would put them in the run's diff.
 
 ## Step 0: Workflow selection and context
 
@@ -88,7 +88,7 @@ Detect from the task (any language): analysis verbs → Analyze; "update the rea
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.claude-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), the service script under "Decision routing (shadow mode)" and the client under "Update check" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then run the update check.
+Create `.dream-team-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), the service script under "Decision routing (shadow mode)" and the client under "Update check" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then run the update check.
 
 ## Update check (new runs only)
 
@@ -167,7 +167,7 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 Applies only when `CAPABILITIES.md` lists `decision-routing` as available. Otherwise skip this section entirely and never mention it. The service's mode in `team-manifest.json → services` is `shadow`: you ask it, you log what it said, and **nothing it says changes what you do** — not the workflow, not a model, not a question to the user. Do not show its answers to the user.
 
-1. **Workflow.** In Step 0, after creating the run directory, write the user's task text exactly as typed to `routing/task.txt` in it, and run `bash .claude/tools/jev-decide.sh workflow .claude-tracking/{context_id}/routing/task.txt`. Decide the workflow yourself as if the service did not exist.
+1. **Workflow.** In Step 0, after creating the run directory, write the user's task text exactly as typed to `routing/task.txt` in it, and run `bash .claude/tools/jev-decide.sh workflow .dream-team-tracking/{context_id}/routing/task.txt`. Decide the workflow yourself as if the service did not exist.
 2. **Difficulty.** For Bug Fix and Small Change only, run the same script with `difficulty` and the same file.
 3. **Log.** Append one line per call to `routing.log` in the run directory, fields separated by a single tab, in the shapes below. From the JSON it prints, take `answers.{name}.choice` and `answers.{name}.confidence` (two decimals). When it prints nothing, write `jev=unavailable` and `conf=-`. `{provider}` is the provider named in the Services row of `CAPABILITIES.md`, so a change of provider shows in the numbers. Never retry.
    - `{YYYY-MM-DD}	workflow	jev={choice}	conf={confidence}	team={your workflow}	provider={provider}`
@@ -191,7 +191,7 @@ After targeted research read the `Scope Count` and `Wiring/surface` lines of the
 
 1. Clarify (≤3 questions) only if needed.
 2. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Read that file yourself before concluding — here you are the consumer.
-3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.claude-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
+3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.dream-team-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
 4. Close status.md.
 
 ## Workflow: Docs
@@ -297,7 +297,7 @@ When the user approves the plan and selects Option 1 (PAUSE for a fresh session)
 
 ```markdown
 Implementation plan approved and saved to:
-`.claude-tracking/{context_id}/plans/detailed-plan.md`
+`.dream-team-tracking/{context_id}/plans/detailed-plan.md`
 
 To run the implementation phase in a **clean session** (recommended to optimize context size and token limits):
 
@@ -307,7 +307,7 @@ To run the implementation phase in a **clean session** (recommended to optimize 
 `/team resume {context_id}`
 ```
 
-## Files (relative to `.claude-tracking/{context_id}/`)
+## Files (relative to `.dream-team-tracking/{context_id}/`)
 
 `status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
 
@@ -337,8 +337,8 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 
 To keep subagent token usage minimal and context lean:
 - **Strictly Isolated Context:** Never pass chat history, prior subagent conversations, or raw research logs in the handoff envelope.
-- **Full Paths:** Every path in a handoff is written from the repository root — `.claude-tracking/{context_id}/plans/draft-plan.md`, never `plans/draft-plan.md`. The shorthand in this skill is for you; the subagent starts at the repository root and does not know the tracking directory.
-- **File Reference Over Text:** Pass file paths instead of file contents (e.g., tell Developer "Read `.claude-tracking/{context_id}/tasks/task-001.md`" rather than embedding the entire task text into the prompt).
+- **Full Paths:** Every path in a handoff is written from the repository root — `.dream-team-tracking/{context_id}/plans/draft-plan.md`, never `plans/draft-plan.md`. The shorthand in this skill is for you; the subagent starts at the repository root and does not know the tracking directory.
+- **File Reference Over Text:** Pass file paths instead of file contents (e.g., tell Developer "Read `.dream-team-tracking/{context_id}/tasks/task-001.md`" rather than embedding the entire task text into the prompt).
 - **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
 - **For Developers:** Include ONLY:
   1. The path to the assigned `task-{N}-*.md`.
