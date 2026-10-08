@@ -100,9 +100,13 @@ A knowledge file that got in your own way is `fact`, not `team`. That covers a c
 
 **Before writing a `fact`**, check it in three steps:
 
-1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it — one line, or the shortest exact excerpt, since the mark is a single line — or confirm with Grep over the file and its topic directory that it says nothing about the subject. The mark names the file from `knowledge.required`, even when the quote comes from one of its topics.
+1. Open the named knowledge file — through its index, the topic that covers the subject — and find the passage. Quote it — one line, or the shortest exact excerpt, since the mark is a single line — or confirm with `grep -rn` in Bash over the file and its topic directory that it says nothing about the subject — in Bash, because `.claude/knowledge/` is git-ignored and the Grep tool skips ignored paths, so it would report a silence that is not there. The mark names the file from `knowledge.required`, even when the quote comes from one of its topics.
 2. Open the repository path that shows the true state. When the truth is a property of this machine or your environment rather than of a file — a forbidden path, a missing tool — record what you observed instead.
 3. Check where the wrong claim came from. A claim seen only in exploration notes, a task file or a subagent's report is not a knowledge-file claim. If the knowledge file is right, there is no `fact`: the research handed on a wrong claim, and that goes under `Team issues`. If the knowledge file is silent and the fact is worth having, it is still a `fact`, written as `says nothing about`. Both can hold at once.
+
+A gap in a knowledge file is never only a `Team issues` line. If you are about to write "the checklist does not mention X" or "TOOLCHAIN has no row for Y" under `Team issues`, that sentence is the `fact`, and the `Learning:` line names its mark; `Learning: none` next to such a `Team issues` line is a contradiction the orchestrator will send back.
+
+A count that ordinary commits change — tests collected, routes registered, operations in a specification, migration heads, files of a kind — is a special case. The generator writes such numbers as `N (measured at <commit> with <command>)`. A knowledge file that carries the measured form and now measures differently is not a `fact`: the form already says the number moves, and the next regeneration re-measures it. A knowledge file that states such a count bare is a `fact` once: the mark asks for the measured form, quoting the bare number, and says nothing about today's value.
 
 The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote>"; actually <claim> (<repo path>)`, or `[STALE-CHECK] <knowledge file> — says nothing about <subject>; actually <claim> (<repo path>)`; for a fact about the environment, `(environment: <what was observed>)` takes the place of `(<repo path>)`. `/generate-knowledge` looks for the quote; a mark without one costs a search, and one whose quote is not in the file has its evidence reported as not matching while its claim is still checked.
 
@@ -140,6 +144,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never add features; never change architecture.
 - Never approve with a failing toolchain caused by the change set.
 - Never report a bare `approved` or `fixed` while `Unverified` is not `none`.
+- Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, and `git ls-files --eol` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
 - Fix a file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.
@@ -161,5 +166,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - "Build and tests pass, lint/format is optional" → every row of TOOLCHAIN.md, every time.
 - "I know this stack, I don't need the checklist file" → REVIEW-CHECKLIST.md is the contract; gaps are reported, not improvised silently.
 - "Reading both architecture files is safer" → the diff names the side; the other file buys nothing and is paid for again on every pass of the rework loop. Reading neither when the diff needs one is the real failure — establish the diff, then read.
+- "Grep over the knowledge directory returned nothing, so the file says nothing" → the tool skipped an ignored directory; `grep -rn` in Bash is the search that counts.
+- "The test count in TOOLCHAIN is off by nine, that is a fact" → a measured count that moved is not a fact; a bare count is, once, and the mark asks for the measured form.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.
