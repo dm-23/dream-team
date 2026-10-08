@@ -15,8 +15,8 @@ You are the Team Setup checker. Mode from `$ARGUMENTS`: `check` (default; report
 3. **Stack neutrality.** Run `checks.stackNeutralityLint` from the manifest via Bash, from the directory named in `checks.runFrom`. Expected: no output. Any hit is reported as a team defect (file:line).
 4. **Version-control exclude.** Generated files are hidden in two places, and both are checked.
    - `.claude/.gitignore` ships with the team and covers `knowledge/` from inside `.claude/`. Verify it exists and still carries that line; if it was deleted or edited, report it — this skill never rewrites it.
-   - `.git/info/exclude` is machine-local and covers the rest. For each entry in `gitExclude[]` check a matching line exists; in `fix` mode append the missing ones after AskUserQuestion confirmation.
-   - The project's own ignore file at the repository root must NOT contain these paths, and this skill never edits it. `.claude/.gitignore` is the team's file, not the project's, and is the one exception.
+   - The run-state directory, `tracking.dir`, is shared by every edition of the team and belongs in the project's own `.gitignore`, which is committed and so hides it for everyone. If that file does not hide it, in `fix` mode ask via AskUserQuestion whether to add the line `{tracking.dir}/`, saying that the file is committed. Yes → append the line. No → handle it like the entries below. If the project's `.gitignore` still holds a line for `tracking.legacyDir` once step 9 has moved the legacy state, offer in the same question to remove it. Apart from those lines, and only with the user's answer in this run, never edit the project's `.gitignore`.
+   - `.git/info/exclude` is machine-local and covers the rest. For each entry in `gitExclude[]` that the project's `.gitignore` does not already hide, check a matching line exists; in `fix` mode append the missing ones after AskUserQuestion confirmation.
 5. **Plugins, services and capabilities.** Read `plugins[]`, `pluginPolicy`, `services[]` and `servicePolicy` from the manifest.
    - **Detect.** For each entry, decide whether its capability is actually present: check the tools and commands available in this session against the entry's `detect` description, and, if the `claude` command-line tool is reachable, cross-check `claude plugin list`. Report a capability as available only when you can see it, not because the plugin name appears in a list.
    - **Consent.** Every entry is optional. In `check` mode install nothing. In `fix` mode, list what is missing and ask via AskUserQuestion **per plugin**, naming what it is for and what it would let the team do; install only the ones the user picks, with the entry's `install` command. Never install anything unasked, never install two entries that share a `capability`, and never enable or disable a plugin the user did not name.
@@ -40,6 +40,7 @@ You are the Team Setup checker. Mode from `$ARGUMENTS`: `check` (default; report
    - In `fix` mode, when no matching entry exists, show the entry from `hooks.settingsSnippet` and ask via AskUserQuestion before merging it into `.claude/settings.json`. Merge into the existing `UserPromptSubmit` array; never replace an existing hooks block. Warn the user that a newly added hook is picked up after they open `/hooks` once or restart the session.
    - Marker: if `hooks.marker` exists, read it and report the run it names; if that run's `status.md` is missing or already `[DONE]`, report it as stale and (fix mode) delete the marker after confirmation.
 8. **Toolchain.** If `TOOLCHAIN.md` exists, read `## Missing on this machine` and report it verbatim.
+9. **Legacy run state.** Read `tracking.legacyDir` and `tracking.migration` from the manifest. If the legacy directory does not exist at the project root, report `Tracking: {tracking.dir} ok` and stop this step. Otherwise run `bash .claude/{tracking.migration} --dry-run` and report what it prints. In `fix` mode ask via AskUserQuestion whether to move the state now, quoting the dry run's counts; on yes run `bash .claude/{tracking.migration}` and report its output verbatim, including the project files it lists for the user to edit by hand. A refusal because a run is open is reported with the instruction the script prints; the other steps still count. Never move, copy or delete run-state files yourself.
 
 ## Report format
 
@@ -49,7 +50,8 @@ Manifest: ok (v{team.version})
 Team files: ok | missing: [...] → re-copy the team into .claude/
 Check scripts: ok | missing: [...] → re-copy the team into .claude/
 Stack neutrality: ok | violations: [...]
-Version-control exclude: .claude/.gitignore ok|altered|missing — .git/info/exclude ok | added: [...] | missing (run fix): [...]
+Version-control exclude: .claude/.gitignore ok|altered|missing — project .gitignore hides {tracking.dir}: yes | added | declined — .git/info/exclude ok | added: [...] | missing (run fix): [...]
+Tracking: {tracking.dir} ok | legacy {tracking.legacyDir} present (run fix) | migrated this run | refused: open run {context_id}
 Capabilities: available: [...] | none detected | installed this run: [...] | declined: [...]
   CAPABILITIES.md: written | unchanged
   Direct access would need a frontmatter change: {capability} → {role} | none
@@ -65,7 +67,7 @@ Toolchain: ok | missing tools: [...]
 
 - Never modify agents, skills, or templates. The only knowledge files you may write are the persistent ones listed in the manifest and `CAPABILITIES.md`.
 - Never install, enable or disable a plugin the user did not explicitly agree to in this run.
-- Never edit an ignore file: neither the project's own at the repository root, nor the team's `.claude/.gitignore`. Report, do not repair.
-- Never run any command other than the manifest lint, `claude plugin list/install`, a bash availability check, a service's credential test and `probe`, the update check's `probe`, and reading files.
-- In `check` mode change nothing except `CAPABILITIES.md`, which is a report of what the machine offers, and `.dream-team-tracking/.update-check`, which the update check's `probe` writes itself; in `fix` mode the version-control exclude file, the project settings hooks entry, the persistent knowledge files, a stale marker, `.dream-team-tracking/.service-consent`, and plugins the user picked may also change, each after confirmation.
+- Never edit the team's `.claude/.gitignore`. Edit the project's own `.gitignore` only as step 4 describes: the run-state lines, with the user's answer in this run.
+- Never run any command other than the manifest lint, `claude plugin list/install`, a bash availability check, a service's credential test and `probe`, the update check's `probe`, the run-state migration script, and reading files.
+- In `check` mode change nothing except `CAPABILITIES.md`, which is a report of what the machine offers, and `.dream-team-tracking/.update-check`, which the update check's `probe` writes itself; in `fix` mode the version-control exclude file, the run-state lines of the project's .gitignore, the run state the migration moves (and the knowledge it rewrites), the project settings hooks entry, the persistent knowledge files, a stale marker, `.dream-team-tracking/.service-consent`, and plugins the user picked may also change, each after confirmation.
 - Never copy, move or delete a team file. A missing or edited agent, skill or template is reported and left alone; replacing the deployment is the user's call.
