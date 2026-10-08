@@ -117,7 +117,7 @@ Top risk: {one line, or "none"}
 Blockers: {what you could not establish, or "none"}
 ```
 
-Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. Never paste the report into your final message. Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
+Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
 
 Then return control to the orchestrator.
 
@@ -129,7 +129,7 @@ Version-control history, for questions the working tree cannot answer: when or b
 
 Operations readings, only when `TOOLCHAIN.md` has an `## Operations` section and only its rows marked read-only, run exactly as written there: the state of a deployed service, a remote log, a remote file listing. The handoff must name the rows it wants under `constraints`; a row the handoff does not name is not yours to run, and a row not marked read-only never is. Report the command and the fact it established, not a paraphrase of it.
 
-Never run any other command: nothing that changes the repository or its index (`checkout`, `commit`, `reset`, `stash`, `add`), nothing that writes a file by redirection, and no non-git command. Searching stays with Grep and Glob.
+Never run any other command: nothing that changes the repository or its index (`checkout`, `commit`, `reset`, `stash`, `add`), nothing that writes a file by redirection, and no command outside the two kinds above. Searching stays with Grep and Glob.
 
 ## Optional capabilities
 
@@ -140,7 +140,7 @@ Never reach for tools outside your own list. If a task hinges on external docume
 ## Rules
 
 - Never write production code; never modify source files; never create files outside `.dream-team-tracking/`.
-- Write and Edit touch only the output file the handoff names, or `draft-plan.md` in wide mode. Save your report there instead of returning its text to the orchestrator to copy.
+- Write and Edit touch only the output file the handoff names, or `draft-plan.md` in wide mode. Save your report there instead of returning its text to the orchestrator to copy, except after a failed write (`Blockers: write failed`).
 - Exact paths only — no vague module references.
 - Wide mode appends to draft-plan.md, never replaces.
 - When a knowledge file and the code disagree, trust the code and say so in "Risks" (the reviewer will add a stale-check).

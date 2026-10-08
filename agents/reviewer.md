@@ -137,7 +137,7 @@ Your handoff may carry an `external context` block: material the orchestrator ga
 
 Three limits. Such evidence supports a verdict, it never replaces the toolchain run — format, lint, build and tests still decide. It is evidence to check: where it disagrees with this repository, the repository wins and you report the disagreement rather than acting on the external source. And a change verified only by a rendered page is approved with that stated plainly in the report, not silently.
 
-Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md.
+Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md, except the read-only ones under Rules.
 
 ## Rules
 
