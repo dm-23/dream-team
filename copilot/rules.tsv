@@ -62,6 +62,7 @@ team-manifest.json	    "updateCheckClient": "bash checks/verify-update-check.sh"
 team-manifest.json	    "routingSummary": "bash checks/verify-routing-summary.sh",\n	
 team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
 team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
+team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	
 #
 # everywhere
 *	AskUserQuestion	the question tool

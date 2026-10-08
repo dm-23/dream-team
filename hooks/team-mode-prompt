@@ -1,39 +1,39 @@
 #!/usr/bin/env bash
 # Dream Team — UserPromptSubmit hook.
 #
-# While the marker file .dream-team-tracking/.team-mode exists, every user message
-# is routed back through the /team orchestrator. This survives a model switch,
-# a long pause, a compaction and a restart, because the harness runs this hook
-# on every submitted prompt rather than relying on anything staying in context.
+# Three things the harness can tell the model deterministically, which prose
+# at the top of a long skill cannot guarantee:
 #
-# Exit 0 with no output = no injection. The hook must never break a session,
-# so every failure path is silent.
+#   <TEAM-LEGACY-STATE>  the project's run state is still in the directory
+#                        teams before 4.0.0 used; /team must not start a run.
+#                        Emitted on every prompt, slash commands included,
+#                        while that directory exists.
+#   <TEAM-MODE-STALE>    the marker names a run whose status.md is missing or
+#                        closed; the marker is to be deleted, the message is a
+#                        standalone request.
+#   <TEAM-MODE-ACTIVE>   a run is open; the message belongs to it. Never on a
+#                        slash command, which is an explicit instruction.
+#
+# This survives a model switch, a long pause, a compaction and a restart,
+# because the harness runs this hook on every submitted prompt. Exit 0 with no
+# output = nothing to say. The hook must never break a session, so every
+# failure path is silent.
 
 set -uo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
-MARKER="${PROJECT_DIR}/.dream-team-tracking/.team-mode"
-
-[ -f "$MARKER" ] || exit 0
+TRACKING="${PROJECT_DIR}/.dream-team-tracking"
+MARKER="${TRACKING}/.team-mode"
+LEGACY="${PROJECT_DIR}/.claude-tracking"
 
 payload="$(cat 2>/dev/null || true)"
 
 # A slash command is an explicit instruction to the harness — never override it.
-if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"/'; then
-  exit 0
+# Leading whitespace, raw or JSON-escaped (\n, \t, \r), does not make it a prompt.
+slash=0
+if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/'; then
+  slash=1
 fi
-
-read_field() {
-  sed -n "s/^$1=//p" "$MARKER" 2>/dev/null | head -1 | tr -d '\r'
-}
-
-context_id="$(read_field context_id)"
-workflow="$(read_field workflow)"
-phase="$(read_field phase)"
-
-[ -n "$context_id" ] || exit 0
-[ -n "$workflow" ] || workflow="unknown"
-[ -n "$phase" ] || phase="unknown"
 
 escape_for_json() {
   local s="$1"
@@ -45,17 +45,53 @@ escape_for_json() {
   printf '%s' "$s"
 }
 
-context_id="$(escape_for_json "$context_id")"
-workflow="$(escape_for_json "$workflow")"
-phase="$(escape_for_json "$phase")"
+read_field() {
+  sed -n "s/^$1=//p" "$MARKER" 2>/dev/null | head -1 | tr -d '\r'
+}
 
-context="<TEAM-MODE-ACTIVE>\n"
-context="${context}Dream Team mode is ON for this project. Run: ${context_id}. Workflow: ${workflow}. Last recorded phase: ${phase}.\n"
-context="${context}Treat the user's message as input to that run, not as a standalone request.\n"
-context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\") and read .dream-team-tracking/${context_id}/status.md before answering.\n"
-context="${context}2. Continue the existing run from its first unchecked phase. Never restart it and never open a second run in parallel.\n"
-context="${context}3. Stay in the orchestrator role: no production code, no tests, no build or test commands of your own — those belong to the Developer, Tester and Reviewer subagents.\n"
-context="${context}Handle directly, without the workflow: a request to stop or pause team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
-context="${context}</TEAM-MODE-ACTIVE>"
+context=""
+
+if [ -d "$LEGACY" ]; then
+  context="${context}<TEAM-LEGACY-STATE>\n"
+  context="${context}This project's run state is still in .claude-tracking/, the directory teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup fix, which shows a dry run of tools/migrate-tracking.sh and moves the state with the user's consent. /team stop and /team status still work. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
+  context="${context}</TEAM-LEGACY-STATE>\n"
+fi
+
+if [ "$slash" -eq 0 ] && [ -f "$MARKER" ]; then
+  context_id="$(read_field context_id)"
+  workflow="$(read_field workflow)"
+  phase="$(read_field phase)"
+  [ -n "$workflow" ] || workflow="unknown"
+  [ -n "$phase" ] || phase="unknown"
+
+  if [ -n "$context_id" ]; then
+    status_file="${TRACKING}/${context_id}/status.md"
+    state=""
+    if [ ! -f "$status_file" ]; then
+      state="missing"
+    elif head -1 "$status_file" 2>/dev/null | tr -d '\r' | grep -qF '[DONE]'; then
+      state="closed"
+    fi
+    cid="$(escape_for_json "$context_id")"
+    if [ -n "$state" ]; then
+      context="${context}<TEAM-MODE-STALE>\n"
+      context="${context}The marker .dream-team-tracking/.team-mode names run ${cid}, whose status.md is ${state}. The run is not open. Delete the marker with the shell command rm -f .dream-team-tracking/.team-mode, say so in one line, and treat the user's message as a standalone request.\n"
+      context="${context}</TEAM-MODE-STALE>\n"
+    else
+      wf="$(escape_for_json "$workflow")"
+      ph="$(escape_for_json "$phase")"
+      context="${context}<TEAM-MODE-ACTIVE>\n"
+      context="${context}Dream Team mode is ON for this project. Run: ${cid}. Workflow: ${wf}. Last recorded phase: ${ph}.\n"
+      context="${context}Treat the user's message as input to that run, not as a standalone request.\n"
+      context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\") and read .dream-team-tracking/${cid}/status.md before answering.\n"
+      context="${context}2. Continue the existing run from its first unchecked phase. Never restart it and never open a second run in parallel.\n"
+      context="${context}3. Stay in the orchestrator role: no production code, no tests, no build or test commands of your own — those belong to the Developer, Tester and Reviewer subagents.\n"
+      context="${context}Handle directly, without the workflow: a request to stop or pause team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
+      context="${context}</TEAM-MODE-ACTIVE>"
+    fi
+  fi
+fi
+
+[ -n "$context" ] || exit 0
 
 printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "UserPromptSubmit",\n    "additionalContext": "%s"\n  },\n  "suppressOutput": true\n}\n' "$context"

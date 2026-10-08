@@ -99,7 +99,7 @@ tools/                         the clients for the optional decision-routing ser
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
                                workflow consistency, text encoding, the integrity check
                                `/generate-knowledge fix` must pass, and the learnings
-                               inbox check
+                               inbox check, and the sticky-hook check
 copilot/                       the GitHub Copilot edition: translation rules, overlays, the
                                installer and its tests
 docs/                          the team's own documents; never read as project documentation
@@ -230,8 +230,10 @@ A run outlives the conversation that started it. While it is open, a marker file
 This is deliberately not a memory or an instruction that lives in context. The harness runs the hook itself, so the behaviour survives a model switch, a long pause, a compaction and a full restart.
 
 - The marker is written when a run starts, updated at every phase change, and deleted when the run closes.
-- A message starting with a slash is never captured, so every command still works normally.
+- A message starting with a slash is never captured, so every command still works normally. Leading whitespace does not change that.
 - `/team stop` deletes the marker and leaves the run parked; `/team resume` picks it up.
+- A marker whose run is already closed, or whose `status.md` is gone, is reported as stale instead of hijacking the message; the orchestrator deletes it.
+- While the pre-4.0.0 run-state directory still exists, every prompt carries a one-line notice that `/team` starts nothing until `/team-setup fix` has moved it. The notice comes from the hook, not from the skill, so it cannot be skipped.
 - If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions.
 
 Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session.
@@ -374,7 +376,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | An update to the team changed nothing, a role or command behaves like the previous version | The session still holds the prompts it loaded at startup | Reopen the session |
 | `/team` refuses to start | A required knowledge file is missing | `/generate-knowledge` |
 | Sticky mode does nothing | Hook not wired, or no bash | `/team-setup check` reports which; open `/hooks` once after wiring |
-| An unrelated request is pulled into a run | A stale marker from a run that never closed | `/team stop`, or `/team-setup fix` |
+| An unrelated request is pulled into a run | A stale marker from a run that never closed | The hook now reports it as stale; `/team stop`, or `/team-setup fix` |
 | A command is not offered | The team's contents are not in `.claude/` itself, but one level down in a subdirectory | Move them up so `.claude/skills/team/SKILL.md` is a real path, then reopen the session |
 | The reviewer reports a missing tool | A command in `TOOLCHAIN.md` is not installed here | Install it, or accept the gap; it is reported, never faked |
 | Generated files appear in version control | The exclude lines were not added | `/team-setup fix` |
