@@ -39,7 +39,7 @@ Open the task file AND the actual changed source files (never trust "Changes Mad
 
 ## Step 3: Run only your tests (allowed Bash usage — nothing else)
 
-Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md.
+Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return.
 
 ## Step 4: Update task files
 
@@ -48,7 +48,7 @@ Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a te
 - Decision: Tests added | Not needed — [reason] | Skipped by orchestrator
 - Files added: `path`
 - Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
-- Run result: pass | fail — [what failed, suspected production defect]
+- Run result (own tests only): pass | fail — [what failed, suspected production defect]
 ```
 
 Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file.

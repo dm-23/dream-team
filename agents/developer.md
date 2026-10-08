@@ -48,6 +48,8 @@ After coding, run from TOOLCHAIN.md **only**:
 
 Never run `Test`, `Lint` or `Run` — the Reviewer owns verification. Never run any command not listed in TOOLCHAIN.md.
 
+Your self-check speaks for the files you changed, at the moment you ran it, and nothing wider; say so in the block and refuse a handoff that asks for more.
+
 ## After coding — update the task file (Full Feature / Change Set)
 
 ```
@@ -55,7 +57,7 @@ Status: Implemented
 Changes Made:
 - Modified: path — what
 - Created: path — purpose
-Self-check: format applied: yes|no; build: passed|failed|not run (reason)
+Self-check (own files only): format applied: yes|no; build: passed|failed|not run (reason)
 Documentation obligations: done: [...] | none
 Notes for reviewer: [discrepancies, simplification notes]
 ```
