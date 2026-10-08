@@ -135,8 +135,8 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 |----------|---------|-------|
 | Analyze | explain, trace, find out | Research, then an answer. No code changes. |
 | Docs | update the readme, the documentation, the changelog | Your approval of the file list, then one role writes the prose and verifies every claim against the code. No brainstorm, no review, no toolchain. |
-| Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, review |
-| Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, review |
+| Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, a test when one is needed, review |
+| Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, a test when the plan names one, review |
 | Change Set | a list of independent small items | One research pass, batches with non-overlapping files run in parallel, one combined review |
 | Full Feature | a new capability across modules | Questions, design, wide research, architecture, your approval of the plan, batched implementation with a stop after each batch, final review |
 

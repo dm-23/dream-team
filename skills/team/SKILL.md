@@ -85,8 +85,8 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 |----------|----------|----------|
 | Analyze | find/explain/trace; no code change | minimal |
 | Docs | the change touches only documentation files | minimal |
-| Bug Fix | something is broken; a fix is needed | light |
-| Small Change | one concern, expected ≤3 files, not a bug | medium |
+| Bug Fix | something is broken; a fix is needed | light (a Tester when the fix needs a test) |
+| Small Change | one concern, expected ≤3 files, not a bug | medium (a Tester when the plan names a test) |
 | Change Set | several independent small items (post-release polish, a list of tweaks), each small, files mostly disjoint | medium, parallel |
 | Full Feature | new capability across modules (new entity + API + user interface, new page, new integration) | full |
 
@@ -225,7 +225,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.
 4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix.
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
-6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to).
+6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to). Then, when the approved fix needs a test — the user asked for one, `PROJECT-RULES.md` requires one, or the fix changes behaviour an existing test pins — handoff → Tester, one call, with the test cases from the approved fix in `inputs`; the Developer never writes tests, so a fix without this call ships untested or not at all. Its model is the cell `bug_fix.tester`. Record `Tests (Tester: run)` or `skipped — reason` in status.md either way.
 7. Handoff → Reviewer (single pass, baseline attached). Reviewer classifies what the run taught (its Step 5).
 8. If Reviewer returns `manual` findings or `needs rework`: handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user).
 9. Report; close status.md.
@@ -236,7 +236,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the pointer block's `Scope Count` line.
 3. Brainstorm ×3 (`phase: solution`); `inputs` is the exploration **path** plus the learnings lines. Quorum.
 4. Present a 2–5 bullet plan (concrete actions, files) via AskUserQuestion for approval.
-5. Handoff → Developer (1–2 inline tasks, disjoint files if 2).
+5. Handoff → Developer (1–2 inline tasks, disjoint files if 2). Then, under the same condition as Bug Fix step 6 — the plan names a test, a rule requires one, or an existing test pins the changed behaviour — handoff → Tester, one call, model from the cell `small_change.tester`. Record the decision in status.md.
 6. Handoff → Reviewer (single pass). Rework loop as in Bug Fix step 8.
 7. Report; close status.md.
 
@@ -273,7 +273,7 @@ If Option 1 ("Approve and PAUSE") is selected:
 
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
-1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer. A task whose files are all documentation goes to the DocWriter instead of a Developer; the Batching Strategy has already placed it after the code it describes, so the DocWriter checks its claims against that code.
+1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer. A task whose files are all documentation goes to the DocWriter instead of a Developer; the Batching Strategy has already placed it after the code it describes, so the DocWriter checks its claims against that code. Its model is the cell `full_feature.doc-writer`; a documentation-only task gets no Tester call.
    Rework: if the Reviewer returns `manual` findings or `needs rework`, loop as in Bug Fix step 8 inside this batch. Any change made after the batch review — a finding, a user decision — goes back through the Reviewer before the gate; the final review never stands in for it.
    Batches the Batching Strategy marks parallel-safe with each other may run as one wave; the gate below then comes once, after every batch of the wave is approved. Record the wave in "Process notes".
 2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. If status.md → "Verify by hand" holds items for this batch, list them in the question text before the options. Ask via AskUserQuestion:
