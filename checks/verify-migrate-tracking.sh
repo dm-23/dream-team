@@ -209,6 +209,17 @@ else
   echo "skip [symlink] cannot create symlinks here"
 fi
 
+case=stale-temp
+# What an interrupt between the temp copy and the rewrite leaves behind.
+P="$tmp/p11"; make_project "$P"
+cp -p "$P/.claude-tracking/bugfix_x_2026-10-01/status.md" "$P/.claude-tracking/bugfix_x_2026-10-01/status.md.mt-tmp"
+cp -p "$P/.claude/knowledge/LEARNINGS.md" "$P/.claude/knowledge/LEARNINGS.md.mt-tmp"
+run "$P"
+[ "$rc" = 0 ] || fail "exit $rc: $(cat "$tmp/err")"
+[ -z "$(find "$P" -name '*.mt-tmp' -print)" ] || fail "a temp file is left: $(find "$P" -name '*.mt-tmp')"
+grep -qF '.dream-team-tracking/bugfix_x' "$P/.dream-team-tracking/bugfix_x_2026-10-01/status.md" || fail "original not rewritten"
+grep -qF '`.dream-team-tracking/{context_id}' "$P/.claude/knowledge/LEARNINGS.md" || fail "knowledge not rewritten"
+
 # @GUARD@  (Task 2 inserts the source guard here)
 
 [ "$status" = 0 ] && echo "verify-migrate-tracking: all cases passed"

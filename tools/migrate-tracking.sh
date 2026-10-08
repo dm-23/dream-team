@@ -81,7 +81,7 @@ fi
 # backups excluded, binary files skipped by -I.
 mentions() {
   [ -d "$1" ] || return 0
-  grep -rlIF --exclude-dir='knowledge-backup-*' -- "$OLD" "$1" 2>/dev/null | LC_ALL=C sort
+  grep -rlIF --exclude-dir='knowledge-backup-*' --exclude='*.mt-tmp' -- "$OLD" "$1" 2>/dev/null | LC_ALL=C sort
 }
 # The project's own files that name it: git grep sees tracked and untracked
 # files and skips ignored ones; the team's directories are left out. The
@@ -114,6 +114,9 @@ if [ "$dry" = 1 ]; then
   exit 0
 fi
 
+# Leftovers of an interrupted rewrite; the suffix belongs to this script.
+find "$OLD" -type f -name '*.mt-tmp' -exec rm -f -- {} + 2>/dev/null
+[ ! -d "$KNOW" ] || find "$KNOW" -type f -name '*.mt-tmp' -exec rm -f -- {} + 2>/dev/null
 mkdir -p "$NEW" || { echo "migrate: could not create $NEW/" >&2; exit 2; }
 
 kn=0 bk=""
@@ -123,6 +126,7 @@ if [ -s "$TMP/know" ]; then
   { mkdir -p "$bk" && cp -R "$KNOW/." "$bk/"; } \
     || { echo "migrate: could not back up $KNOW/ to $bk/; nothing was rewritten or moved" >&2; exit 2; }
   while IFS= read -r f; do
+    [ -f "$f" ] || continue
     rewrite "$f" || { echo "migrate: could not rewrite $f (read-only or locked?); fix that and run again" >&2; exit 2; }
     kn=$((kn + 1))
   done < "$TMP/know"
@@ -130,6 +134,7 @@ fi
 
 rn=0
 while IFS= read -r f; do
+  [ -f "$f" ] || continue
   rewrite "$f" || { echo "migrate: could not rewrite $f (read-only or locked?); fix that and run again" >&2; exit 2; }
   rn=$((rn + 1))
 done < "$TMP/run"
