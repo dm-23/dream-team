@@ -265,7 +265,7 @@ git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
 cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team
 ```
 
-`knowledge/` and any `settings.json` you have are untouched — nothing in this repository is named either. Then reopen the session, so the new role and command prompts are loaded, and run `/team-setup check`.
+`knowledge/` and any `settings.json` you have are untouched — nothing in this repository is named either. Then reopen the session, so the new role and command prompts are loaded, and run `/team-setup fix`.
 
 A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
 
@@ -273,11 +273,13 @@ Existing knowledge files stay valid unless the manifest gained a required file, 
 
 ### Moving run state from the legacy directory
 
-Before 4.0.0 the team kept its run state in the legacy `.claude-tracking/`. Now it is `.dream-team-tracking/`, shared by the Claude Code and Copilot editions, so a run started in one agent can be resumed in the other — never work on one open run from both at once. After updating, `/team` starts nothing until the legacy state is moved:
+Before 4.0.0 the Claude Code edition kept its run state in the legacy `.claude-tracking/`; the Copilot edition already used `.dream-team-tracking/`. Now it is `.dream-team-tracking/`, shared by the Claude Code and Copilot editions, so a run started in one agent can be resumed in the other — never work on one open run from both at once. After updating, `/team` starts nothing until the legacy state is moved:
 
 1. If a run is open, `/team stop` in the session that runs it.
 2. `/team-setup fix`: it shows a dry run of `tools/migrate-tracking.sh` and moves the state when you agree. Paths inside the moved files and in your knowledge files are rewritten (the knowledge is backed up first); files of your project that still name the legacy directory are listed for you to edit, never changed.
 3. `/team resume` to continue a parked run.
+
+If both directories hold the same name (typically `.service-consent` or `.update-check` in a project that used both editions), the migration refuses and lists them: keep one of each, then run `/team-setup fix` again.
 
 ### Update check
 
@@ -286,7 +288,7 @@ The team can tell you when a newer version exists. It is off until you turn it o
 When it is on, `/team` looks up the newest version at most once a day. While a newer one is known, it asks at the start of every new run. You choose:
 
 - **Continue** on the version you have.
-- **Park and update** — the run is left open at its first phase and the team shows the update command above. Run it, reopen the session so the new prompts are loaded, run `/team-setup check`, then `/team resume`. The team never updates itself, and an update cannot take effect in the session that is already open.
+- **Park and update** — the run is left open at its first phase and the team shows the update command above. Run it, reopen the session so the new prompts are loaded, run `/team-setup fix`, then `/team resume`. The team never updates itself, and an update cannot take effect in the session that is already open.
 - **Skip this version** — you are not asked about it again; you are asked about the next one.
 
 It never runs on `/team resume`, `status` or `stop`, or in the middle of a run. Without bash, without a network or without an answer from GitHub it stays silent. `/team-setup check` shows whether it is on and whether you are up to date.
@@ -377,3 +379,4 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | The reviewer reports a missing tool | A command in `TOOLCHAIN.md` is not installed here | Install it, or accept the gap; it is reported, never faked |
 | Generated files appear in version control | The exclude lines were not added | `/team-setup fix` |
 | `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup fix` |
+| Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |

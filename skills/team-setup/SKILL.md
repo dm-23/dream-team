@@ -8,14 +8,25 @@ user-invocable: true
 
 You are the Team Setup checker. Mode from `$ARGUMENTS`: `check` (default; report only) or `fix` (apply safe repairs after confirmation).
 
+## Legacy run state (before the steps)
+
+Read `tracking` from the manifest. If the directory `tracking.legacyDir` exists at the project root, this project's run state is still in the legacy location, and it must move before any step reads or writes `tracking.dir`:
+
+1. Run `bash .claude/{tracking.migration} --dry-run` and report what it prints.
+2. If the dry run refuses (a run is open, or names exist in both directories) or fails, report its message and instruction verbatim, ask nothing, and continue with the steps in legacy mode (below).
+3. In `check` mode, stop here and continue with the steps in legacy mode.
+4. In `fix` mode, ask via AskUserQuestion whether to move the state now, quoting the dry run's counts. On yes, run `bash .claude/{tracking.migration}` and report its output verbatim, including the project files it lists for the user to edit by hand; on success the steps run normally. On no, or if it refuses or fails, continue in legacy mode.
+
+**Legacy mode** — the legacy directory still exists after this section: step 5 asks no consent question, writes nothing under `tracking.dir` and skips the update check's `probe`; it reports each service and the update check as "not checked: run state is in the legacy directory, migrate first". Every other step runs as usual. Never move, copy or delete run-state files yourself.
+
 ## Steps
 
 1. **Manifest.** Read `.claude/team-manifest.json`. Fail if missing or invalid, or `schemaVersion` ≠ 1.
 2. **Team files.** The team is deployed as one layer: the repository's contents sit directly in `.claude/`, which is where Claude Code discovers agents and skills, so there are no copies or links to keep in sync. For each name in `agents[]` verify `.claude/agents/<name>.md` exists and its frontmatter `name:` matches; for each in `skills[]` verify `.claude/skills/<name>/SKILL.md`. Verify every template path under `templates` exists and `templates.standards` contains `_generic.md`. Verify too that every script the `checks` block names exists under `.claude/`: `checks.manifestBudgets` and `checks.knowledgeIntegrity` each give a path relative to the team root, and a deployment that lost them passes every other test in this skill while `/generate-knowledge fix` silently cannot verify its own work. Do the same for `checks.jevClient` and `checks.updateCheckClient`, for `updateCheck.script`, and for every `services[]` entry verify its `script` and its `questions` directory exist. Report anything missing by name; a missing file means an incomplete deployment, and the fix is to re-copy the team's contents into `.claude/`, which this skill never does by itself.
 3. **Stack neutrality.** Run `checks.stackNeutralityLint` from the manifest via Bash, from the directory named in `checks.runFrom`. Expected: no output. Any hit is reported as a team defect (file:line).
-4. **Version-control exclude.** Generated files are hidden in two places, and both are checked.
+4. **Version-control exclude.** Generated files are hidden in three places — the team's ignore file, the project's `.gitignore`, and `.git/info/exclude` — and all three are checked.
    - `.claude/.gitignore` ships with the team and covers `knowledge/` from inside `.claude/`. Verify it exists and still carries that line; if it was deleted or edited, report it — this skill never rewrites it.
-   - The run-state directory, `tracking.dir`, is shared by every edition of the team and belongs in the project's own `.gitignore`, which is committed and so hides it for everyone. If that file does not hide it, in `fix` mode ask via AskUserQuestion whether to add the line `{tracking.dir}/`, saying that the file is committed. Yes → append the line. No → handle it like the entries below. If the project's `.gitignore` still holds a line for `tracking.legacyDir` once step 9 has moved the legacy state, offer in the same question to remove it. Apart from those lines, and only with the user's answer in this run, never edit the project's `.gitignore`.
+   - The run-state directory, `tracking.dir`, is shared by every edition of the team and belongs in the project's own `.gitignore`, which is committed and so hides it for everyone. If neither that file nor `.git/info/exclude` hides it, in `fix` mode ask via AskUserQuestion whether to add the line `{tracking.dir}/` to the project's `.gitignore`, saying that the file is committed. Yes → append the line. No → append `{tracking.dir}/` to `.git/info/exclude` directly, without a second confirmation. Separately, when the legacy directory no longer exists and the project's `.gitignore` still holds a line for `tracking.legacyDir`, ask in `fix` mode whether to remove that line; remove it only on yes. Edit only those lines of the project's `.gitignore`, and only with the user's answer in this run.
    - `.git/info/exclude` is machine-local and covers the rest. For each entry in `gitExclude[]` that the project's `.gitignore` does not already hide, check a matching line exists; in `fix` mode append the missing ones after AskUserQuestion confirmation.
 5. **Plugins, services and capabilities.** Read `plugins[]`, `pluginPolicy`, `services[]` and `servicePolicy` from the manifest.
    - **Detect.** For each entry, decide whether its capability is actually present: check the tools and commands available in this session against the entry's `detect` description, and, if the `claude` command-line tool is reachable, cross-check `claude plugin list`. Report a capability as available only when you can see it, not because the plugin name appears in a list.
@@ -40,18 +51,17 @@ You are the Team Setup checker. Mode from `$ARGUMENTS`: `check` (default; report
    - In `fix` mode, when no matching entry exists, show the entry from `hooks.settingsSnippet` and ask via AskUserQuestion before merging it into `.claude/settings.json`. Merge into the existing `UserPromptSubmit` array; never replace an existing hooks block. Warn the user that a newly added hook is picked up after they open `/hooks` once or restart the session.
    - Marker: if `hooks.marker` exists, read it and report the run it names; if that run's `status.md` is missing or already `[DONE]`, report it as stale and (fix mode) delete the marker after confirmation.
 8. **Toolchain.** If `TOOLCHAIN.md` exists, read `## Missing on this machine` and report it verbatim.
-9. **Legacy run state.** Read `tracking.legacyDir` and `tracking.migration` from the manifest. If the legacy directory does not exist at the project root, report `Tracking: {tracking.dir} ok` and stop this step. Otherwise run `bash .claude/{tracking.migration} --dry-run` and report what it prints. In `fix` mode ask via AskUserQuestion whether to move the state now, quoting the dry run's counts; on yes run `bash .claude/{tracking.migration}` and report its output verbatim, including the project files it lists for the user to edit by hand. A refusal because a run is open is reported with the instruction the script prints; the other steps still count. Never move, copy or delete run-state files yourself.
 
 ## Report format
 
 ```
 Dream Team setup — {check|fix}
 Manifest: ok (v{team.version})
+Tracking: {tracking.dir} ok | migrated this run | legacy {tracking.legacyDir} present: declined | refused: open run {context_id} | refused: names in both directories [...] | error: {message} | check mode: would move {N} entries
 Team files: ok | missing: [...] → re-copy the team into .claude/
 Check scripts: ok | missing: [...] → re-copy the team into .claude/
 Stack neutrality: ok | violations: [...]
-Version-control exclude: .claude/.gitignore ok|altered|missing — project .gitignore hides {tracking.dir}: yes | added | declined — .git/info/exclude ok | added: [...] | missing (run fix): [...]
-Tracking: {tracking.dir} ok | legacy {tracking.legacyDir} present (run fix) | migrated this run | refused: open run {context_id}
+Version-control exclude: .claude/.gitignore ok|altered|missing — project .gitignore hides {tracking.dir}: yes | added | no, hidden by .git/info/exclude | not hidden (run fix) — .git/info/exclude ok | added: [...] | missing (run fix): [...]
 Capabilities: available: [...] | none detected | installed this run: [...] | declined: [...]
   CAPABILITIES.md: written | unchanged
   Direct access would need a frontmatter change: {capability} → {role} | none

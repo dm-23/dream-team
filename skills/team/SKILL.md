@@ -67,9 +67,10 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 ## Step -1: Preflight (every invocation)
 
 0. **Legacy run state.** Read `tracking` from `.claude/team-manifest.json`. If the directory `tracking.legacyDir` exists at the project root, this project's run state has not been moved to `tracking.dir` yet, and nothing below may run against it:
-   - `status`: read `{tracking.legacyDir}/.team-mode` if present and report that run as parked in the legacy directory, to be moved with `/team-setup fix`. Change nothing.
-   - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and say the run is parked and will resume after `/team-setup fix`.
+   - `status`: report the run named by `{tracking.legacyDir}/.team-mode` if present, and the run named by `hooks.marker` if present; say that `/team stop` and then `/team-setup fix` are needed before resuming. Do not call a run "parked" while its marker exists. Change nothing.
+   - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and the marker at `hooks.marker` if present; say the run(s) are parked and will continue with `/team resume` after `/team-setup fix`.
    - anything else, `resume` included: start nothing. Say the state is still in the legacy directory; if its marker exists, ask the user to run `/team stop` first; then `/team-setup fix`, which moves it. Stop here.
+   - In all three cases, stop here.
 
    Without a legacy directory: if the argument is `stop` or `status`, act per the "Sticky team mode" table and stop here.
 1. Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check it exists under `knowledge.dir`. If any is missing: stop and tell the user to run `/generate-knowledge` (list the missing files). Do not attempt to generate knowledge yourself.
