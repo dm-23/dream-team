@@ -102,6 +102,7 @@ case=project-files
 [ "$(cat "$P/CLAUDE.md")" = "Runs live in .claude-tracking/." ] || fail "CLAUDE.md edited"
 has "$tmp/out" "Project files that still mention"
 for f in .gitignore CLAUDE.md docs/x.md; do has "$tmp/out" "$f"; done
+[ "$(cat "$P/docs/x.md")" = "See \`.claude-tracking/\` for runs." ] || fail "docs/x.md edited"
 grep -qF '.claude/knowledge' "$tmp/out" && fail "the team's own directory is listed as a project file"
 
 case=rerun

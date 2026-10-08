@@ -97,7 +97,7 @@ PAT="$(printf '%s' "$OLD" | sed 's/[.[\*^$/]/\\&/g')"
 # GNU sed on Windows (Git Bash) drops CR in text mode; -b keeps CRLF files intact.
 SEDB=""; sed -b p </dev/null >/dev/null 2>&1 && SEDB="-b"
 rewrite() {
-  cp -p -- "$1" "$1.mt-tmp" && sed $SEDB "s/$PAT/$NEW/g" "$1" > "$1.mt-tmp" && mv -f -- "$1.mt-tmp" "$1" || { rm -f -- "$1.mt-tmp"; return 1; }
+  cp -p -- "$1" "$1.mt-tmp" && LC_ALL=C sed $SEDB "s/$PAT/$NEW/g" "$1" > "$1.mt-tmp" && mv -f -- "$1.mt-tmp" "$1" || { rm -f -- "$1.mt-tmp"; return 1; }
 }
 
 mentions "$OLD" > "$TMP/run"

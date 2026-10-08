@@ -189,5 +189,5 @@ Next:
   2. In VS Code, turn on the chat.useHooks setting (hooks are a preview feature).
   3. Run /team-setup fix.
   4. Run /generate-knowledge if this project has no knowledge yet.
-  5. If a run was parked for this update, run /team-setup check and then /team resume.
+  5. If a run was parked for this update, run /team-setup fix and then /team resume.
 EOF

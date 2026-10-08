@@ -277,7 +277,7 @@ Before 4.0.0 the Claude Code edition kept its run state in the legacy `.claude-t
 
 1. If a run is open, `/team stop` in the session that runs it.
 2. `/team-setup fix`: it shows a dry run of `tools/migrate-tracking.sh` and moves the state when you agree. Paths inside the moved files and in your knowledge files are rewritten (the knowledge is backed up first); files of your project that still name the legacy directory are listed for you to edit, never changed.
-3. `/team resume` to continue a parked run.
+3. Commit the `.gitignore` change, if `/team-setup fix` made one, before `/team resume`: the resumed run's baseline predates it, so an uncommitted change would show up in the run's review diff. Then `/team resume` continues a parked run.
 
 If both directories hold the same name (typically `.service-consent` or `.update-check` in a project that used both editions), the migration refuses and lists them: keep one of each, then run `/team-setup fix` again.
 
