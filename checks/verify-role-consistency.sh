@@ -181,6 +181,23 @@ else
   dup="$(echo "$mr_calls" | awk -F'\t' '$1 != "!layout" && $2 != "" {print $1 "." $2}' | sort | uniq -d)"
   [ -z "$dup" ] || { echo "FAIL: modelRouting.workflows repeats a call: $(echo "$dup" | tr '\n' ' ')" >&2; status=1; }
 
+  # Every call a workflow's section in skills/team/SKILL.md can make needs a
+  # cell, or the orchestrator invents a tier on the spot and logs it as a
+  # deviation (the audit found eight such runs). This table is the contract;
+  # extend it when a workflow gains a call.
+  required_cells="analyze:researcher-explorer
+docs:doc-writer
+bug_fix:researcher-explorer brainstorm developer tester reviewer
+small_change:researcher-explorer brainstorm developer tester reviewer
+change_set:researcher-explorer brainstorm developer doc-writer tester reviewer
+full_feature:brainstorm researcher-explorer:wide researcher-explorer architect developer doc-writer tester reviewer reviewer:final"
+  while IFS=: read -r wf cells; do
+    for c in $cells; do
+      echo "$mr_calls" | awk -F'\t' -v w="$wf" -v k="$c" '$1 == w && $2 == k {found=1} END {exit !found}' \
+        || { echo "FAIL: modelRouting.workflows.$wf has no cell for $c, a call that workflow makes" >&2; status=1; }
+    done
+  done <<< "$required_cells"
+
   while IFS="$(printf '\t')" read -r wf call val; do
     [ -n "$wf" ] || continue
     if [ "$wf" = "!layout" ]; then
