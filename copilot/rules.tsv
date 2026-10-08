@@ -20,7 +20,6 @@ skills/team/SKILL.md	- "An Artifact is nicer to share than a local file" → Art
 skills/team/SKILL.md	run in parallel on opus or above, so	run in parallel, so
 skills/team/SKILL.md	honestly: it selects the model tier under "Model routing".	honestly.
 skills/team/SKILL.md	, and its model comes from the cell `change_set.reviewer`.	.
-skills/team/SKILL.md	while you go on as if it were	while you carry on as if it were
 skills/team/SKILL.md	3. AskUserQuestion:	3. Ask through the question tool:
 skills/team/SKILL.md	5. AskUserQuestion:	5. Ask through the question tool:
 #
@@ -58,6 +57,7 @@ team-manifest.json	    "textEncoding": "bash checks/verify-text-encoding.sh",\n
 team-manifest.json	    "jevClient": "bash checks/verify-jev-decide.sh",\n	
 team-manifest.json	    "updateCheckClient": "bash checks/verify-update-check.sh",\n	
 team-manifest.json	    "routingSummary": "bash checks/verify-routing-summary.sh",\n	
+team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
 #
 # everywhere
 *	AskUserQuestion	the question tool

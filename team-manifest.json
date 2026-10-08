@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "3.9.0",
+    "version": "3.10.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -298,6 +298,7 @@
     "jevClient": "bash checks/verify-jev-decide.sh",
     "updateCheckClient": "bash checks/verify-update-check.sh",
     "routingSummary": "bash checks/verify-routing-summary.sh",
+    "copilotPort": "bash copilot/check.sh",
     "routingSummaryReport": "bash .claude/checks/summarize-routing.sh — run from the project root; prints the decision-routing shadow numbers from every run's routing.log",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",

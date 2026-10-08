@@ -19,7 +19,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
 - A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
-- Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you go on as if it were.
+- Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you carry on as if it were.
 - When a review finding or a user decision changes what `detailed-plan.md`, `change-set.md` or a task file says, correct that file in the same step and log it in "Decisions log". Later batches and resumed sessions work from those files, not from the review.
 - Update `.claude-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).

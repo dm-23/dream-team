@@ -100,6 +100,8 @@ checks/                        the scripts the manifest's checks run: manifest b
                                workflow consistency, text encoding, the integrity check
                                `/generate-knowledge fix` must pass, and the learnings
                                inbox check
+copilot/                       the GitHub Copilot edition: translation rules, overlays, the
+                               installer and its tests
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
 .gitattributes                 pins LF on the hook files and the clients under tools/; a CRLF checkout breaks them
@@ -280,6 +282,83 @@ When it is on, `/team` looks up the newest version at most once a day. While a n
 - **Skip this version** — you are not asked about it again; you are asked about the next one.
 
 It never runs on `/team resume`, `status` or `stop`, or in the middle of a run. Without bash, without a network or without an answer from GitHub it stays silent. `/team-setup check` shows whether it is on and whether you are up to date.
+
+## GitHub Copilot
+
+The same team runs in GitHub Copilot, in VS Code agent mode and in the Copilot CLI, from one set of installed files. It is not a second copy to maintain. `copilot/install.sh` translates this repository's files when it installs them, and fails, naming the place, when a change here can no longer be translated.
+
+### Install and update
+
+From the project root, in bash (Git Bash on Windows):
+
+```bash
+git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
+bash /tmp/dream-team/copilot/install.sh .
+rm -rf /tmp/dream-team
+```
+
+Updating is the same three commands. `--dry-run` prints what would change and writes nothing.
+
+Then:
+1. Reopen VS Code, or restart the CLI.
+2. In VS Code, turn on the `chat.useHooks` setting.
+3. Run `/team-setup fix`.
+4. Run `/generate-knowledge` if the project has no knowledge yet.
+
+### What it writes, and what it never touches
+
+| Path | Contents |
+|------|----------|
+| `.github/agents/<role>.agent.md` | The seven roles, hidden from the agent picker and called as subagents |
+| `.github/skills/<command>/SKILL.md` | `/team`, `/generate-knowledge`, `/team-setup` |
+| `.github/hooks/dream-team.json` | The session-start hook |
+| `.github/dream-team/` | Manifest, templates, clients, runtime checks, and `.installed`, the list of what was installed |
+
+**What it touches.** The installer replaces only the files it installed itself, and only if nobody has edited them since. It never writes, moves or deletes:
+- `.github/dream-team/knowledge/` (knowledge, learnings, `CAPABILITIES.md`);
+- `.dream-team-tracking/` (runs, the marker, consent records);
+- `.git/`;
+- the project's settings;
+- any other file.
+
+**When it stops.** A file of the project's own at one of the installer's paths stops the install, with a list. So does a team file edited by hand, unless you pass `--force`. With `--force`, the edited file is first copied to `.dream-team-tracking/install-backup-<time>/`.
+
+**Removed files.** A file that a newer version no longer ships is deleted, unless it was edited.
+
+The Copilot edition keeps its own knowledge and its own runs. It can sit beside a Claude Code install of the team in the same project, and neither reads the other's state.
+
+### What differs from Claude Code
+
+1. **Models.** Every subagent runs on the session model. VS Code and the CLI name models differently, so the tier table in `modelRouting` is not carried over.
+2. **Open runs.** An open run is announced when a session starts, not on every message: Copilot lets no hook add context per prompt. After a compaction, use `/team resume`.
+3. **Capabilities.** `/team-setup` installs nothing. Optional capabilities are MCP servers; it reports which are missing and gives the VS Code and CLI steps to add each. The session-memory and instruction-file capabilities exist only as Claude Code plugins and are not offered.
+4. **Hooks in VS Code.** They run only while `chat.useHooks` is on, a preview feature.
+
+### Maintaining the port
+
+`bash copilot/check.sh` builds the edition from fixtures and from this repository, then installs it into throwaway projects. Run it with the other checks after changing any prompt.
+
+The translation is data:
+
+- `copilot/rules.tsv`: literal replacements, as `file-glob<TAB>from<TAB>to`, applied in order. A rule that matches nothing fails the build.
+- `copilot/overrides/`: whole blocks replaced. A block is a section under a heading, a list item or a paragraph of a Markdown file, or a top-level key of the manifest. The first line of each overlay is its anchor, exactly as it appears in the source.
+- `copilot/allow.tsv`: the only Claude Code terms allowed to survive, by file and exact string.
+- `copilot/files/`: files that exist only in the Copilot edition.
+
+### Verified by hand
+
+The two behaviours the documentation does not settle were checked once in each product:
+1. Whether the hook's combined output is accepted.
+2. Whether the roles stay out of the agent picker.
+
+| Check | VS Code | Copilot CLI |
+|-------|---------|-------------|
+| The seven roles are callable as subagents | not yet checked | not yet checked |
+| The roles are absent from the agent picker | not yet checked | not yet checked |
+| `/team <task>` receives the task text | not yet checked | not yet checked |
+| Gates appear as questions with options | not yet checked | not yet checked |
+| Three Brainstorm calls run in parallel | not yet checked | not yet checked |
+| With an open run, a new session receives the `TEAM-MODE-ACTIVE` text | not yet checked | not yet checked |
 
 ## Troubleshooting
 
