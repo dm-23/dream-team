@@ -28,6 +28,8 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 bs=$'\x5c'
 RECORD=".github/dream-team/.installed"
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+RECORD_L="$(lower "$RECORD")"
 project="" dry=0 force=0
 for a in "$@"; do
   case "$a" in
@@ -74,9 +76,8 @@ if [ -f "$IM" ]; then
 fi
 
 allowed() { # $1 = relative path, $2 = "rec" to accept names from the installed manifest too
-  local agents="$AGENTS" skills="$SKILLS" seg rest="$1" lp="${1,,}"
+  local agents="$AGENTS" skills="$SKILLS" seg rest="$1"
   [ "${2:-}" = rec ] && { agents="$AGENTS_REC"; skills="$SKILLS_REC"; }
-  agents="${agents,,}" skills="${skills,,}"
   # Shape: every segment is plain [A-Za-z0-9._-]+, never "." or "..". No empty
   # segments, backslashes, "~" (8.3 short names), spaces or globs.
   while :; do
@@ -86,14 +87,17 @@ allowed() { # $1 = relative path, $2 = "rec" to accept names from the installed 
     [ "$seg" = "$rest" ] && break
     rest="${rest#*/}"
   done
-  # The file system may be case-insensitive: compare lowercased.
-  case "$lp" in
-    .github/dream-team/knowledge|.github/dream-team/knowledge/*|"${RECORD,,}") return 1 ;;
+  # The file system may be case-insensitive: deny on the lowercased path,
+  # allow only on the exact-case path (generated paths are always exact-case).
+  case "$(lower "$1")" in
+    .github/dream-team/knowledge|.github/dream-team/knowledge/*|"$RECORD_L") return 1 ;;
+  esac
+  case "$1" in
     .github/dream-team/*|.github/hooks/dream-team.json) return 0 ;;
     .github/agents/*.agent.md)
-      local a="${lp#.github/agents/}"; a="${a%.agent.md}"; [ -n "$a" ] && [[ $agents == *" $a "* ]] ;;
+      local a="${1#.github/agents/}"; a="${a%.agent.md}"; [ -n "$a" ] && [[ $agents == *" $a "* ]] ;;
     .github/skills/*/*)
-      local s="${lp#.github/skills/}"; s="${s%%/*}"; [ -n "$s" ] && [[ $skills == *" $s "* ]] ;;
+      local s="${1#.github/skills/}"; s="${s%%/*}"; [ -n "$s" ] && [[ $skills == *" $s "* ]] ;;
     *) return 1 ;;
   esac
 }
@@ -121,7 +125,7 @@ while IFS= read -r p; do
   printf '%s %s\n' "$st" "$p" >> "$TMP/plan"
 done < "$TMP/new"
 while IFS=' ' read -r hr p; do
-  grep -qxF -- "$p" "$TMP/new" && continue
+  grep -qixF -- "$p" "$TMP/new" && continue
   allowed "$p" rec || { echo "install: internal error: $RECORD names $p, outside the team's paths; remove that line and run again" >&2; exit 2; }
   [ -f "$P/$p" ] || continue
   hc="$(hash_of "$P/$p")" || exit 2
@@ -161,7 +165,11 @@ while IFS=' ' read -r st p; do
       write_file "$p" ;;
     remove)
       rm -f "$P/$p"; d="$(dirname "$p")"
-      while case "${d,,}" in .|.github|.github/agents|.github/skills|.github/hooks|.github/dream-team|*"$bs"*) false ;; *) true ;; esac && rmdir "$P/$d" 2>/dev/null; do d="$(dirname "$d")"; done ;;
+      while :; do
+        case "$(lower "$d")" in .|.github|.github/agents|.github/skills|.github/hooks|.github/dream-team|*"$bs"*) break ;; esac
+        rmdir "$P/$d" 2>/dev/null || break
+        d="$(dirname "$d")"
+      done ;;
   esac
 done < "$TMP/plan"
 

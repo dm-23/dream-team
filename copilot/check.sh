@@ -569,6 +569,35 @@ for bad in ".github/dream-team/templates${bsl}..${bsl}knowledge${bsl}CAPABILITIE
 done
 finish
 
+start install-case-variants
+P="$(new_project variants)"
+run_install "$P"
+rec="$P/.github/dream-team/.installed"
+probe="$P/.github/dream-team/templates/probe.md"
+echo probe > "$probe"
+cp "$rec" "$TMP/rec.orig"
+for bad in ".GITHUB/dream-team/templates/probe.md" ".github/Skills/team/probe.md"; do
+  cp "$TMP/rec.orig" "$rec"
+  printf '%s %s\n' "$(git hash-object "$probe")" "$bad" >> "$rec"
+  run_install "$P"
+  [ "$RC" = 2 ] || fail "$bad: expected exit 2, got $RC"
+  grep -qF "outside the team's paths" "$TMP/inst.err" || fail "$bad: message: $(cat "$TMP/inst.err")"
+  [ -f "$probe" ] || fail "$bad: probe file deleted"
+done
+cp "$TMP/rec.orig" "$rec"
+printf '%s %s\n' "$(git hash-object "$P/.github/dream-team/team-manifest.json")" ".github/dream-team/Team-Manifest.json" >> "$rec"
+run_install "$P"
+[ "$RC" = 0 ] || fail "case variant of a built file: exit $RC: $(cat "$TMP/inst.err")"
+[ -f "$P/.github/dream-team/team-manifest.json" ] || fail "a case variant of a built file removed it"
+finish
+
+start install-bash3-compatible
+caret="$(printf '\x5e')"
+if grep -nE '[$][{][A-Za-z_0-9]+(,,|'"$caret$caret"')|declare -A|mapfile|readarray' "$INSTALL" > "$TMP/bash4.hits"; then
+  fail "bash-4-only construct in install.sh: $(cat "$TMP/bash4.hits")"
+fi
+finish
+
 start install-remove-role
 P="$(new_project oldrole)"
 run_install "$P"
