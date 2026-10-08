@@ -92,5 +92,46 @@ p="$(project launcher)"; marker "$p" bug_fix_l_2026-10-08 "3 Design"; status "$p
 OUT="$(printf '{"prompt":"hello"}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" team-mode-prompt)"
 case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail launcher "launcher output: $OUT" ;; esac
 
+# 10. inbox due: only on a /team <task> prompt, only when the check says so
+inbox_project() { # name LEARNINGS-body -> project path with a team root, a manifest and a knowledge dir
+  local p; p="$(project "$1")"
+  mkdir -p "$p/.claude/knowledge/learnings" "$p/.claude/checks" "$p/.claude/hooks"
+  cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
+  cp "$ROOT/checks/verify-learnings-inbox.sh" "$p/.claude/checks/"
+  cp "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
+  printf '%s\n' "$2" > "$p/.claude/knowledge/LEARNINGS.md"
+  printf '%s' "$p"
+}
+run_deployed() { # CASE PROJECT PROMPT: runs the hook from its deployed place
+  OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PROJECT_DIR="$2" bash "$2/.claude/hooks/team-mode-prompt")"; RC=$?
+}
+due_body='# Inbox
+
+## Index
+
+| Date | Title | Tags |
+|------|-------|------|
+| 2026-10-01 | A trap | tag |
+'
+p="$(inbox_project inbox-due "$due_body")"
+printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
+run_deployed inbox-due "$p" '"/team fix the crash"'
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'/generate-knowledge all'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
+run_deployed inbox-due-plain "$p" '"hello"'
+case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-plain "inbox block on a plain prompt: $OUT" ;; esac
+run_deployed inbox-due-status "$p" '"/team status"'
+case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-status "inbox block on /team status: $OUT" ;; esac
+
+# 11. inbox clean: silence
+p="$(inbox_project inbox-clean "$due_body")"
+run_deployed inbox-clean "$p" '"/team fix the crash"'
+[ -z "$OUT" ] || fail inbox-clean "expected silence: $OUT"
+
+# 12. inbox check cannot read its limits (old manifest): silence, never a false "due"
+p="$(inbox_project inbox-old "$due_body")"
+sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.claude/team-manifest.json"
+run_deployed inbox-old "$p" '"/team fix the crash"'
+[ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
+
 [ "$fails" -eq 0 ] && echo "hook: ok"
 exit $(( fails > 0 ))

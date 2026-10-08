@@ -57,6 +57,25 @@ if [ -d "$LEGACY" ]; then
   context="${context}</TEAM-LEGACY-STATE>\n"
 fi
 
+# A new run reads the learnings index whole, so the moment to say that the
+# inbox is due is the prompt that starts one: "/team <task>", never stop,
+# status or resume, and never a plain message. The check prints the reasons
+# and exits 1 when due; 0 and 2 (clean, or limits unreadable) stay silent.
+if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
+   && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]+(stop|status|resume)'; then
+  TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+  if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then
+    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
+    if [ "$rc" -eq 1 ]; then
+      summary="$(printf '%s\n' "$inbox" | head -1 | sed 's/^learnings inbox: //')"
+      summary="$(escape_for_json "$summary")"
+      context="${context}<TEAM-INBOX-DUE>\n"
+      context="${context}The learnings inbox is due: ${summary}. Tell the user once, in one line, that /generate-knowledge all turns the pending marks into rules and empties the inbox, then record \\\"Inbox due: told YYYY-MM-DD\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}</TEAM-INBOX-DUE>\n"
+    fi
+  fi
+fi
+
 if [ "$slash" -eq 0 ] && [ -f "$MARKER" ]; then
   context_id="$(read_field context_id)"
   workflow="$(read_field workflow)"

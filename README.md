@@ -165,7 +165,7 @@ If research shows a Small Change is bigger than three files, or touches a schema
 
 Two more files sit in the same directory and are written by someone else.
 
-`LEARNINGS.md` persists across regenerations. It is an inbox of traps that have not yet earned a rule, not a log of runs. After a run the reviewer classifies what it taught: a trap becomes an entry — its own file under `learnings/` plus one row in the index — and a rule or a fact the knowledge files lack becomes a mark on an entry; a run that taught nothing leaves nothing, and a defect of the team itself goes to the run's report instead. `/generate-knowledge all` empties the inbox: with your consent and after a backup, it writes marked rules and facts into the knowledge files, keeps promoted rules across later regenerations, and removes entries that are covered, obsolete, or never belonged there.
+`LEARNINGS.md` persists across regenerations. It is an inbox of traps that have not yet earned a rule, not a log of runs. After a run the reviewer classifies what it taught: a trap becomes an entry — its own file under `learnings/` plus one row in the index — and a rule or a fact the knowledge files lack becomes a mark on an entry; a run that taught nothing leaves nothing, and a defect of the team itself goes to the run's report instead. `/generate-knowledge all` empties the inbox: with your consent and after a backup, it writes marked rules and facts into the knowledge files, keeps promoted rules across later regenerations, and removes entries that are covered, obsolete, or never belonged there. A run says once that the inbox is due and records that it did; the reminder is not repeated on every resume.
 
 `/generate-knowledge fix` restructures an existing knowledge base into the current
 shape — splitting the files a reader only needs part of, and moving learnings entries
@@ -234,6 +234,7 @@ This is deliberately not a memory or an instruction that lives in context. The h
 - `/team stop` deletes the marker and leaves the run parked; `/team resume` picks it up.
 - A marker whose run is already closed, or whose `status.md` is gone, is reported as stale instead of hijacking the message; the orchestrator deletes it.
 - While the pre-4.0.0 run-state directory still exists, every prompt carries a one-line notice that `/team` starts nothing until `/team-setup fix` has moved it. The notice comes from the hook, not from the skill, so it cannot be skipped.
+- On the prompt that starts a run, the hook also says when the learnings inbox is due, so the reminder does not depend on the model counting marks in a directory its search tools skip.
 - If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions.
 
 Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session.
