@@ -130,6 +130,7 @@ run_deployed inbox-clean "$p" '"/team fix the crash"'
 # 12. inbox check cannot read its limits (old manifest): silence, never a false "due"
 p="$(inbox_project inbox-old "$due_body")"
 sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.claude/team-manifest.json"
+printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-old "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
 
