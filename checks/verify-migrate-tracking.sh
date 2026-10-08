@@ -75,6 +75,8 @@ N="$P/.dream-team-tracking/bugfix_x_2026-10-01"
 grep -qF '.dream-team-tracking/bugfix_x_2026-10-01/' "$N/status.md" || fail "status.md not rewritten"
 [ "$(cat "$P/.dream-team-tracking/.service-consent")" = "jev=declined 2026-10-04" ] || fail "consent changed"
 has "$tmp/out" "Migrated"
+has "$tmp/out" "  bugfix_x_2026-10-01"
+has "$tmp/out" "  .service-consent"
 
 case=rewrite-scope
 [ "$(tr -cd '\r' < "$N/plans/crlf.md" | wc -c | tr -d ' ')" = 2 ] || fail "CRLF not preserved"
@@ -177,6 +179,35 @@ echo x > "$P/.claude-tracking"; run "$P"
 
 case=bash3
 if grep -nE '\$\{[A-Za-z_][A-Za-z_0-9]*(,,|\^\^)|declare -A|mapfile|readarray' "$SCRIPT"; then fail "bash-4-only construct"; fi
+
+case=atomic-rewrite
+# A failing rename of the temp file must leave every original untouched.
+P="$tmp/p9"; make_project "$P"
+mkdir -p "$tmp/stub"
+cat > "$tmp/stub/mv" <<'STUB'
+#!/usr/bin/env bash
+for a in "$@"; do case "$a" in *.mt-tmp) exit 1 ;; esac; done
+exec /usr/bin/env -i PATH="$REAL_PATH" mv "$@"
+STUB
+chmod +x "$tmp/stub/mv"
+before="$(snap "$P")"
+(cd "$P" && REAL_PATH="$PATH" PATH="$tmp/stub:$PATH" bash .claude/tools/migrate-tracking.sh) > "$tmp/out" 2> "$tmp/err"; rc=$?
+[ "$rc" = 2 ] || fail "expected exit 2, got $rc"
+after="$(snap "$P" | grep -v "knowledge-backup-.*-tracking/")"; [ "$before" = "$after" ] || fail "a failed rewrite changed or left files"
+has "$tmp/err" "could not rewrite"
+
+case=symlink
+P="$tmp/p10"; make_project "$P"
+mkdir -p "$tmp/outside"; echo "outside .claude-tracking" > "$tmp/outside/f.md"
+rm -rf "$P/.claude-tracking"
+if MSYS=winsymlinks:nativestrict ln -s "$tmp/outside" "$P/.claude-tracking" 2>/dev/null && [ -L "$P/.claude-tracking" ]; then
+  run "$P"
+  [ "$rc" = 2 ] || fail "expected exit 2 for a symlinked legacy directory, got $rc"
+  has "$tmp/err" "symbolic link"
+  [ "$(cat "$tmp/outside/f.md")" = "outside .claude-tracking" ] || fail "a file outside the project was rewritten"
+else
+  echo "skip [symlink] cannot create symlinks here"
+fi
 
 # @GUARD@  (Task 2 inserts the source guard here)
 

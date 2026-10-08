@@ -1,7 +1,7 @@
 # hooks/team-mode-prompt is a bash script and hooks/run-hook.cmd is a cmd/sh
 # polyglot: a CRLF checkout breaks both, and with them sticky team mode. Pin LF
 # so a clone matches what was committed, on machines with core.autocrlf=true.
-# tools/jev-decide.sh and tools/update-check.sh are run through bash by
+# tools/jev-decide.sh, tools/update-check.sh and tools/migrate-tracking.sh are run through bash by
 # Claude Code the same way and get the same pin.
 #
 # Scoped to those files on purpose. This file travels with the team and
@@ -12,6 +12,7 @@ hooks/run-hook.cmd text eol=lf
 hooks/team-mode-prompt text eol=lf
 tools/jev-decide.sh text eol=lf
 tools/update-check.sh text eol=lf
+tools/migrate-tracking.sh text eol=lf
 # copilot/ builds the GitHub Copilot edition; its scripts and awk programs run
 # through bash and awk, which a CRLF checkout breaks the same way.
 copilot/*.sh text eol=lf

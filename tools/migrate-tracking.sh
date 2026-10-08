@@ -48,6 +48,9 @@ for v in "$NEW" "$OLD"; do
 done
 [ -n "$KNOW" ] || { echo "migrate: knowledge.dir is missing from the manifest" >&2; exit 2; }
 
+for p in "$OLD" "$NEW"; do
+  [ ! -L "$p" ] || { echo "migrate: $p is a symbolic link; refusing to touch anything. Replace it with a real directory and run again." >&2; exit 2; }
+done
 [ -e "$OLD" ] || { echo "migrate: nothing to migrate ($OLD/ not found)"; exit 0; }
 [ -d "$OLD" ] || { echo "migrate: $OLD exists but is not a directory" >&2; exit 2; }
 [ ! -e "$NEW" ] || [ -d "$NEW" ] || { echo "migrate: $NEW exists but is not a directory" >&2; exit 2; }
@@ -94,7 +97,7 @@ PAT="$(printf '%s' "$OLD" | sed 's/[.[\*^$/]/\\&/g')"
 # GNU sed on Windows (Git Bash) drops CR in text mode; -b keeps CRLF files intact.
 SEDB=""; sed -b p </dev/null >/dev/null 2>&1 && SEDB="-b"
 rewrite() {
-  sed $SEDB "s/$PAT/$NEW/g" "$1" > "$TMP/rw" && cat "$TMP/rw" > "$1"
+  cp -p -- "$1" "$1.mt-tmp" && sed $SEDB "s/$PAT/$NEW/g" "$1" > "$1.mt-tmp" && mv -f -- "$1.mt-tmp" "$1" || { rm -f -- "$1.mt-tmp"; return 1; }
 }
 
 mentions "$OLD" > "$TMP/run"
@@ -120,25 +123,26 @@ if [ -s "$TMP/know" ]; then
   { mkdir -p "$bk" && cp -R "$KNOW/." "$bk/"; } \
     || { echo "migrate: could not back up $KNOW/ to $bk/; nothing was rewritten or moved" >&2; exit 2; }
   while IFS= read -r f; do
-    rewrite "$f" || { echo "migrate: could not rewrite $f; run again to finish" >&2; exit 2; }
+    rewrite "$f" || { echo "migrate: could not rewrite $f (read-only or locked?); fix that and run again" >&2; exit 2; }
     kn=$((kn + 1))
   done < "$TMP/know"
 fi
 
 rn=0
 while IFS= read -r f; do
-  rewrite "$f" || { echo "migrate: could not rewrite $f; run again to finish" >&2; exit 2; }
+  rewrite "$f" || { echo "migrate: could not rewrite $f (read-only or locked?); fix that and run again" >&2; exit 2; }
   rn=$((rn + 1))
 done < "$TMP/run"
 
-moved=0
+moved=0; : > "$TMP/moved"
 while IFS= read -r e; do
-  mv -- "$e" "$NEW/${e##*/}" || { echo "migrate: could not move $e (is a file open elsewhere?); run again to finish" >&2; exit 2; }
-  moved=$((moved + 1))
+  mv -- "$e" "$NEW/${e##*/}" || { echo "migrate: could not move $e (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
+  moved=$((moved + 1)); echo "${e##*/}" >> "$TMP/moved"
 done < "$TMP/entries"
-rmdir "$OLD" || { echo "migrate: $OLD/ is not empty after the move; run again to finish" >&2; exit 2; }
+rmdir "$OLD" || { echo "migrate: $OLD/ is not empty after the move (a file could not be moved?); fix that and run again" >&2; exit 2; }
 
 echo "Migrated $OLD/ → $NEW/: $moved entries moved; text rewritten in $rn run-state files and $kn knowledge files."
+sed 's/^/  /' "$TMP/moved"
 [ -z "$bk" ] || echo "Knowledge backup: $bk/"
 echo "Project files that still mention $OLD (edit these yourself; the migration never does):"
 project_mentions
