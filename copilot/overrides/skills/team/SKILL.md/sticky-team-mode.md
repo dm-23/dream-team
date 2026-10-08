@@ -6,17 +6,19 @@ While a run is open, a marker file records it, so the run outlives the session t
 Marker path: `.dream-team-tracking/.team-mode` (plain text, one `key=value` per line).
 
 ```
-context_id={workflow}_{slug}_{YYYY-MM-DD}
+context_id={workflow_key}_{slug}_{YYYY-MM-DD}
 workflow={Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 phase={number and name of the phase just entered}
 language={language the user wrote the task in}
 started={YYYY-MM-DD}
 ```
 
+`workflow_key` is the manifest's key for the workflow: lower case, spaces as underscores (`analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`). `slug` is the task in at most forty characters: lower case, every run of characters that are not letters or digits replaced by one hyphen, no leading or trailing hyphen. The same string names the run directory; older runs used other spellings of the workflow, which changes nothing about how they are read.
+
 - **Write** it in Step 0, immediately after creating `status.md`.
 - **Update** the `phase` line at every phase change, in the same edit as `status.md`.
-- **Delete** it when the run closes (`[DONE]`), when the user asks to stop or pause team mode, and before starting a different run.
-- If the marker names a run whose `status.md` is missing or already `[DONE]`, delete the marker and say so in one line.
+- **Delete** it when the run closes (`[DONE]`), when the user asks to stop or pause team mode, and before starting a different run — with `rm -f .dream-team-tracking/.team-mode`, the one shell write this skill allows on a tracking file, and confirm with `ls -a`.
+- If the marker names a run whose `status.md` is missing or whose first line contains `[DONE]`, delete the marker and say so in one line. The session hook announces a marker without checking its run, so this check is yours; after it, the user's messages are standalone requests.
 
 Arguments that manage the mode, handled without any workflow ceremony:
 

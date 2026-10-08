@@ -2,7 +2,7 @@
 
 ## Handoff
 
-- context_id: {workflow}_{slug}_{YYYY-MM-DD}
+- context_id: {workflow_key}_{slug}_{YYYY-MM-DD}
 - workflow: {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 - role: {brainstorm | researcher-explorer | architect | developer | doc-writer | tester | reviewer}
 - mode/phase: {wide | targeted | questions | solution | diagnosis | batch-review | final-review | n/a}

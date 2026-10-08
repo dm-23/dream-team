@@ -19,7 +19,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
 - A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
-- Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you carry on as if it were.
+- Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you carry on as if it were. The one exception is deleting the marker, which no other tool can do: `rm -f .dream-team-tracking/.team-mode`, followed by `ls -a .dream-team-tracking` to see it gone.
 - When a review finding or a user decision changes what `detailed-plan.md`, `change-set.md` or a task file says, correct that file in the same step and log it in "Decisions log". Later batches and resumed sessions work from those files, not from the review.
 - Update `.dream-team-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result` and fill `Closed`.
 - Keep the sticky-mode marker in step with the run (see "Sticky team mode" below).
@@ -42,17 +42,19 @@ While a run is open, a marker file keeps every later message inside this workflo
 Marker path: `.dream-team-tracking/.team-mode` (plain text, one `key=value` per line).
 
 ```
-context_id={workflow}_{slug}_{YYYY-MM-DD}
+context_id={workflow_key}_{slug}_{YYYY-MM-DD}
 workflow={Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 phase={number and name of the phase just entered}
 language={language the user wrote the task in}
 started={YYYY-MM-DD}
 ```
 
+`workflow_key` is the manifest's key for the workflow: lower case, spaces as underscores (`analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`). `slug` is the task in at most forty characters: lower case, every run of characters that are not letters or digits replaced by one hyphen, no leading or trailing hyphen. The same string names the run directory; older runs used other spellings of the workflow, which changes nothing about how they are read.
+
 - **Write** it in Step 0, immediately after creating `status.md`.
 - **Update** the `phase` line at every phase change, in the same edit as `status.md`.
-- **Delete** it when the run closes (`[DONE]`), when the user asks to stop or pause team mode, and before starting a different run.
-- If the marker names a run whose `status.md` is missing or already `[DONE]`, delete the marker and say so in one line.
+- **Delete** it when the run closes (`[DONE]`), when the user asks to stop or pause team mode, and before starting a different run — with `rm -f .dream-team-tracking/.team-mode`, the one shell write this skill allows on a tracking file, and confirm with `ls -a`.
+- If the marker names a run whose `status.md` is missing or whose first line contains `[DONE]`, delete the marker and say so in one line. The hook reports such a marker as `<TEAM-MODE-STALE>` rather than `<TEAM-MODE-ACTIVE>`, and the message that carried it is a standalone request.
 
 Arguments that manage the mode, handled without any workflow ceremony:
 
@@ -66,7 +68,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 
 ## Step -1: Preflight (every invocation)
 
-0. **Legacy run state.** Read `tracking` from `.claude/team-manifest.json`. If the directory `tracking.legacyDir` exists at the project root, this project's run state has not been moved to `tracking.dir` yet, and nothing below may run against it:
+0. **Legacy run state.** Read `tracking` from `.claude/team-manifest.json`. If the directory `tracking.legacyDir` exists at the project root, this project's run state has not been moved to `tracking.dir` yet, and nothing below may run against it: The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`; when you see that block, this item applies whether or not you have read the manifest yet.
    - `status`: report the run named by `{tracking.legacyDir}/.team-mode` if present, and the run named by `hooks.marker` if present; say that `/team stop` and then `/team-setup fix` are needed before resuming. Do not call a run "parked" while its marker exists. Change nothing.
    - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and the marker at `hooks.marker` if present; say the run(s) are parked and will continue with `/team resume` after `/team-setup fix`.
    - anything else, `resume` included: start nothing. Say the state is still in the legacy directory; if its marker exists, ask the user to run `/team stop` first; then `/team-setup fix`, which moves it. Stop here.
@@ -77,7 +79,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 2. If `LEARNINGS.md` is missing, create it from `knowledge.persistentTemplates`.
 3. Read `TOOLCHAIN.md → Missing on this machine`. If it lists tools, warn the user once (they may continue).
 3b. Read `CAPABILITIES.md` if it exists (see "Optional capabilities"). Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
-4. Resume check: read the marker at `hooks.marker` if it exists, and list `.dream-team-tracking/*/status.md` whose first line does not start with `[DONE]`. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase. If its "Process notes" carry `Team update … parked` and no phase after 0 is checked, first re-take `Baseline` (`git rev-parse --short HEAD`, `git status --porcelain`) and rebuild `status.md` from the current template, carrying over the task, language, workflow, context id, `Started`, Decisions log and Process notes: the update changed the team's own files under `.claude/`, and a baseline taken before it would put them in the run's diff.
+4. Resume check: read the marker at `hooks.marker` if it exists. Then, in Bash, `ls -d .dream-team-tracking/*/` and read the first line of each directory's `status.md` (`head -1`); the Glob and Grep tools skip this directory because it is git-ignored, and a tool that returns nothing looks exactly like no open runs. A run is closed when that first line contains `[DONE]` anywhere — runs closed by older versions wrote `# [DONE] …` or ended the heading with `— [DONE]`; a directory without `status.md` is not a run and is ignored. The open ones are the candidates below. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase. If its "Process notes" carry `Team update … parked` and no phase after 0 is checked, first re-take `Baseline` (`git rev-parse --short HEAD`, `git status --porcelain`) and rebuild `status.md` from the current template, carrying over the task, language, workflow, context id, `Started`, Decisions log and Process notes: the update changed the team's own files under `.claude/`, and a baseline taken before it would put them in the run's diff.
 
 ## Step 0: Workflow selection and context
 
@@ -94,7 +96,7 @@ Detect from the task (any language): analysis verbs → Analyze; "update the rea
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.dream-team-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), the service script under "Decision routing (shadow mode)" and the client under "Update check" are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then run the update check.
+Create `.dream-team-tracking/{workflow}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker, the service script under "Decision routing (shadow mode)", the client under "Update check" and the rows of `TOOLCHAIN.md → Operations` under the rules of "Operations" below are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then run the update check.
 
 ## Update check (new runs only)
 
@@ -335,6 +337,8 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "Batches are small, one review at the end is enough" → allowed only for Change Set and for disjoint Full Feature batches, and only when recorded in status.md.
 - "This follow-up message is small, I'll just answer it directly" → while a marker exists every message belongs to the run; answer outside it only for the exceptions listed in "Sticky team mode".
 - "The run is finished, the marker will sort itself out" → deleting the marker is part of closing; a stale marker hijacks the next unrelated request.
+- "Grep found nothing under the tracking directory, so nothing is open" → that directory is git-ignored and the search tools skip it; `ls` in Bash is the only listing that counts.
+- "The first line says `[DONE]` at the end, so it is probably open" → `[DONE]` anywhere in the first line closes a run; older versions wrote it after the heading.
 - "The findings are short, chat text is enough" → length decides how big the report is, never what form it takes; the file is written anyway.
 - "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
 - "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.

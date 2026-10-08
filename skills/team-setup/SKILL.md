@@ -49,7 +49,7 @@ Read `tracking` from the manifest. If the directory `tracking.legacyDir` exists 
    - Wiring: the project's `.claude/settings.json` must contain a `UserPromptSubmit` entry whose command names `run-hook.cmd`. Report whether it was found.
    - Shell: a bash interpreter must be reachable, otherwise the hook exits quietly and sticky mode is unavailable. Report `bash: found|absent (sticky mode disabled)`.
    - In `fix` mode, when no matching entry exists, show the entry from `hooks.settingsSnippet` and ask via AskUserQuestion before merging it into `.claude/settings.json`. Merge into the existing `UserPromptSubmit` array; never replace an existing hooks block. Warn the user that a newly added hook is picked up after they open `/hooks` once or restart the session.
-   - Marker: if `hooks.marker` exists, read it and report the run it names; if that run's `status.md` is missing or already `[DONE]`, report it as stale and (fix mode) delete the marker after confirmation.
+   - Marker: if `hooks.marker` exists, read it and report the run it names; if that run's `status.md` is missing or its first line contains `[DONE]` anywhere, report it as stale and (fix mode) delete the marker after confirmation.
 8. **Toolchain.** If `TOOLCHAIN.md` exists, read `## Missing on this machine` and report it verbatim.
 
 ## Report format
