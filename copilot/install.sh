@@ -52,8 +52,9 @@ bash "$HERE/build.sh" "$B" > "$TMP/build.log" \
 M="$B/.github/dream-team/team-manifest.json"
 
 hash_of() { # via stdin: native git.exe mishandles some characters in path arguments
+  # CR is stripped: a checkout with core.autocrlf turns the LF files into CRLF, and the record holds LF hashes
   local h
-  h="$(git hash-object --stdin < "$1")" && [ -n "$h" ] \
+  h="$(tr -d '\r' < "$1" | git hash-object --stdin)" && [ -n "$h" ] \
     || { echo "install: could not hash $1" >&2; return 1; }
   printf '%s\n' "$h"
 }
@@ -188,4 +189,5 @@ Next:
   2. In VS Code, turn on the chat.useHooks setting (hooks are a preview feature).
   3. Run /team-setup fix.
   4. Run /generate-knowledge if this project has no knowledge yet.
+  5. If a run was parked for this update, run /team-setup check and then /team resume.
 EOF

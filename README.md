@@ -292,12 +292,10 @@ The same team runs in GitHub Copilot, in VS Code agent mode and in the Copilot C
 From the project root, in bash (Git Bash on Windows):
 
 ```bash
-git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
-bash /tmp/dream-team/copilot/install.sh .
-rm -rf /tmp/dream-team
+rm -rf /tmp/dream-team && git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && bash /tmp/dream-team/copilot/install.sh . && rm -rf /tmp/dream-team
 ```
 
-Updating is the same three commands. `--dry-run` prints what would change and writes nothing.
+Updating is the same command. `--dry-run` prints what would change and writes nothing.
 
 Then:
 1. Reopen VS Code, or restart the CLI.
@@ -325,7 +323,7 @@ Then:
 
 **Removed files.** A file that a newer version no longer ships is deleted, unless it was edited.
 
-The Copilot edition keeps its own knowledge and its own runs. It can sit beside a Claude Code install of the team in the same project, and neither reads the other's state.
+The Copilot edition keeps its own knowledge and its own runs. VS Code may also pick up a Claude Code install's commands and roles from `.claude/`, so a project with both installs can show duplicate `/team`, `/team-setup` and `/generate-knowledge` commands and roles. Until that is checked, keep one edition per project (or one per editor).
 
 ### What differs from Claude Code
 
@@ -347,9 +345,7 @@ The translation is data:
 
 ### Verified by hand
 
-The two behaviours the documentation does not settle were checked once in each product:
-1. Whether the hook's combined output is accepted.
-2. Whether the roles stay out of the agent picker.
+The documentation does not settle two behaviours: whether the hook's combined output is accepted, and whether the roles stay out of the agent picker. These, and the other rows below, must be checked once in each product before you rely on them. The table records the result of each check.
 
 | Check | VS Code | Copilot CLI |
 |-------|---------|-------------|
@@ -359,6 +355,7 @@ The two behaviours the documentation does not settle were checked once in each p
 | Gates appear as questions with options | not yet checked | not yet checked |
 | Three Brainstorm calls run in parallel | not yet checked | not yet checked |
 | With an open run, a new session receives the `TEAM-MODE-ACTIVE` text | not yet checked | not yet checked |
+| Side by side with a Claude install: one `/team` and the Copilot roles only | not yet checked | not yet checked |
 
 ## Troubleshooting
 

@@ -7,6 +7,7 @@ skills/generate-knowledge/SKILL.md	Sources: CLAUDE.md, README,	Sources: AGENTS.m
 skills/generate-knowledge/SKILL.md	.claude/PROJECT.md	@KEEP-CLAUDE@PROJECT.md
 skills/generate-knowledge/SKILL.md	.claude/docs	@KEEP-CLAUDE@docs
 skills/generate-knowledge/SKILL.md	`.claude/agents/*.md`	`.github/agents/*.agent.md`
+skills/generate-knowledge/SKILL.md	Do not touch `.claude/agents/`, `.claude/skills/`,	Do not touch `.github/agents/`, `.github/skills/`,
 skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS`	Arguments: the text the user typed after the command
 skills/generate-knowledge/SKILL.md	one AskUserQuestion call	one question-tool call
 #
@@ -24,6 +25,7 @@ skills/team/SKILL.md	3. AskUserQuestion:	3. Ask through the question tool:
 skills/team/SKILL.md	5. AskUserQuestion:	5. Ask through the question tool:
 #
 # setup
+skills/team-setup/SKILL.md	required plugins, and knowledge presence	optional capabilities, and knowledge presence
 skills/team-setup/SKILL.md	Mode from `$ARGUMENTS`:	Mode from the text the user typed after the command:
 skills/team-setup/SKILL.md	after AskUserQuestion confirmation	after confirmation through the question tool
 skills/team-setup/SKILL.md	unavailable ones with their install commands	unavailable ones with their `installVscode` and `installCli` lines
@@ -38,6 +40,7 @@ skills/team-setup/SKILL.md	the version-control exclude file, the project setting
 # templates
 templates/status.md	- {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}\n	
 templates/handoff.md	any Agent prompt	any subagent prompt
+templates/capabilities.md	Install (only with the user's agreement)	How to set it up (the user does it)
 templates/capabilities.md	{install command from the manifest}	{installVscode} (VS Code) / {installCli} (CLI)
 templates/capabilities.md	4. Never install, enable or disable anything. Only `/team-setup` does that, and only after the user agrees to that specific plugin.	4. Never install, enable or disable anything. The user sets capabilities up; `/team-setup` only reports how.
 templates/capabilities.md	`agents/{role}.md`	`.github/agents/{role}.agent.md`
@@ -48,7 +51,7 @@ tools/*.sh	${CLAUDE_PROJECT_DIR:-$PWD}	$PWD
 # manifest
 team-manifest.json	Stack-agnostic multi-agent development team for Claude Code.	Stack-agnostic multi-agent development team for GitHub Copilot (VS Code and the Copilot CLI).
 team-manifest.json	Put the key in the env block of your user settings, ~/.claude/settings.json: \"env\": { \"{credential}\": \"<key>\" }. Claude Code passes it to every shell it starts, on every OS. A variable exported from your shell profile, or set with setx on Windows, works too. Never put it in the project's .claude/settings.json, which is committed, and never paste it into the chat. Restart Claude Code, then run /team-setup again.	Set {credential} in the environment VS Code or the Copilot CLI starts from: export it from your shell profile, or on Windows run setx {credential} \"<key>\" and open a new terminal. Never put it in a file inside the project, which may be committed, and never paste it into the chat. Restart VS Code or the CLI, then run /team-setup again.
-team-manifest.json	cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team — then reopen the session,	bash /tmp/dream-team/copilot/install.sh . && rm -rf /tmp/dream-team — then reopen VS Code or restart the Copilot CLI,
+team-manifest.json	git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team — then reopen the session,	rm -rf /tmp/dream-team && git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && bash /tmp/dream-team/copilot/install.sh . && rm -rf /tmp/dream-team — then reopen VS Code or restart the Copilot CLI,
 team-manifest.json	"runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into"	"runFrom": "the team root, which is .github/dream-team/ in the project"
 team-manifest.json	 agents/*.md skills/*/SKILL.md README.md"	 ../agents/brainstorm.agent.md ../agents/researcher-explorer.agent.md ../agents/architect.agent.md ../agents/developer.agent.md ../agents/doc-writer.agent.md ../agents/tester.agent.md ../agents/reviewer.agent.md ../skills/team/SKILL.md ../skills/generate-knowledge/SKILL.md ../skills/team-setup/SKILL.md"
 team-manifest.json	    "manifestBudgets": "bash checks/verify-manifest-budgets.sh",\n	

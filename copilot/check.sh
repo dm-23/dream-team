@@ -484,6 +484,26 @@ bk="$(ls -d "$P"/.dream-team-tracking/install-backup-*/.github/agents/developer.
 [ -n "$bk" ] && grep -q 'local edit' "$bk" || fail "no backup holding the edit"
 finish
 
+start install-crlf-clone
+# A clone made with core.autocrlf=true checks the unpinned files out with CRLF; it is still an untouched install.
+P="$(new_project crlf-src)"
+run_install "$P"
+[ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
+(cd "$P" && git add -A && git -c user.name=t -c user.email=t@example.com commit -q -m install) >/dev/null 2>&1 || fail "could not commit the install"
+rm -rf "$TMP/crlf-clone"
+git -c core.autocrlf=true clone -q "$P" "$TMP/crlf-clone" >/dev/null 2>&1 || fail "could not clone"
+if [ "$(tr -cd '\r' < "$TMP/crlf-clone/.github/agents/developer.agent.md" | wc -c)" -eq 0 ]; then
+  fail "the clone has no CRLF files, so this case proves nothing (is core.autocrlf honoured?)"
+else
+  run_install "$TMP/crlf-clone"
+  [ "$RC" = 0 ] || fail "untouched CRLF clone: exit $RC: $(cat "$TMP/inst.err")"
+  grep -qE '^  modified 0$' "$TMP/inst.out" && grep -qE '^  update 0$' "$TMP/inst.out"     || fail "untouched CRLF clone not reported unchanged: $(cat "$TMP/inst.out")"
+  echo "local edit" >> "$TMP/crlf-clone/.github/agents/developer.agent.md"
+  run_install "$TMP/crlf-clone"
+  [ "$RC" = 1 ] && grep -qF 'edited by hand' "$TMP/inst.err" || fail "a real edit in the clone was not caught (exit $RC)"
+fi
+finish
+
 start install-remove
 rec="$P/.github/dream-team/.installed"
 echo "old" > "$P/.github/dream-team/templates/obsolete.md"
