@@ -409,6 +409,15 @@ assert "bug_fix_x_2026-10-07" in a and "TEAM-MODE-ACTIVE" in a and "\"quoted\"" 
 else
   case "$out" in *bug_fix_x_2026-10-07*SessionStart*) ;; *) fail "hook output: $out" ;; esac
 fi
+mkdir -p "$hp/.claude-tracking"
+out="$(cd "$hp" && bash "$HOOK" < /dev/null)"
+case "$out" in *TEAM-LEGACY-STATE*TEAM-MODE-ACTIVE*) ;; *) fail "legacy dir present: expected legacy then active blocks: $out" ;; esac
+rm -f "$hp/.dream-team-tracking/.team-mode"
+out="$(cd "$hp" && bash "$HOOK" < /dev/null)"; rc=$?
+[ "$rc" = 0 ] || fail "legacy dir, no marker: exit $rc"
+case "$out" in *TEAM-LEGACY-STATE*) ;; *) fail "legacy dir, no marker: expected the legacy block: $out" ;; esac
+case "$out" in *TEAM-MODE-ACTIVE*) fail "legacy dir, no marker: active block without a marker: $out" ;; esac
+rm -rf "$hp/.claude-tracking"
 finish
 run_install() { bash "$INSTALL" "$@" > "$TMP/inst.out" 2> "$TMP/inst.err"; RC=$?; }
 new_project() { local p="$TMP/$1"; mkdir -p "$p" && (cd "$p" && git init -q) && printf '%s' "$p"; }

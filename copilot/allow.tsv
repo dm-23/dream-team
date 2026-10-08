@@ -5,3 +5,5 @@
 # The migration script and the manifest name the legacy run-state directory on purpose.
 .github/dream-team/tools/migrate-tracking.sh	.claude-tracking
 .github/dream-team/team-manifest.json	".claude-tracking"
+# The session hook names the legacy run-state directory on purpose, as the migration script does.
+.github/dream-team/hooks/session-start	.claude-tracking
