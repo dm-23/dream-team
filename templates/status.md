@@ -40,6 +40,12 @@ Checks the team may not run — from the tasks' `Verify by hand` lines and the R
 
 - {none | task or batch — what to run or look at — what to expect}
 
+## Operations log
+
+Commands from `TOOLCHAIN.md → Operations` run during this run, one line each: who ran it, the command verbatim, the exit code, one line of output or the capture file under `run/`.
+
+- {none}
+
 ## Process notes (deviations from SKILL.md, for the next retrospective)
 
 - {none}

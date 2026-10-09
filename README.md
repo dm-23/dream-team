@@ -62,6 +62,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 - An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.
 - The team reports the build and test results it actually ran, not a promise.
+- Deploys, rollbacks and readings from a running system are not a workflow step. When your repository documents such commands, `/generate-knowledge` lists them in an Operations section of `TOOLCHAIN.md`, and the orchestrator runs only the ones marked for it, one approval per command, logging each in the run's status file. Everything else there is yours to run.
 
 ## Requirements
 

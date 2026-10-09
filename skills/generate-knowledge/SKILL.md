@@ -141,7 +141,7 @@ Repository topology (entry points, API surface, logic, data, user interface, tes
 
 ```markdown
 # Toolchain
-All commands run from: `<directory>`. Agents may run ONLY commands listed here.
+All commands run from: `<directory>`. Agents may run ONLY commands listed here; a row under `## Operations` runs only as its `Runs as` column says.
 `<scratch>` in a command stands for the temporary directory your environment gives you; substitute it, and never a fixed system path.
 
 | Purpose | Command | Verified | Source | Cost |

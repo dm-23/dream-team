@@ -14,7 +14,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Global rules
 
-- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies.
+- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`, under "Operations" below.
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
@@ -195,6 +195,18 @@ Always launch three Brainstorm instances in parallel with lenses `minimalism`, `
 
 After targeted research read the `Scope Count` and `Wiring/surface` lines of the ResearcherExplorer's pointer block — the report itself stays unread; those two lines are what the gate is decided from. If the total is more than 3 files, or `Wiring/surface` names anything other than `none`, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
 
+## Operations
+
+Some work ends with a step no role may take: a deploy, a rollback, a restart, a reading from a running system. `TOOLCHAIN.md → ## Operations` lists those commands, each with who runs it and whether it is read-only. That section is the whole permission; a command not in it is the user's, and you hand them the command and wait.
+
+- A row marked `user` is never run by you or a subagent. Give the command verbatim via AskUserQuestion, with the option to run it themselves or to skip, and record their answer.
+- A row marked `orchestrator with per-command approval` you may run yourself, one AskUserQuestion per command quoting it exactly, never batched, never rephrased. A read-only row may instead be handed to the ResearcherExplorer by handoff, naming the row under `constraints`.
+- Every command run under this section is logged in status.md → "Operations log" with its exit code and one line of output; longer captures are kept under the run's `run/` directory and the log names the file.
+- An operations script that happens to build or test on the way (a deploy that runs the suite first) is still an operations command: run it as listed, report what it ran, and never treat its green as the Reviewer's verdict — the review already happened, or has not happened yet and still must.
+- Nothing here changes a workflow's gates. A deploy comes after the final review and the commit the user approved, never in place of either.
+
+Without an `## Operations` section in TOOLCHAIN.md, this section does nothing, and `/generate-knowledge` is where it would be added.
+
 ## Workflow: Analyze
 
 1. Clarify (≤3 questions) only if needed.
@@ -297,7 +309,7 @@ Execute batches according to the Batching Strategy. For each batch:
 
 Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
 
-Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself".
+Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself". If `TOOLCHAIN.md → Operations` has a deploy row, offer it next, under "Operations"; never before the commit.
 
 ### Pause Instruction Template
 
@@ -342,6 +354,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "The findings are short, chat text is enough" → length decides how big the report is, never what form it takes; the file is written anyway.
 - "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
 - "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.
+- "The user asked me to deploy, so the role rules are suspended" → they are not; the Operations section says which commands you may run and how each is approved and logged.
 
 ## Minimal Handoff Rules (Context Isolation)
 
