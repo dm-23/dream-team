@@ -53,7 +53,7 @@ context=""
 
 if [ -d "$LEGACY" ]; then
   context="${context}<TEAM-LEGACY-STATE>\n"
-  context="${context}This project's run state is still in .claude-tracking/, the directory teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup fix, which shows a dry run of tools/migrate-tracking.sh and moves the state with the user's consent. /team stop and /team status still work. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
+  context="${context}This project's run state is still in the legacy directory .claude-tracking/, which teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup fix, which shows a dry run of tools/migrate-tracking.sh and moves the state with the user's consent. /team stop and /team status still work. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
   context="${context}</TEAM-LEGACY-STATE>\n"
 fi
 
