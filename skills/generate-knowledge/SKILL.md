@@ -19,7 +19,7 @@ Output language: the language of the user's request; file contents in English (a
 
 ## Inputs (read all before writing)
 
-1. `.claude/team-manifest.json` — the required file list and template locations.
+1. `.claude/team-manifest.json` — the required file list and template locations. `knowledge.learningsEntryTemplate` is the entry format; `knowledge.persistentTemplates` the index.
 2. Repository manifests and build files (whatever exists): dependency manifests, lock files, task runners, container files, CI/CD pipeline definitions, editor/format configuration.
 3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`,
    `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`. The team's own documents are not
@@ -277,7 +277,7 @@ A step of `all` (or no argument), after the knowledge files are written and befo
    - A fact the repository confirms is reflected in its file; one it contradicts is reported as false. Either way its `[STALE-CHECK]` lines become `[STALE-CHECK RESOLVED YYYY-MM-DD]`.
    - An entry consumed or removed loses its file and its index row together.
    - A shortened trap keeps its heading and every field; only text past the limit is cut.
-6. **Refresh the template prose** of `LEARNINGS.md` from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace only the prose above `## Index` and the template's own sections below the index table; keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is `fix`'s consented rewrite, and an inline entry is not template text.
+6. **Refresh the template prose** of `LEARNINGS.md` from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace the prose above `## Index` with the template's, and remove the template's own former sections below the index table (`## Entry format` and the slug rules, which now live in the entry template); keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is `fix`'s consented rewrite, and an inline entry is not template text.
 7. **Verify** with `checks.learningsInbox`, run as `checks.learningsInboxRunFrom` spells out, and report its output verbatim. Exit 1 after triage is expected only for what the user declined; say which.
 
 Report: entries per class before, what was applied, entries left, the backup path, and the team defects verbatim so the user can pass them to the team's maintainers.
@@ -288,7 +288,7 @@ For each existing knowledge file: verify every path it names exists, every comma
 
 ## Fix mode (`fix`)
 
-Restructures what is already written. It reads `.claude/knowledge/`, the manifest, and `.claude/templates/learnings.md` — the last one read-only, for the index shape it defines, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so and point at `all`; do not guess.
+Restructures what is already written. It reads `.claude/knowledge/`, the manifest, and `.claude/templates/learnings.md` and `.claude/templates/learnings-entry.md` — the last two read-only, for the index shape and the entry format they define, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so and point at `all`; do not guess.
 
 **The target shape**, which `fix` moves a file towards and which the gate below tests
 alongside the budget:
@@ -305,7 +305,7 @@ alongside the budget:
 
 **Two classes of work, consented separately.**
 
-*Moves* relocate text byte for byte: splitting a `subset` file into an index and topics, lifting each `LEARNINGS` entry into its own file. Nothing is reworded. The only new text is the descriptive lines in the index.
+*Moves* relocate text byte for byte: splitting a `subset` file into an index and topics, lifting each `LEARNINGS` entry into its own file. Dropping the template's former sections below the index (`## Entry format` and the slug rules) is a move as well: that text is the team's, not the project's, and it now lives in `templates/learnings-entry.md`; no entry text is touched. Nothing is reworded. The only new text is the descriptive lines in the index.
 
 *Rewrites* change text: compacting `LEARNINGS` index rows to `learningsIndexRowTokens`, `learningsIndexRowTitleChars` and `learningsIndexRowMaxTags`; reconciling that index's table header to the one `templates/learnings.md` defines, when an older deployment's header carries columns the template no longer has and rows written to the current shape would not line up with it; cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost — dropping a column loses what was in it — so ask for this class separately. Accepting moves and declining rewrites is a supported outcome — do the moves.
 

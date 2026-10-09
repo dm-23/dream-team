@@ -127,5 +127,33 @@ done < "$tmp/required-files"
 grep -q '"LEARNINGS.md"' "$tmp/classification-block" \
   || { echo "FAIL: no classification for LEARNINGS.md" >&2; status=1; }
 
+# The learnings index is read whole on every run. Its budget must hold the
+# deployed template (everything but the rows) plus a full index, or no
+# deployment can ever be inside it. Measured as the skills measure: four
+# characters to a token.
+read_budget() {
+  sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p" "$tmp/budgets-block" | head -1
+}
+tpl=templates/learnings.md
+if [ ! -f "$tpl" ]; then
+  echo "FAIL: $tpl not found" >&2; status=1
+else
+  tpl_tokens=$(( ($(wc -c < "$tpl") + 3) / 4 ))
+  max_rows="$(read_budget learningsIndexMaxRows)"
+  row_tokens="$(read_budget learningsIndexRowTokens)"
+  override="$(sed -n '/"overrides"[[:space:]]*:/,/}/p' "$tmp/budgets-block" \
+    | sed -n 's/.*"LEARNINGS.md"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)"
+  if [ -z "$override" ]; then
+    echo "FAIL: knowledge.budgets.overrides has no entry for LEARNINGS.md; its class budget (indexTokens) cannot hold the template plus a full index" >&2
+    status=1
+  elif [ -n "$max_rows" ] && [ -n "$row_tokens" ]; then
+    need=$(( tpl_tokens + max_rows * row_tokens ))
+    if [ "$override" -lt "$need" ]; then
+      echo "FAIL: knowledge.budgets.overrides.LEARNINGS.md is $override tokens; the template ($tpl_tokens) plus $max_rows rows of $row_tokens need $need" >&2
+      status=1
+    fi
+  fi
+fi
+
 [ $status -eq 0 ] && echo "manifest budgets: ok"
 exit $status

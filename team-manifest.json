@@ -89,7 +89,7 @@
       "PROJECT-RULES.md"
     ],
     "budgets": {
-      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class.",
+      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. LEARNINGS.md is an index whose rows are capped separately, so its override is the deployed template plus learningsIndexMaxRows rows of learningsIndexRowTokens; checks/verify-manifest-budgets.sh enforces that sum.",
       "indexTokens": 800,
       "topicTokens": 1500,
       "wholeFileTokens": 4000,
@@ -99,7 +99,8 @@
       "learningsIndexMaxRows": 30,
       "learningsEntryLines": 25,
       "overrides": {
-        "REVIEW-CHECKLIST.md": 14000
+        "REVIEW-CHECKLIST.md": 14000,
+        "LEARNINGS.md": 2000
       }
     },
     "classification": {
@@ -123,6 +124,7 @@
     "persistentTemplates": {
       "LEARNINGS.md": ".claude/templates/learnings.md"
     },
+    "learningsEntryTemplate": ".claude/templates/learnings-entry.md",
     "environment": {
       "CAPABILITIES.md": {
         "writtenBy": "/team-setup",
@@ -154,6 +156,7 @@
     "handoff": "handoff.md",
     "reportHtml": "report-html.md",
     "capabilities": "capabilities.md",
+    "learningsEntry": "learnings-entry.md",
     "standards": "standards"
   },
   "gitExclude": [

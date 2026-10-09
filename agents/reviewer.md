@@ -115,8 +115,8 @@ The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote
 **Writing an entry** touches both `.claude/knowledge/learnings/` and `.claude/knowledge/LEARNINGS.md`, in one pass:
 
 1. Write the entry to `.claude/knowledge/learnings/YYYY-MM-DD-{slug}.md`. The file
-   holds the entry and nothing else, in the format `templates/learnings.md`
-   documents, within `knowledge.budgets.learningsEntryLines` lines. That file also
+   holds the entry and nothing else, in the format `templates/learnings-entry.md`
+   (`knowledge.learningsEntryTemplate` in the manifest) defines, within `knowledge.budgets.learningsEntryLines` lines. That file also
    defines how `{slug}` is derived from the title; derive it exactly, because the
    orchestrator computes the same path from the index row to find the entry again.
 2. Add one row to the `## Index` table of `.claude/knowledge/LEARNINGS.md`, with the
