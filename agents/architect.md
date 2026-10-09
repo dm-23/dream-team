@@ -80,6 +80,8 @@ task-001-name.md, ...
 
 **Files:** paths to modify / create (from the research section)
 
+**Test files:** paths of tests the Tester creates or changes for this task (from the research section's `## Tests`); or `none`. Never listed under `Files`: that list is the Developer's, and the Developer may not touch a test.
+
 **Insertion Points:** `Symbol` in `path` (~line N) — what to add or change, one line each; or the single line `not established — targeted research required`
 
 **Acceptance Criteria:**
@@ -114,6 +116,7 @@ The Reviewer runs only what `TOOLCHAIN.md` lists, so a criterion is one it can c
 | Task would touch more than 4 files or 2 modules | split |
 | Two tasks edit the same file | same batch, sequential (state the order) |
 | New component needs registration/wiring | same task as the component |
+| A change breaks compilation or expectations of an existing test | that test goes under `Test files` of the task that breaks it, so the Tester repairs it in the same batch |
 | New entity + persistence + endpoint | separate tasks, same batch |
 
 ## Optional capabilities
@@ -125,7 +128,7 @@ Never reach for tools outside your own list. If the design turns on external doc
 ## Rules
 
 - No production code; no files outside `.dream-team-tracking/{context_id}/`.
-- Every task has `RecommendedBatch`, `Files` and `Insertion Points`.
+- Every task has `RecommendedBatch`, `Files`, `Test files` and `Insertion Points`; no test path appears under `Files`.
 - Every `Acceptance Criteria` item is checkable from the diff or a TOOLCHAIN.md command; every other check is a `Verify by hand` line.
 - Cite existing paths for every pattern; never invent patterns.
 - `## Simplicity Justification` and `## Documentation Obligations` are mandatory.

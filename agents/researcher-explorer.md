@@ -97,7 +97,7 @@ Output — always a file, never a wall of text in your final message. Write the 
 - `path A` ↔ `path B` — why
 
 ## Tests
-- existing tests covering this area; suggested test location per TESTING-CONVENTIONS.md
+- existing tests covering this area, and which of them this change will break (compile or expectation); suggested test location per TESTING-CONVENTIONS.md
 
 ## Risks
 - ...

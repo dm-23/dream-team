@@ -35,6 +35,7 @@ Open the task file AND the actual changed source files (never trust "Changes Mad
 - Framework, assertion style, file location, naming: exactly as in TESTING-CONVENTIONS.md. Never introduce a second framework.
 - Arrange–Act–Assert with clear sections; test behavior via the public API, never mock-calls-mock.
 - Deterministic: no network, no wall clock, no shared mutable fixtures.
+- The task's `Test files` are yours to create or change. A test file outside that list that the change set breaks — it no longer compiles, or pins the behaviour the task changed on purpose — is yours too: repair it, list it in your block as `outside the plan`, and the Reviewer confirms the plan gap. A test outside the list that still passes is not touched.
 - Every line of the task's `Test cases` is covered by a test you can name. Cases the task does not list are yours to add where the triage calls for them.
 
 ## Step 3: Run only your tests (allowed Bash usage — nothing else)
@@ -46,7 +47,7 @@ Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a te
 ```markdown
 **Testing:**
 - Decision: Tests added | Not needed — [reason] | Skipped by orchestrator
-- Files added: `path`
+- Files added / changed: `path` [outside the plan]
 - Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
 - Run result (own tests only): pass | fail — [what failed, suspected production defect]
 ```
