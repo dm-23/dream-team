@@ -92,6 +92,21 @@ p="$(project launcher)"; marker "$p" bug_fix_l_2026-10-08 "3 Design"; status "$p
 OUT="$(printf '{"prompt":"hello"}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" team-mode-prompt)"
 case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail launcher "launcher output: $OUT" ;; esac
 
+# 9b. the snippet's command as a harness runs it: from the project root, with
+#     CLAUDE_PROJECT_DIR unset. Claude Code runs it under bash; VS Code Copilot
+#     reads the same .claude/settings.json entry, ignores its "shell" field and
+#     runs the command in the Windows default shell, PowerShell. The command
+#     must therefore parse in both, so it carries no bash-only syntax.
+SNIPPET_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*\)",$/\1/p' "$ROOT/hooks/settings-snippet.json" | head -1 | sed 's/\\"/"/g')"
+[ -n "$SNIPPET_CMD" ] || fail snippet-cmd "no command line found in settings-snippet.json"
+mkdir -p "$p/.claude/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
+OUT="$(cd "$p" && printf '{"prompt":"hello"}' | env -u CLAUDE_PROJECT_DIR bash -c "$SNIPPET_CMD" 2>&1)"
+case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-bash "snippet command under bash: $OUT" ;; esac
+if command -v powershell.exe >/dev/null 2>&1; then
+  OUT="$(cd "$p" && printf '{"prompt":"hello"}' | env -u CLAUDE_PROJECT_DIR powershell.exe -NoProfile -NonInteractive -Command "$SNIPPET_CMD" 2>&1)"
+  case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-powershell "snippet command under PowerShell: $OUT" ;; esac
+fi
+
 # 10. inbox due: only on a /team <task> prompt, only when the check says so
 inbox_project() { # name LEARNINGS-body -> project path with a team root, a manifest and a knowledge dir
   local p; p="$(project "$1")"

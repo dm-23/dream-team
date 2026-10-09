@@ -2,8 +2,10 @@
 @echo off
 REM Cross-platform polyglot launcher for Dream Team hook scripts.
 REM On Windows cmd.exe runs the batch block below, which locates a bash and
-REM calls the named script. On Unix the shell treats the block as a here-doc
-REM fed to the no-op ":" builtin and falls through to the shell section.
+REM calls the named script; PowerShell hands a .cmd file to cmd.exe, so a
+REM harness that runs hooks in PowerShell (VS Code Copilot) lands here too.
+REM On Unix the shell treats the block as a here-doc fed to the no-op ":"
+REM builtin and falls through to the shell section.
 REM
 REM Hook scripts are intentionally extensionless: a command containing ".sh"
 REM triggers Claude Code's Windows auto-detection, which would prepend its own

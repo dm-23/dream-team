@@ -1,12 +1,12 @@
 {
-  "_comment": "Merge the UserPromptSubmit entry below into <project>/.claude/settings.json to enable sticky team mode. Do not replace an existing hooks block — append this entry to the UserPromptSubmit array. /team-setup fix offers to do this for you.",
+  "_comment": "Merge the UserPromptSubmit entry below into <project>/.claude/settings.json to enable sticky team mode. Do not replace an existing hooks block — append this entry to the UserPromptSubmit array. /team-setup fix offers to do this for you. The command is a plain project-relative path on purpose: VS Code Copilot reads the same entry, ignores the shell field and runs the command in PowerShell, where bash syntax such as ${VAR:-default} is a parse error. Both harnesses run hooks from the project root.",
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/run-hook.cmd\" team-mode-prompt",
+            "command": ".claude/hooks/run-hook.cmd team-mode-prompt",
             "shell": "bash",
             "timeout": 10,
             "async": false,

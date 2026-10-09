@@ -46,9 +46,9 @@ Read `tracking` from the manifest. If the directory `tracking.legacyDir` exists 
 6. **Knowledge.** For each file in `knowledge.required` check presence under `knowledge.dir`; for `knowledge.persistent` check presence, else (fix mode) create from `persistentTemplates`. An entry ending in `/` is a directory, not a file: check that the directory exists and (fix mode) create it empty. It has no `persistentTemplates` entry and needs none — an empty learnings directory is the correct state of a project that has not produced an entry yet, and inventing a file to put in it would put content in the knowledge base that no run produced. If required files are missing, tell the user to run `knowledge.generator`.
 7. **Sticky-mode hook.** Read the `hooks` block of the manifest and verify the team can keep a run active across model switches and restarts:
    - Files: `hooks.launcher` and every script it dispatches exist under `hooks.dir`.
-   - Wiring: the project's `.claude/settings.json` must contain a `UserPromptSubmit` entry whose command names `run-hook.cmd`. Report whether it was found.
+   - Wiring: the project's `.claude/settings.json` must contain a `UserPromptSubmit` entry whose command names `run-hook.cmd`. Report whether it was found. When it was, compare its `command` with the one in `hooks.settingsSnippet`: a different string is stale wiring, left by an older team. Report it as `wiring stale`; the entry still works in Claude Code but fails in other harnesses that read the same file.
    - Shell: a bash interpreter must be reachable, otherwise the hook exits quietly and sticky mode is unavailable. Report `bash: found|absent (sticky mode disabled)`.
-   - In `fix` mode, when no matching entry exists, show the entry from `hooks.settingsSnippet` and ask via AskUserQuestion before merging it into `.claude/settings.json`. Merge into the existing `UserPromptSubmit` array; never replace an existing hooks block. Warn the user that a newly added hook is picked up after they open `/hooks` once or restart the session.
+   - In `fix` mode, when no matching entry exists, show the entry from `hooks.settingsSnippet` and ask via AskUserQuestion before merging it into `.claude/settings.json`. Merge into the existing `UserPromptSubmit` array; never replace an existing hooks block. When the entry exists but its command is stale, show both strings and ask the same way before replacing that entry's `command` with the snippet's; change nothing else in the entry. Warn the user that a newly added or changed hook is picked up after they open `/hooks` once or restart the session.
    - Marker: if `hooks.marker` exists, read it and report the run it names; if that run's `status.md` is missing or its first line contains `[DONE]` anywhere, report it as stale and (fix mode) delete the marker after confirmation.
 8. **Toolchain.** If `TOOLCHAIN.md` exists, read `## Missing on this machine` and report it verbatim.
 
@@ -68,7 +68,7 @@ Capabilities: available: [...] | none detected | installed this run: [...] | dec
 Services: {name} ({capability}): available via {provider} ({mode}) | no key for any provider | consent not asked (run fix) | declined | consented to {provider} but no key for it → set {credential}, key from {keyUrl} | unreachable via {provider}
 Update check: on — up to date (v{team.version}) | v{R} available → README "Updating the team" | unreachable | off | not asked (run fix)
 Knowledge: ok | missing: [...] → run /generate-knowledge
-Sticky mode: wired via project settings | NOT wired (run fix) — bash: found|absent
+Sticky mode: wired via project settings | wiring stale (run fix) | NOT wired (run fix) — bash: found|absent
 Active run: none | {context_id} (phase {N}) | stale marker → {context_id} already closed
 Toolchain: ok | missing tools: [...]
 ```

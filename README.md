@@ -238,7 +238,7 @@ This is deliberately not a memory or an instruction that lives in context. The h
 - On the prompt that starts a run, the hook also says when the learnings inbox is due, so the reminder does not depend on the model counting marks in a directory its search tools skip.
 - If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions.
 
-Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session.
+Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session. The command in the snippet is a plain project-relative path with no bash syntax, because VS Code Copilot reads hooks from the same file and runs them in PowerShell on Windows; `/team-setup` reports an entry with an older spelling as stale wiring, and `fix` offers to replace it.
 
 ## The manifest
 
