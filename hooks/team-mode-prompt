@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Dream Team — UserPromptSubmit hook.
 #
-# Three things the harness can tell the model deterministically, which prose
+# Four things the harness can tell the model deterministically, which prose
 # at the top of a long skill cannot guarantee:
 #
 #   <TEAM-LEGACY-STATE>  the project's run state is still in the directory
@@ -13,6 +13,8 @@
 #                        standalone request.
 #   <TEAM-MODE-ACTIVE>   a run is open; the message belongs to it. Never on a
 #                        slash command, which is an explicit instruction.
+#   <TEAM-INBOX-DUE>     the learnings inbox is due; emitted only on the prompt
+#                        that starts a run.
 #
 # This survives a model switch, a long pause, a compaction and a restart,
 # because the harness runs this hook on every submitted prompt. Exit 0 with no
@@ -53,7 +55,7 @@ context=""
 
 if [ -d "$LEGACY" ]; then
   context="${context}<TEAM-LEGACY-STATE>\n"
-  context="${context}This project's run state is still in the legacy directory .claude-tracking/, which teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup fix, which shows a dry run of tools/migrate-tracking.sh and moves the state with the user's consent. /team stop and /team status still work. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
+  context="${context}This project's run state is still in the legacy directory .claude-tracking/, which teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup fix, which shows a dry run of tools/migrate-tracking.sh and moves the state with the user's consent. /team stop and /team status still work. If a TEAM-MODE-ACTIVE block follows, do not continue that run: ask for /team stop, then /team-setup fix. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
   context="${context}</TEAM-LEGACY-STATE>\n"
 fi
 
@@ -61,7 +63,8 @@ fi
 # inbox is due is the prompt that starts one: "/team <task>", never stop,
 # status or resume, and never a plain message. The check prints the reasons
 # and exits 1 when due; 0 and 2 (clean, or limits unreadable) stay silent.
-if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
+# Skipped while the legacy directory exists: no run can start then.
+if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
    && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]+(stop|status|resume)'; then
   TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then

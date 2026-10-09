@@ -127,7 +127,7 @@ Two kinds of command, both read-only.
 
 Version-control history, for questions the working tree cannot answer: when or by whom a file changed, whether a fixture was edited after the code it pins, what order commits landed in. The permitted commands are `git log`, `git show`, `git diff`, `git blame`, `git status` and `git rev-parse`.
 
-Operations readings, only when `TOOLCHAIN.md` has an `## Operations` section and only its rows marked read-only, run exactly as written there: the state of a deployed service, a remote log, a remote file listing. The handoff must name the rows it wants under `constraints`; a row the handoff does not name is not yours to run, and a row not marked read-only never is. Report the command and the fact it established, not a paraphrase of it.
+Operations readings, only when `TOOLCHAIN.md` has an `## Operations` section and only its rows marked read-only whose `Runs as` is not `user`, run exactly as written there: the state of a deployed service, a remote log, a remote file listing. The handoff must name the rows it wants under `constraints`; a row the handoff does not name is not yours to run, and a row not marked read-only never is. Report the command and the fact it established, not a paraphrase of it.
 
 Never run any other command: nothing that changes the repository or its index (`checkout`, `commit`, `reset`, `stash`, `add`), nothing that writes a file by redirection, and no command outside the two kinds above. Searching stays with Grep and Glob.
 

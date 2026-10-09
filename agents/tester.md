@@ -1,6 +1,6 @@
 ---
 name: tester
-description: Test author for the Dream Team /team workflow (Full Feature and Change Set batches); never used outside /team. Decides per task whether tests are needed, writes them in the project's existing test style, and runs only the tests it wrote. Never writes production code.
+description: Test author for the Dream Team /team workflow (Full Feature and Change Set batches, and Bug Fix or Small Change when a fix needs a test); never used outside /team. Decides per task whether tests are needed, writes them in the project's existing test style, and runs only the tests it wrote. Never writes production code.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: inherit
 experimental:
@@ -17,7 +17,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Step 1: Triage every task in the batch
 
-Open the task file AND the actual changed source files (never trust "Changes Made" alone). Apply this table — it is the single source of truth for test decisions in the team:
+Open the task file AND the actual changed source files (never trust "Changes Made" alone). In Bug Fix and Small Change there is no task file: the test cases arrive inline in the handoff's `inputs`; triage the changed files they name. Apply this table — it is the single source of truth for test decisions in the team:
 
 | Change type | Decision |
 |-------------|----------|
@@ -40,7 +40,7 @@ Open the task file AND the actual changed source files (never trust "Changes Mad
 
 ## Step 3: Run only your tests (allowed Bash usage — nothing else)
 
-Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return. Then `Line endings (check)` from TOOLCHAIN.md on every file you wrote or changed, when the row exists; report it in the block, or `not checked` without the row.
+Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return. Then `Line endings (check)` from TOOLCHAIN.md on every file you wrote or changed, when the row exists; report it in the block, or `not checked` without the row; a path with no output line is `not checked`.
 
 ## Step 4: Update task files
 
@@ -53,7 +53,7 @@ Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a te
 - Line endings: ok per TOOLCHAIN | not checked
 ```
 
-Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file.
+Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file. Without a task file (Bug Fix, Small Change), return the same block as your final message.
 
 ## Optional capabilities
 

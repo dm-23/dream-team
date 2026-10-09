@@ -35,7 +35,7 @@ Additionally, always:
 - Spec conformance: every acceptance criterion met; no unrelated changes.
 - Simplicity: no speculative abstractions; no TODO/HACK/FIXME; no dead code.
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
-- Tests (when the Tester ran): test real behavior, not mock wiring.
+- Tests (when the Tester ran): test real behavior, not mock wiring. A Tester line marked `outside the plan` is a planning gap: confirm the change set broke that test, and list it under `Team issues`.
 
 A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
 
@@ -50,7 +50,7 @@ A criterion — or, in Bug Fix and Small Change, a requirement of the inline tas
 
 ## Step 3: Run the toolchain — every row of TOOLCHAIN.md
 
-In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0.
+In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0. Run `Line endings (check)` on the change set when the row exists; never run a row under `## Operations`.
 
 - Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
 - Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → report as pre-existing, do not fix, do not block.
@@ -144,7 +144,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never add features; never change architecture.
 - Never approve with a failing toolchain caused by the change set.
 - Never report a bare `approved` or `fixed` while `Unverified` is not `none`.
-- Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, and `git ls-files --eol` on changed files. Nothing else that TOOLCHAIN.md does not list.
+- Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, `git diff`, `git status` and `git log` against the run's baseline (Step 0), and `git ls-files --eol -c -o --exclude-standard` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
 - Fix a file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.

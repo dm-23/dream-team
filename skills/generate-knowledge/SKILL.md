@@ -156,7 +156,7 @@ All commands run from: `<directory>`. Agents may run ONLY commands listed here; 
 | Validate `<document>` | ... (one row per document; see below) |
 | Run | ... |
 | Install missing | ... |
-| Line endings (check) | `git ls-files --eol -- <paths>` | yes | derived here | cheap |
+| Line endings (check) | `git ls-files --eol -c -o --exclude-standard -- <paths>` | yes | derived here | cheap |
 
 ## Operations
 (only when the repository has deploy, rollback or remote-inspection scripts or documented commands; otherwise omit the section)
@@ -178,7 +178,7 @@ Procedure: take candidates from CI/pipeline files first, then task runners/READM
 
 **Where a command may write.** Only to the repository paths its purpose names, and to standard output. Feed a tool its input through a pipe or standard input instead of staging a copy. When a tool can only write a file, the command writes it under `<scratch>`. Never name a fixed temporary path such as `/tmp/...`, `%TEMP%` or `$TMP`: it is shared between runs, it means different things in different shells, and the agent's environment may forbid writing there.
 
-**Line endings.** When the working copy keeps CRLF — `git config core.autocrlf` prints `true`, or `.gitattributes` sets `eol=crlf`, or `git ls-files --eol | grep -c 'w/crlf'` is above zero — the `Line endings (check)` row is required and its command is `git ls-files --eol -- <paths>`, read as `i/<index> w/<working tree>` per file. It is the only line-ending check agents may claim: counting carriage returns with a text tool misreports on this platform, and the row exists so nobody improvises one. Without CRLF in the working copy, omit the row.
+**Line endings.** When the working copy keeps CRLF — `git config core.autocrlf` prints `true`, or `.gitattributes` sets `eol=crlf`, or `git ls-files --eol | grep -c 'w/crlf'` is above zero — the `Line endings (check)` row is required and its command is `git ls-files --eol -c -o --exclude-standard -- <paths>`, read as `i/<index> w/<working tree>` per file. A path that prints no line is reported `not checked`. It is the only line-ending check agents may claim: counting carriage returns with a text tool misreports on this platform, and the row exists so nobody improvises one. Without CRLF in the working copy, omit the row.
 
 **Operations.** Commands that deploy, roll back, restart or inspect a running system are never run by this generator and never marked verified. List them from the repository's own scripts and documents, each with who runs it: `user` for anything that writes to a remote or production system, `orchestrator with per-command approval` for a read-only inspection the team may perform during a run. The `Read-only` column is a promise the ResearcherExplorer relies on; when in doubt, `no`.
 

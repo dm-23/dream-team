@@ -411,12 +411,12 @@ else
 fi
 mkdir -p "$hp/.claude-tracking"
 out="$(cd "$hp" && bash "$HOOK" < /dev/null)"
-case "$out" in *TEAM-LEGACY-STATE*TEAM-MODE-ACTIVE*) ;; *) fail "legacy dir present: expected legacy then active blocks: $out" ;; esac
+case "$out" in *TEAM-LEGACY-STATE*'<TEAM-MODE-ACTIVE>'*) ;; *) fail "legacy dir present: expected legacy then active blocks: $out" ;; esac
 rm -f "$hp/.dream-team-tracking/.team-mode"
 out="$(cd "$hp" && bash "$HOOK" < /dev/null)"; rc=$?
 [ "$rc" = 0 ] || fail "legacy dir, no marker: exit $rc"
 case "$out" in *TEAM-LEGACY-STATE*) ;; *) fail "legacy dir, no marker: expected the legacy block: $out" ;; esac
-case "$out" in *TEAM-MODE-ACTIVE*) fail "legacy dir, no marker: active block without a marker: $out" ;; esac
+case "$out" in *'<TEAM-MODE-ACTIVE>'*) fail "legacy dir, no marker: active block without a marker: $out" ;; esac
 rm -rf "$hp/.claude-tracking"
 finish
 run_install() { bash "$INSTALL" "$@" > "$TMP/inst.out" 2> "$TMP/inst.err"; RC=$?; }

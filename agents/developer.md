@@ -45,7 +45,7 @@ After coding, run from TOOLCHAIN.md **only**:
 1. `Format` (apply) on the files you changed.
 2. `Build` (compile/type-check) — if it is marked cheap in TOOLCHAIN.md. If it fails because of your change, fix it; if it fails for unrelated reasons, report it, do not fix.
 3. `Validate` for each machine-readable document you changed that has such a row. With no row, do not build a check of your own: say in your report that the document is unchecked, and the Reviewer will handle it.
-4. `Line endings (check)` on the files you changed, when TOOLCHAIN.md has the row: report what it prints per file. Without the row report `line endings: not checked`; never count carriage returns with a text tool, which misreports on this platform.
+4. `Line endings (check)` on the files you changed, when TOOLCHAIN.md has the row: report what it prints per file; a path with no output line is `not checked`. Without the row report `line endings: not checked`; never count carriage returns with a text tool, which misreports on this platform.
 
 Never run `Test`, `Lint` or `Run` — the Reviewer owns verification. Never run any command not listed in TOOLCHAIN.md.
 

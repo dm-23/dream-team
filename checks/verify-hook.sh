@@ -73,12 +73,12 @@ case "$OUT" in *TEAM-MODE-STALE*bug_fix_z_2026-10-08*missing*) ;; *) fail nostat
 p="$(project legacy)"; mkdir -p "$p/.claude-tracking"
 run legacy "$p" '"hello"'
 case "$OUT" in *TEAM-LEGACY-STATE*'.claude-tracking/'*'/team-setup fix'*) ;; *) fail legacy "no legacy block: $OUT" ;; esac
-case "$OUT" in *TEAM-MODE-ACTIVE*) fail legacy "active block without a marker: $OUT" ;; esac
+case "$OUT" in *'<TEAM-MODE-ACTIVE>'*) fail legacy "active block without a marker: $OUT" ;; esac
 run legacy-slash "$p" '"/team fix the thing"'
 case "$OUT" in *TEAM-LEGACY-STATE*) ;; *) fail legacy-slash "legacy block must survive a slash prompt: $OUT" ;; esac
 marker "$p" bug_fix_w_2026-10-08 "2 Research"; status "$p" bug_fix_w_2026-10-08 "# Status: w"
 run legacy-open "$p" '"hello"'
-case "$OUT" in *TEAM-LEGACY-STATE*TEAM-MODE-ACTIVE*) ;; *) fail legacy-open "expected legacy then active: $OUT" ;; esac
+case "$OUT" in *TEAM-LEGACY-STATE*'<TEAM-MODE-ACTIVE>'*) ;; *) fail legacy-open "expected legacy then active: $OUT" ;; esac
 
 # 8. JSON escaping of phase text
 p="$(project escape)"; marker "$p" bug_fix_q_2026-10-08 '4.1 Batch "A" done \ next'; status "$p" bug_fix_q_2026-10-08 "# Status: q"

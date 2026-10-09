@@ -23,6 +23,11 @@ skills/team/SKILL.md	honestly: it selects the model tier under "Model routing".	
 skills/team/SKILL.md	, and its model comes from the cell `change_set.reviewer`.	.
 skills/team/SKILL.md	3. AskUserQuestion:	3. Ask through the question tool:
 skills/team/SKILL.md	5. AskUserQuestion:	5. Ask through the question tool:
+skills/team/SKILL.md	 Its model is the cell `bug_fix.tester`.	
+skills/team/SKILL.md	, model from the cell `small_change.tester`	
+skills/team/SKILL.md	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
+skills/team/SKILL.md	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
+skills/team/SKILL.md	 The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one.	
 #
 # setup
 skills/team-setup/SKILL.md	required plugins, and knowledge presence	optional capabilities, and knowledge presence
