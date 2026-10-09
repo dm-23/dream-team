@@ -348,7 +348,7 @@ The Copilot edition keeps its own knowledge and shares run state with a Claude C
 
 ### Maintaining the port
 
-`bash copilot/check.sh` builds the edition from fixtures and from this repository, then installs it into throwaway projects. Run it with the other checks after changing any prompt.
+`bash copilot/check.sh` builds the edition from fixtures and from this repository, then installs it into throwaway projects. It prints one `ok [case]` line per case and takes about thirty minutes on Windows with Git Bash, because each case spawns many processes; run `bash copilot/build.sh <empty-dir>` after every prompt change (under a minute, and it fails on a broken anchor or rule) and the full check before a release.
 
 The translation is data:
 
@@ -384,3 +384,4 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | Generated files appear in version control | The exclude lines were not added | `/team-setup fix` |
 | `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup fix` |
 | Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |
+| An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
