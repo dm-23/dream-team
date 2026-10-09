@@ -91,7 +91,7 @@ contradict its class. The cuts that work:
 ## Tenancy / Auth Model
 
 ## Key Technical Facts
-- build cost (measured or from CI), deployment target, single or multiple repositories, generated code, etc.
+- build cost (measured or from CI), deployment target, single or multiple repositories, generated code, etc.; counts in the measured form
 
 ## Documentation map
 - which human documents exist and which are authoritative (from Inputs 3), with known discrepancies
@@ -156,6 +156,16 @@ All commands run from: `<directory>`. Agents may run ONLY commands listed here.
 | Validate `<document>` | ... (one row per document; see below) |
 | Run | ... |
 | Install missing | ... |
+| Line endings (check) | `git ls-files --eol -- <paths>` | yes | derived here | cheap |
+
+## Operations
+(only when the repository has deploy, rollback or remote-inspection scripts or documented commands; otherwise omit the section)
+
+| Purpose | Command | Runs as | Read-only | Source |
+|---------|---------|---------|-----------|--------|
+| Deploy | ... | user | no | script path / README |
+| Rollback | ... | user | no | ... |
+| Service status | ... | orchestrator with per-command approval | yes | ... |
 
 ## Verification log
 - command — how verified (executed / found in CI at path / from card, not executed)
@@ -167,6 +177,10 @@ All commands run from: `<directory>`. Agents may run ONLY commands listed here.
 Procedure: take candidates from CI/pipeline files first, then task runners/README, then the active stack card's `## Toolchain`. Execute the cheap read-only ones (format check, lint, build, test) if the user has not forbidden it; mark `Verified: yes` only after a real run. Mark "Cost: cheap" only when measured under about one minute.
 
 **Where a command may write.** Only to the repository paths its purpose names, and to standard output. Feed a tool its input through a pipe or standard input instead of staging a copy. When a tool can only write a file, the command writes it under `<scratch>`. Never name a fixed temporary path such as `/tmp/...`, `%TEMP%` or `$TMP`: it is shared between runs, it means different things in different shells, and the agent's environment may forbid writing there.
+
+**Line endings.** When the working copy keeps CRLF — `git config core.autocrlf` prints `true`, or `.gitattributes` sets `eol=crlf`, or `git ls-files --eol | grep -c 'w/crlf'` is above zero — the `Line endings (check)` row is required and its command is `git ls-files --eol -- <paths>`, read as `i/<index> w/<working tree>` per file. It is the only line-ending check agents may claim: counting carriage returns with a text tool misreports on this platform, and the row exists so nobody improvises one. Without CRLF in the working copy, omit the row.
+
+**Operations.** Commands that deploy, roll back, restart or inspect a running system are never run by this generator and never marked verified. List them from the repository's own scripts and documents, each with who runs it: `user` for anything that writes to a remote or production system, `orchestrator with per-command approval` for a read-only inspection the team may perform during a run. The `Read-only` column is a promise the ResearcherExplorer relies on; when in doubt, `no`.
 
 **Validate rows.** Every document the team edits by hand that has a machine-readable format (a specification, a schema, a configuration file) gets a `Validate` row. `PROJECT-RULES.md → Documents to keep in sync` lists these documents. Without a listed command, an agent either skips the check or improvises one, and both break the rule that agents run only what this file lists. Take the command from the repository's own tooling or CI first. Otherwise build it from a parser already present on this machine (a runtime's standard library, or a library already in the dependency cache, never a new download), run it on the current file, and record it as `derived here`. If nothing here can parse the format, write the row as `none — the Reviewer checks it by reading`. That way the absence is a recorded decision, not a gap. PROJECT-RULES.md is written after this file, so step 10 of "Process" confirms that every such document has its row.
 
@@ -270,7 +284,7 @@ Report: entries per class before, what was applied, entries left, the backup pat
 
 ## Check mode (`check`)
 
-For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every "current highest version/number" style claim is still correct, and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
+For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
 
 ## Fix mode (`fix`)
 
@@ -349,6 +363,7 @@ this run, not a note for later — say so plainly rather than burying it.
 - Every path verified to exist; every pattern has 2–3 real examples; every command traced to a source and, where possible, executed.
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
+- A count that ordinary commits change — tests collected, routes registered, operations in a specification, migration heads, files of a kind — is written as `N (measured at <short-sha> with <command>)`, never bare: the Reviewer treats a bare count that drifted as a missing fact and a measured one as expected movement. Prefer stating the command alone where the number adds nothing.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
 - `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode and in the inbox triage of `all` you also write the backup directory under `.dream-team-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
 - Every file is inside the budget its class gives it, and the size table proves it.
