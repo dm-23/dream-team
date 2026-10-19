@@ -7,6 +7,8 @@
 # user declines, hides it through .git/info/exclude (see gitExclude in
 # team-manifest.json). Both layers are generated and neither is ever committed.
 knowledge/
+temp/
+docs/
 
 # OS noise
 Thumbs.db
