@@ -24,6 +24,7 @@ skills/team/SKILL.md	, and its model comes from the cell `change_set.reviewer`.	
 skills/team/SKILL.md	3. AskUserQuestion:	3. Ask through the question tool:
 skills/team/SKILL.md	5. AskUserQuestion:	5. Ask through the question tool:
 skills/team/SKILL.md	 Its model is the cell `bug_fix.tester`.	
+skills/team/SKILL.md	 The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.	
 skills/team/SKILL.md	, model from the cell `small_change.tester`	
 skills/team/SKILL.md	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
 skills/team/SKILL.md	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`

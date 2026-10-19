@@ -147,9 +147,9 @@ All commands run from: `<directory>`. Agents may run ONLY commands listed here; 
 | Purpose | Command | Verified | Source | Cost |
 |---------|---------|----------|--------|------|
 | Format (check) | ... | yes/no | CI file / README / card / derived here | cheap/expensive |
-| Format (apply) | ... |
+| Format (apply) | ... (the form that takes the file paths to format, when the tool has one; the Developer and the Tester format only their own files) |
 | Lint | ... |
-| Build | ... |
+| Build | ... (when the cost differs by project, the Cost cell names the cheap projects; the Developer builds only those) |
 | Test all | ... |
 | Test one | ... |
 | Additional test runners | ... (for example a separate user-interface test command) |
@@ -216,6 +216,8 @@ L. ... (from "Duplicated code paths that must change together")
 ```
 
 Flat numbered list, no headings, each item verifiable by reading the diff or running a TOOLCHAIN command.
+
+An item that can be confirmed only once a commit exists — a commit-message form, a pre-commit hook's result, a pull-request target — ends with the suffix `(after commit)`. The Reviewer reports such items separately and never counts them as unverified; without the suffix, every run reports them unverified forever.
 
 ### PROJECT-RULES.md
 

@@ -117,14 +117,14 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Brainstorm | read only | Three parallel instances propose questions, solutions or a diagnosis | Reads your source; talks to you |
 | ResearcherExplorer | read, search, git history, write to run state | Finds the exact files, symbols and insertion points | Modifies source |
 | Architect | read, search, write to run state | Detailed plan and task breakdown for a full feature | Writes production code |
-| Developer | read, edit, write, formatter and compile check | Implements exactly one task | Writes or runs tests |
+| Developer | read, edit, write, formatter and compile check, a diff of its own files | Implements exactly one task | Writes or runs tests |
 | DocWriter | read, search, edit, write — no shell | Writes documentation, verifying every claim against the code first | Touches source code or tests |
-| Tester | read, edit, write, runs only its own tests | Decides what needs tests and writes them | Touches production code |
+| Tester | read, edit, write, formatter, runs only its own tests, a diff of its own files | Decides what needs tests and writes them | Touches production code |
 | Reviewer | read, search, edit, write, full toolchain | Reviews against the generated checklist, runs format, lint, build and tests, classifies what the run taught | Adds features |
 
 The orchestrator is the only role that talks to you. It never writes code and never runs a build.
 
-**Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question.
+**Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question. A lens that needs a piece of code it was not given says so, and the team fetches it rather than letting the lens guess; a choice the research or the Architect finds afterwards goes back to the three lenses once, by a count, before it can reach you.
 
 **Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm and Architect opus; Developer, Reviewer and DocWriter sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
@@ -139,7 +139,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, a test when one is needed, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, a test when the plan names one, review |
 | Change Set | a list of independent small items | One research pass, batches with non-overlapping files run in parallel, one combined review |
-| Full Feature | a new capability across modules | Questions, design, wide research, architecture, your approval of the plan, batched implementation with a stop after each batch, final review |
+| Full Feature | a new capability across modules | Questions, wide research, design, architecture, your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
 
 If research shows a Small Change is bigger than three files, or touches a schema, a public interface or wiring, you are asked whether to upgrade it rather than being quietly let through.
 

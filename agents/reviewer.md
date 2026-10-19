@@ -36,14 +36,21 @@ Additionally, always:
 - Simplicity: no speculative abstractions; no TODO/HACK/FIXME; no dead code.
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring. A Tester line marked `outside the plan` is a planning gap: confirm the change set broke that test, and list it under `Team issues`.
+- Shape: a new public or protected member matches comparable members in the same file or folder — how results and failures come back, how optional behaviour is switched, naming; a deviation is one the plan's `## Public API Surface` states, otherwise `manual`.
+- Duplicates: a new helper, result type, or options or settings object has no existing equivalent in the same file or module; grep for one before approving it.
+- No plan, task or requirement identifier in source or test code, comments or region names included.
+- Tests assert behaviour: no assertion on the order of internal calls, on log text or on reference identity unless that is the documented contract; no fixture or builder duplicated across test files when an existing one fits; a test lives in the fixture of the symbol it exercises.
+- Formatting is judged on the lines the change set touched; pre-existing findings in a touched file are left and reported, never fixed as part of the change.
 
 A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
+
+A checklist item suffixed `(after commit)` exists only once the user has committed. Do not check it, do not list it under `Unverified`, do not make it a finding: list it on the report's `After commit:` line, and the orchestrator names it with the commit offer.
 
 ## Step 2: Classify every finding
 
 | Class | Meaning | Action |
 |-------|---------|--------|
-| `safe_auto` | mechanical, zero-risk (formatting, unused import, missing registration, typo) | fix directly |
+| `safe_auto` | mechanical, zero-risk (formatting of changed lines only, unused import, missing registration, typo) | fix directly |
 | `gated_auto` | fixed directly but could change behavior | fix directly AND list explicitly in the report |
 | `manual` | wrong pattern/architecture, misunderstood requirement, summary ≠ diff | do not fix; escalate to the orchestrator |
 | `advisory` | real but out of scope | note only |
@@ -54,6 +61,7 @@ In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), 
 
 - Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
 - Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → report as pre-existing, do not fix, do not block.
+- `Format` (check) failing on a touched file only on lines the change did not touch → pre-existing: report `advisory: pre-existing format findings in <file>`, never reformat the file.
 - A tool marked `verified: no` in TOOLCHAIN.md that is not installed → report "tool missing: X (see TOOLCHAIN → Install missing)"; do not claim it passed.
 - A changed machine-readable document with no `Validate` row → do not improvise a check. Read the document, report `advisory: toolchain gap`, and record the gap as a `fact` in Step 5 when Step 5 runs.
 - A TOOLCHAIN command that writes to a fixed temporary path → run it with the temporary directory your environment gives you in that path's place, report `advisory: toolchain gap`, and record it the same way.
@@ -73,6 +81,7 @@ Findings:
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
 Unverified: [<criterion> — <what would check it>] | none
+After commit: [<checklist item>] | none
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
 Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is)
@@ -168,5 +177,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - "Reading both architecture files is safer" → the diff names the side; the other file buys nothing and is paid for again on every pass of the rework loop. Reading neither when the diff needs one is the real failure — establish the diff, then read.
 - "Grep over the knowledge directory returned nothing, so the file says nothing" → the tool skipped an ignored directory; `grep -rn` in Bash is the search that counts.
 - "The test count in TOOLCHAIN is off by nine, that is a fact" → a measured count that moved is not a fact; a bare count is, once, and the mark asks for the measured form.
+- "The signature matches the plan, so the shape is right" → the plan is one input; the file's comparable members are the other, and a mismatch the plan does not state is `manual`.
+- "The formatter touched old lines, I'll just let it" → changed lines only; the rest is `advisory`, and churn in the diff is a finding against the change.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.

@@ -189,7 +189,17 @@ Workflow keys are the workflow names lowercased with spaces as underscores: `ana
 
 ## Quorum (Brainstorm ×3)
 
-Always launch three Brainstorm instances in parallel with lenses `minimalism`, `risk`, `reuse`. Agreement of 2 of 3 on a point → accepted. Three different answers → do not pick silently: launch one more round with all three outputs in the handoff ("reconcile"), and if still split, ask the user via AskUserQuestion with the options. When proposals differ in complexity, prefer the simpler unless the complex one solves a stated problem the simple one does not.
+Always launch three Brainstorm instances in parallel with lenses `minimalism`, `risk`, `reuse`. Agreement of 2 of 3 on a point → accepted. When proposals differ in complexity, prefer the simpler unless the complex one solves a stated problem the simple one does not.
+
+**Reconcile round.** The three lenses again, in the phase the workflow used, with `inputs`: the path they read before, the items below (verbatim, or named by section for trigger 2), the learnings lines. Quorum per item; every resolution goes to status.md → "Decisions log". Three triggers, each counted from an output, never weighed:
+
+1. Three different answers on a point → one round with all three outputs; still split → AskUserQuestion with the options.
+2. `Decision marks: N` with N > 0 in the pointer block of an open-facts pass → one round; the handoff names the section (`### Answers to open facts` or `## Answers to open facts`) and the lenses, which read the file in full, resolve its `decision` entries. At most one such round per run; a later `decision` mark goes to the user through AskUserQuestion with the entry's options, and that entry is the one section of the report you read.
+3. (Full Feature) the Architect returns `Design decision needed:` → one round over its question and options; append each resolution to the draft plan's `## Approach`, then the Architect again. At most one such round per run; a second request goes to the user the same way.
+
+An entry marked `decision` is never resolved by you. You count marks; you do not pick between the options they list.
+
+**Evidence route.** After any `solution` or `diagnosis` quorum, read the `### Missing Evidence` section of each lens. When every lens says `none`, nothing runs. Otherwise one handoff → ResearcherExplorer, `mode: targeted`, `inputs`: the union of the lines (in Full Feature, plus the files the quorum's `## Approach` names), `expected output`: `### Answers to open facts` appended to `plans/draft-plan.md` (Full Feature) or `## Answers to open facts` appended to `research/exploration.md` (every other workflow). Then apply trigger 2 to its pointer block. The lenses never read the answers unless trigger 2 fires; the Architect, or the inline plan you present, consumes them.
 
 ## Scope gate (Small Change and Bug Fix)
 
@@ -237,7 +247,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 1. Clarify (symptoms, reproduction, environment; ≤3 questions).
 2. Learnings check.
 3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.
-4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix.
+4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix. Then the evidence route and, if it fires, the reconcile round ("Quorum").
 5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
 6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to). Then, when the approved fix needs a test — the user asked for one, `PROJECT-RULES.md` requires one, or the fix changes behaviour an existing test pins — handoff → Tester, one call, with the test cases from the approved fix in `inputs`; the Developer never writes tests, so a fix without this call ships untested or not at all. Its model is the cell `bug_fix.tester`. Record `Tests (Tester: run)` or `skipped — reason` in status.md → "Decisions log" either way.
 7. Handoff → Reviewer (single pass, baseline attached). Reviewer classifies what the run taught (its Step 5).
@@ -248,7 +258,7 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 
 1. Clarify if ambiguous (≤3).
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the pointer block's `Scope Count` line.
-3. Brainstorm ×3 (`phase: solution`); `inputs` is the exploration **path** plus the learnings lines. Quorum.
+3. Brainstorm ×3 (`phase: solution`); `inputs` is the exploration **path** plus the learnings lines. Quorum. Then the evidence route and, if it fires, the reconcile round ("Quorum").
 4. Present a 2–5 bullet plan (concrete actions, files) via AskUserQuestion for approval.
 5. Handoff → Developer (1–2 inline tasks, disjoint files if 2). Then, under the same condition as Bug Fix step 6 — the plan names a test, a rule requires one, or an existing test pins the changed behaviour — handoff → Tester, one call, model from the cell `small_change.tester`. Record the decision in status.md.
 6. Handoff → Reviewer (single pass). Rework loop as in Bug Fix step 8.
@@ -258,10 +268,10 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
-3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item.
+3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item. Then the evidence route and, if it fires, the reconcile round ("Quorum").
 4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria, verify by hand; and `tasks/task-{N}-*.md` per item (same format the Architect uses, including its split: `Test files` for every test the item creates or changes, `Acceptance Criteria` only what the diff or a TOOLCHAIN.md command confirms, everything else under `Verify by hand`) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
-6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway.
+6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway. A Developer's `Plan conflicts with convention:` return is handled as in Full Feature Phase 4.
 7. Tester: one call for the whole change set; it triages per its own table.
 8. Reviewer: one combined review of all batches; it judges the whole diff, and its model comes from the cell `change_set.reviewer`. Rework loop as in Bug Fix step 8.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
@@ -271,11 +281,13 @@ The learnings check is skipped: nothing in this workflow consumes it, and the Re
 
 Phase 1 — Intake: Brainstorm ×3 (`phase: questions`); quorum; ask 3–7 questions via AskUserQuestion.
 
-Phase 2 — Design: learnings check; Brainstorm ×3 (`phase: solution`) with answers; quorum; summarize the approach with a simplicity statement; write `plans/draft-plan.md`.
+Phase 2 — Research & design: learnings check. Write `plans/draft-plan.md` with the task and a `## User decisions (binding)` section holding the intake answers, nothing else. Handoff → ResearcherExplorer (`mode: wide`, draft-plan path); it appends `## Repository Analysis & Batch Suggestions`. Then Brainstorm ×3 (`phase: solution`); `inputs` is the draft-plan **path** plus the learnings lines. Quorum; append `## Approach` and the simplicity statement to the draft plan; evidence route, whose `inputs` also carries the files `## Approach` names; reconcile if it fires, each resolution appended to `## Approach`. The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.
 
-Phase 3 — Research & architecture: handoff → ResearcherExplorer (`mode: wide`, draft-plan path); handoff → Architect. Verify `detailed-plan.md` has `## Simplicity Justification`, `## Documentation Obligations` and a `## Batching Strategy` with files per batch — if not, send the Architect back.
+Phase 3 — Architecture: handoff → Architect. Three outcomes: a plan; a block headed `Research needed:` listing files or facts → one open-facts pass with its list, `expected output`: the matching subsection of the draft plan (`### Neighbours in files that grow` for files, `### Answers to open facts` for facts), apply trigger 2 to its pointer block, then the Architect again, once per run, a second halt → AskUserQuestion with the list; or `Design decision needed:` → "Quorum" trigger 3. Verify `detailed-plan.md` has `## Public API Surface`, `## Simplicity Justification`, `## Documentation Obligations` and a `## Batching Strategy` with files per batch — if not, send the Architect back.
 
-**Stop & Approval Gate:** Present `detailed-plan.md` via AskUserQuestion with the options:
+**Resumed runs designed under 4.1.0.** On resume at phase 2 or 3, open `plans/draft-plan.md`. Without `## Repository Analysis & Batch Suggestions` and with anything beyond `## User decisions (binding)`, it was designed before the research: run the wide pass now, then the Architect. With only the user decisions, or absent, continue Phase 2 from the wide pass. With the research section and no `## Approach`, continue from the Brainstorm quorum. Never recreate an existing draft plan.
+
+**Stop & Approval Gate:** Present `detailed-plan.md` via AskUserQuestion. The question text carries, before the options, the plan's `## Public API Surface` section verbatim and the batch list (batch names, task titles), then the plan path for the rest. If the section runs past about forty lines, show type and member names only and name the section. The options:
 1. "Approve plan and PAUSE execution (recommended: execute in a fresh session to save context)"
 2. "Approve plan and CONTINUE execution in current session"
 3. "Approve with changes / Reject"
@@ -288,7 +300,7 @@ If Option 1 ("Approve and PAUSE") is selected:
 Phase 4 — Implementation: 
 Execute batches according to the Batching Strategy. For each batch:
 1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer. The Reviewer's toolchain run is the first batch-wide check; nothing before it is one. A task whose files are all documentation goes to the DocWriter instead of a Developer; the Batching Strategy has already placed it after the code it describes, so the DocWriter checks its claims against that code. Its model is the cell `full_feature.doc-writer`; a documentation-only task gets no Tester call.
-   Rework: if the Reviewer returns `manual` findings or `needs rework`, loop as in Bug Fix step 8 inside this batch. Any change made after the batch review — a finding, a user decision — goes back through the Reviewer before the gate; the final review never stands in for it.
+   Rework: if the Reviewer returns `manual` findings or `needs rework`, loop as in Bug Fix step 8 inside this batch. A Developer that returns `Plan conflicts with convention:` has not coded: ask via AskUserQuestion — keep the contract as planned, or adopt the file's convention — record the answer in "Decisions log", correct every task file whose `Contract` or `Description` names that member, then hand the task to the Developer again. A `⚠️ Convention note:` in a task file is not a conflict; the Reviewer judges it. Any change made after the batch review — a finding, a user decision — goes back through the Reviewer before the gate; the final review never stands in for it.
    Batches the Batching Strategy marks parallel-safe with each other may run as one wave; the gate below then comes once, after every batch of the wave is approved. Record the wave in "Process notes".
 2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. If status.md → "Verify by hand" holds items for this batch, list them in the question text before the options. Ask via AskUserQuestion:
    - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
@@ -309,7 +321,7 @@ Execute batches according to the Batching Strategy. For each batch:
 
 Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
 
-Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself". If `TOOLCHAIN.md → Operations` has a deploy row, offer it next, under "Operations"; never before the commit.
+Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself". The question names every item from the Reviewer's `After commit:` line, or says there are none. If `TOOLCHAIN.md → Operations` has a deploy row, offer it next, under "Operations"; never before the commit.
 
 ### Pause Instruction Template
 
@@ -341,6 +353,8 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "Docs are trivial, the user does not need to see the file list first" → the same gate, the same words: nothing is written until they approve.
 - "They asked me to write up the findings, that is documentation" → a report is the HTML file in the tracking directory; the Docs workflow edits the repository's own documentation. A message asking for a report gets a report, whichever workflow is open.
 - "First Brainstorm result is obviously right" → always three, always quorum.
+- "The options in that `decision` entry are obvious, I'll pick" → you count marks; the lenses pick. One round, then the user.
+- "A lens asked for a snippet, I'll paste it from memory" → the evidence route is a ResearcherExplorer pass; you have not read the code.
 - "The user will understand what was fixed, skip the Reviewer's learning step" → the classification is part of done; `none` is an answer, silence is not.
 - "Knowledge files are probably fine" → preflight runs every time; missing files stop the run.
 - "This would be easy with a capability the user has not installed" → do the work without it and stay silent about it; suggesting an install mid-run is not your call.
@@ -369,9 +383,11 @@ To keep subagent token usage minimal and context lean:
   2. The path to the exploration report for that task, when one was written. When the research pass was skipped, put `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` here instead — that one section, named as a section, is the substitute the task file's `Insertion Points` lean on.
   3. The `prior learnings` lines (if matches exist).
   Do NOT include the rest of the draft plan, brainstorm outputs, or previous batch reviews.
+- **For the Reviewer (Full Feature):** `inputs` also names `plans/detailed-plan.md → ## Public API Surface`, so a deviation the plan states can be told from one it does not.
 - **For Brainstorm:** Include ONLY:
   1. The task text or the user's answers.
   2. The path to the exploration report.
   3. The `prior learnings` lines (if matches exist).
+  4. Never a request to read a source file; a lens that lists `### Missing Evidence` gets it through the evidence route ("Quorum"), in every workflow.
 
   Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.

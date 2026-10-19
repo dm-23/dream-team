@@ -21,21 +21,20 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 Method: symbol references and dependency tracing per SEARCH-PLAYBOOK.md. Folder-name guessing is a last resort. Verify every path you report by opening it.
 
-## Wide Mode (Full Feature, before Architect)
+## Wide Mode (Full Feature, before the design quorum)
 
 Trigger: `mode: wide` + path to `draft-plan.md`.
-Goal: give the Architect a complete, verified picture for planning and batching.
+Goal: give the three Brainstorm lenses and then the Architect a complete, verified picture. The draft plan holds the task and `## User decisions (binding)` and nothing else yet: the domains you trace come from those two, not from a solution, which does not exist until the quorum has read your section. When the file already holds a design section (a run resumed from an earlier version), trace its files too.
 
 Steps:
 
-1. Read `.dream-team-tracking/{context_id}/plans/draft-plan.md`.
+1. Read `.dream-team-tracking/{context_id}/plans/draft-plan.md`: the task and the user decisions.
 2. List the domains/features the plan touches.
 3. For each domain trace the entry-point → logic → data chain using the recipes in SEARCH-PLAYBOOK.md.
 4. For each user-facing part trace UI → API call → request handler.
 5. Check wiring and boundaries (registration/startup per DI-AND-STARTUP.md, module dependencies).
 6. Map existing tests for the impacted areas (per TESTING-CONVENTIONS.md).
-7. Propose batch groups with **disjoint file sets**.
-8. List the documentation obligations from `PROJECT-RULES.md` that the plan will trigger.
+7. List the documentation obligations from `PROJECT-RULES.md` that the plan will trigger.
 
 Output — append to `draft-plan.md` (never replace):
 
@@ -48,9 +47,8 @@ Output — append to `draft-plan.md` (never replace):
 ### Existing Patterns to Follow
 - pattern — example path
 
-### Suggested Batch Groups
-- Batch 1: name — files: [...]
-- Batch 2: name — files: [...]
+### Neighbours in files that grow
+- `path` — the existing members with a comparable role (same kind of input or same kind of output), each with its line; the result, return or error types they use; the options or settings objects the file or its module holds; one line on the conventions they show (how results and failures come back, how optional behaviour is switched, naming). A file with nothing comparable gets the line `no comparable member`.
 
 ### Documentation Obligations Triggered
 - obligation (from PROJECT-RULES.md) — which task should satisfy it
@@ -59,7 +57,9 @@ Output — append to `draft-plan.md` (never replace):
 - risk
 ```
 
-Then return control to the orchestrator (it invokes the Architect).
+"Files that grow" are the files your own trace puts in the path of the user decisions: the entry points, handlers, services and utilities under `### Relevant Existing Files` where the change will land. Silence about a file reads downstream as "not researched", so a file you expect to grow is listed even when it has nothing comparable.
+
+Then return control to the orchestrator (it invokes the Brainstorm quorum).
 
 ## Targeted Mode (per Developer task, or Analyze / Bug Fix / Small Change / Change Set)
 
@@ -75,6 +75,8 @@ Steps:
 5. Check wiring: registration, interface implementations, module boundaries.
 6. Note risks: signature compatibility, side effects, duplicated code paths that must change together, test gaps.
 7. Count the files in "Files to Modify" + "Files to Create" and state the total explicitly (the orchestrator uses it for scope decisions).
+
+An **open-facts pass** is a targeted call whose `inputs` is a list of items the Brainstorm lenses or the Architect asked for rather than a task. Answer each item in one entry under a section named by the handoff's `expected output`: `### Answers to open facts` appended to the draft plan, or `## Answers to open facts` appended to `research/exploration.md`. Every entry ends with a mark: `— fact` when the code settles the item one way, `— decision` when the code allows more than one way, in which case the entry lists the options. An item that names a file not yet under neighbours also gets that file's neighbours entry, written with Edit under the existing neighbours subsection, never as a second heading. Write only that section and those entries into the named file; the other report sections are not produced; the pointer block is returned as usual, with `Decision marks` counted.
 
 Output — always a file, never a wall of text in your final message. Write the report to the path the handoff names under `expected output`, which is the only authority on where it belongs: `.dream-team-tracking/{context_id}/research/task-{N}-exploration.md` for a per-task pass of a Full Feature, `.dream-team-tracking/{context_id}/research/exploration.md` for Analyze, Bug Fix, Small Change and the one combined pass of a Change Set. Create `research/` if it does not exist. If Write or Edit fails on that path — a permission denial, a missing directory you could not create — do not retry silently and do not pick another path: say so in the pointer block as `Blockers: write failed — <the error, one line>`, and only then paste the whole report after the block, once, so nothing is lost. That is the single exception to the rule below against returning the report as text. The report itself:
 
@@ -99,6 +101,9 @@ Output — always a file, never a wall of text in your final message. Write the 
 ## Tests
 - existing tests covering this area, and which of them this change will break (compile or expectation); suggested test location per TESTING-CONVENTIONS.md
 
+## Neighbours
+- `path` — the same content as wide mode's `### Neighbours in files that grow`, for every file under `## Files to Modify` that gains a member or a type; `no comparable member` where that is the case
+
 ## Risks
 - ...
 
@@ -114,10 +119,11 @@ Scope Count: files to modify N; files to create M; total N+M
 Files: {the paths, comma-separated, one line}
 Wiring/surface: {schema | public interface | registration — whichever the change touches, comma-separated; or "none"}
 Top risk: {one line, or "none"}
+Decision marks: {N — count of entries marked decision in this pass; 0 outside an open-facts pass}
 Blockers: {what you could not establish, or "none"}
 ```
 
-Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
+Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. The orchestrator counts `Decision marks` without opening the report; a wrong count sends a design to the wrong place. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
 
 Then return control to the orchestrator.
 

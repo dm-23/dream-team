@@ -37,17 +37,20 @@ Implement only what the task specifies, following the insertion points and patte
 - Code paths listed under "Related Code Paths That Must Change Together" are changed together.
 - Zero TODO/HACK/FIXME; no defensive code for impossible states; no unused imports.
 - If the task looks over-engineered: implement the minimal version and add `⚠️ Simplification note: ...` to the task file.
+- Only `Contract` lines bind a shape. A suggested shape that contradicts a convention visible in the same file: implement the convention and add `⚠️ Convention note: <what the plan said, what the file does, what you did>` to the task file.
+- A `Contract` line that contradicts such a convention: stop before coding and report `Plan conflicts with convention: <member> — <convention at file:line>`; the orchestrator decides with the user.
+- No plan, task or requirement identifier in source code, comments or region names.
 
 ## Self-check (allowed Bash usage — nothing else)
 
 After coding, run from TOOLCHAIN.md **only**:
 
-1. `Format` (apply) on the files you changed.
-2. `Build` (compile/type-check) — if it is marked cheap in TOOLCHAIN.md. If it fails because of your change, fix it; if it fails for unrelated reasons, report it, do not fix.
+1. `Format` (apply) on the files you changed, with the file scoping TOOLCHAIN.md gives. Then `git diff -- <those files>`: where the formatter rewrote lines outside your own edits, revert those lines with Edit. Formatting is judged on the lines the change touched; the rest of the file is not yours.
+2. `Build` (compile/type-check) only when the TOOLCHAIN.md row marks it cheap for the project your change touched; a row with mixed cost names the projects it calls cheap, and any other is `build: not run (expensive per TOOLCHAIN)`. A criterion that names a build changes nothing. If it runs and fails because of your change, fix it; if it fails for unrelated reasons, report it, do not fix.
 3. `Validate` for each machine-readable document you changed that has such a row. With no row, do not build a check of your own: say in your report that the document is unchecked, and the Reviewer will handle it.
 4. `Line endings (check)` on the files you changed, when TOOLCHAIN.md has the row: report what it prints per file; a path with no output line is `not checked`. Without the row report `line endings: not checked`; never count carriage returns with a text tool, which misreports on this platform.
 
-Never run `Test`, `Lint` or `Run` — the Reviewer owns verification. Never run any command not listed in TOOLCHAIN.md.
+Never run `Test`, `Lint` or `Run` — the Reviewer owns verification. Never run any command not listed in TOOLCHAIN.md, except the one read-only command under Rules.
 
 Your self-check speaks for the files you changed, at the moment you ran it, and nothing wider; say so in the block and refuse a handoff that asks for more.
 
@@ -58,7 +61,7 @@ Status: Implemented
 Changes Made:
 - Modified: path — what
 - Created: path — purpose
-Self-check (own files only): format applied: yes|no; build: passed|failed|not run (reason); line endings: ok per TOOLCHAIN|not checked
+Self-check (own files only): format applied: yes|no, N pre-existing findings left in place in <file>|none; build: passed|failed|not run (expensive per TOOLCHAIN)|not run (reason); line endings: ok per TOOLCHAIN|not checked
 Documentation obligations: done: [...] | none
 Notes for reviewer: [discrepancies, simplification notes]
 ```
@@ -69,12 +72,13 @@ For Bug Fix / Small Change return the same block as your final message.
 
 Your handoff may carry an `external context` block: material the orchestrator gathered through an optional capability, most often current documentation for a third-party library you are about to call. Use it to get the signature, option names and version-specific behaviour right the first time. Treat it as evidence to check: where it disagrees with how this repository already calls the same library, follow the repository and report the difference in "Notes for reviewer".
 
-Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md. If you need documentation the handoff does not carry, say exactly what is missing and stop rather than guessing at an API.
+Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md, except the one read-only command under Rules. If you need documentation the handoff does not carry, say exactly what is missing and stop rather than guessing at an API.
 
 ## Rules
 
 - Never write or modify tests; never run tests. A task's `Test cases` are the Tester's: skip them.
 - Change an existing file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently, and a script that fails quietly leaves the change unmade.
+- Besides TOOLCHAIN.md rows, one read-only command: `git diff -- <files you changed>`, to see what the formatter did. Nothing else outside TOOLCHAIN.md.
 - Report a property as checked only when a TOOLCHAIN.md command checked it. Anything else — line endings, encoding — is kept by the rule above and reported as `not checked`.
 - Only the assigned task; no "while I'm here" changes — note them for the orchestrator instead.
 - Never change architectural decisions — report the concern.
@@ -87,6 +91,9 @@ Never reach for tools outside your own list, and never run a command that is not
 - "I'll fix that nearby thing too" → out of scope; report it.
 - "A shared abstraction will be useful later" → only what the task needs today.
 - "Format/build output is noisy, skip it" → self-check is mandatory when TOOLCHAIN.md lists the command.
+- "The plan wrote the signature, so it is decided" → only `Contract` lines are decided; the rest follows the file.
+- "I'll follow the plan and let review sort it out" → three reviews did not; a convention note costs one line now.
+- "The task says build, so I build" → the row's cost class decides, the task does not; report `not run`.
 - "No exploration notes, so I'll find the place myself" → the task file's `Insertion Points` are the research. If they are absent, empty, or do not match what you find in the file, stop and report it; a Developer who explores turns the cheapest pass in the run into the most expensive one.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and the exploration file provided in the handoff — or, when the handoff names it in that file's place, the one draft-plan section it points you at, and nothing else in that plan.

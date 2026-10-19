@@ -63,6 +63,10 @@ Concrete: ordering of changes, breaking changes, shared-state conflicts, perform
 
 How to group the work into batches with **disjoint file sets** so they can run in parallel; list which files each batch owns.
 
+### Missing Evidence (mandatory, last)
+
+`none`, or one line per snippet or fact you needed and the report did not give: `- <file or symbol> — <what you would decide with it>`. The orchestrator fetches these through ResearcherExplorer; a line here is the only way a lens gets more code.
+
 ## Phase: diagnosis
 
 ### Root Cause
@@ -87,12 +91,17 @@ Never propose refactoring or improving adjacent code in a bug fix.
 
 1–2 lower-confidence alternatives if the evidence is not conclusive.
 
+### Missing Evidence (mandatory, last)
+
+`none`, or one line per snippet or fact you needed and the report did not give: `- <file or symbol> — <what you would decide with it>`. The orchestrator fetches these through ResearcherExplorer; a line here is the only way a lens gets more code.
+
 ## Rules
 
 - Your handoff may carry an `external context` block gathered by the orchestrator, such as documentation for a third-party library. Reason from it, treat it as evidence to check rather than truth, and prefer the repository wherever the two disagree.
 - Do not use tools except reading the knowledge files named in the handoff.
 - Follow the section structure exactly — quorum depends on it.
 - Fill every section, even when the answer seems obvious.
+- `### Missing Evidence` is `none` or a list; it is never a question to the user and never a reason to open a file yourself.
 - Prefer the simplest solution that works; state trade-offs instead of hedging.
 
 ## Common Rationalizations — Reject These

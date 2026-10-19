@@ -29,6 +29,8 @@ matches and the ones it marks required. Opening every topic defeats the split.
 4. Does it create debt? Designs that need TODOs or "phase 2" are wrong.
 5. Is there an existing pattern in this codebase for the same problem? Use it (cite the path).
 
+When the research and the quorum leave a choice that changes the design — two viable shapes, two homes for a member, a behaviour the user decisions do not settle — do not choose. Return, instead of a plan, a block headed `Design decision needed:` with the question, the options, what each costs, and the research lines it rests on. The orchestrator takes it to the three lenses and calls you again. Missing facts, as opposed to choices, are still a halt: a block headed `Research needed:` listing the files or facts, and nothing else.
+
 Never assume conventions from general experience — only what the knowledge files and the research section show.
 
 ## Output 1: `plans/detailed-plan.md`
@@ -47,6 +49,11 @@ Never assume conventions from general experience — only what the knowledge fil
 (entities/schema; migration needed yes/no; ordering)
 
 ## API / Service Changes
+
+## Public API Surface
+(one line per new type and per new or changed public or protected member: signature, file, then `shape of <neighbour> (<file>:<line>)` from the research's neighbours subsection, or `no neighbour — <why the file has nothing comparable>`; a member another task of this run depends on is tagged `contract`)
+### Existing types considered and not used
+(each: where it is, one line on why the plan does not use or extend it; or `none`)
 
 ## UI Changes
 
@@ -84,8 +91,10 @@ task-001-name.md, ...
 
 **Insertion Points:** `Symbol` in `path` (~line N) — what to add or change, one line each; or the single line `not established — targeted research required`
 
+**Contract:** `Signature` in `path` — shape of `neighbour` (`file:line`); or `none` — members other tasks of this run call or implement, so two Developers in parallel need the same shape. Every other shape in `Description` is a suggestion the Developer follows only where the file's idiom agrees.
+
 **Acceptance Criteria:**
-- [ ] criterion checkable by reading the diff or by a command TOOLCHAIN.md lists
+- [ ] criterion: a property of the diff, checkable by reading it
 - [ ] (if the task adds/changes an interface, route, schema or configuration) documentation obligation from PROJECT-RULES.md satisfied: [which]
 
 **Verify by hand:** what the user runs or looks at, and what they should see — one line each; or `none`
@@ -101,11 +110,11 @@ task-001-name.md, ...
 **Status:** pending
 ```
 
-Fill `Insertion Points` from `## Repository Analysis & Batch Suggestions` wherever the wide pass already located the symbol and the place. Write `not established — targeted research required` only where it genuinely did not: that line is what makes the orchestrator spend a research pass on the task, and a guess written in its place sends a Developer at the wrong symbol with no one left to catch it.
+Fill `Insertion Points` from `## Repository Analysis & Batch Suggestions` wherever the wide pass already located the symbol and the place. Write `not established — targeted research required` only where it genuinely did not: that line is what makes the orchestrator spend a research pass on the task, and a guess written in its place sends a Developer at the wrong symbol with no one left to catch it. Fill the neighbour of every `## Public API Surface` line from `### Neighbours in files that grow`; a file that grows and has no entry there is missing research, and you halt for it rather than opening the file to look.
 
 The Developer never writes tests, so `Description` and `Acceptance Criteria` never ask for them: every test the task needs is a `Test cases` line, which the Tester covers.
 
-The Reviewer runs only what `TOOLCHAIN.md` lists, so a criterion is one it can confirm by reading the diff or by one of those commands. A check that needs anything else — a live database, a running service, fault injection, a deployed environment, a manual click-through — goes under `Verify by hand`, never under `Acceptance Criteria`. The orchestrator hands those lines to the user; written as a criterion, the same check either stalls the Reviewer or tempts it to run what it may not.
+A criterion is a property of the diff. It never names a toolchain command: format, lint, build and tests are the Reviewer's step 3 and run on every batch whatever the criteria say; written as a criterion, a build sends a Developer into an expensive run or into ticking what it did not run. A check that needs anything the Reviewer may not run — a live database, a running service, fault injection, a deployed environment, a manual click-through — goes under `Verify by hand`, never under `Acceptance Criteria`; a check that exists only after a commit (a commit-message form, a pre-commit hook) is nobody's criterion: the orchestrator names it with the commit offer.
 
 ## Task Granularity
 
@@ -129,7 +138,8 @@ Never reach for tools outside your own list. If the design turns on external doc
 
 - No production code; no files outside `.dream-team-tracking/{context_id}/`.
 - Every task has `RecommendedBatch`, `Files`, `Test files` and `Insertion Points`; no test path appears under `Files`.
-- Every `Acceptance Criteria` item is checkable from the diff or a TOOLCHAIN.md command; every other check is a `Verify by hand` line.
+- Every `Acceptance Criteria` item is a property of the diff and names no toolchain command; every other check is a `Verify by hand` line.
+- `## Public API Surface` is mandatory; every task has `Contract`.
 - Cite existing paths for every pattern; never invent patterns.
 - `## Simplicity Justification` and `## Documentation Obligations` are mandatory.
 - Zero TODOs in the plan.
@@ -138,5 +148,8 @@ Never reach for tools outside your own list. If the design turns on external doc
 
 - "An interface now will help later" → only when a second implementation exists.
 - "This decision is too small to justify" → the section is mandatory at every size.
-- "Research probably missed something but the picture is clear" → halt and request the missing research instead.
+- "Research probably missed something but the picture is clear" → halt with `Research needed:` and request the missing research instead.
 - "A test against the live database is still a testable criterion" → testable by whom: the Reviewer runs only TOOLCHAIN.md, so it is `Verify by hand`.
+- "Build passes is a criterion" → the Reviewer runs it anyway; as a criterion it only misleads the Developer.
+- "Commit with the ticket number is a criterion" → the team does not commit inside a run; the orchestrator names it with the commit offer.
+- "The file has nothing like this, so I'll prescribe the shape" → write `no neighbour` with the reason, and keep the shape a suggestion unless another task depends on it.

@@ -37,10 +37,14 @@ Open the task file AND the actual changed source files (never trust "Changes Mad
 - Deterministic: no network, no wall clock, no shared mutable fixtures.
 - The task's `Test files` are yours to create or change. A test file outside that list that the change set breaks — it no longer compiles, or pins the behaviour the task changed on purpose — is yours too: repair it, list it in your block as `outside the plan`, and the Reviewer confirms the plan gap. A test outside the list that still passes is not touched.
 - Every line of the task's `Test cases` is covered by a test you can name. Cases the task does not list are yours to add where the triage calls for them.
+- Assert behaviour: no assertion on the order of internal or protected calls, on log text, or on reference identity unless the task's `Test cases` or the contract say that is the behaviour.
+- Before writing a builder, mock block or fixture, grep the test project for one that fits; when a second file needs the same setup, put it where TESTING-CONVENTIONS.md puts shared helpers.
+- A test for symbol X lives in X's fixture, never in a neighbour's because it was convenient to write together.
+- No plan, task or requirement identifier in test code, comments or region names.
 
 ## Step 3: Run only your tests (allowed Bash usage — nothing else)
 
-Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return. Then `Line endings (check)` from TOOLCHAIN.md on every file you wrote or changed, when the row exists; report it in the block, or `not checked` without the row; a path with no output line is `not checked`.
+First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, with the file scoping the row gives; then `git diff -- <those files>`, and where the formatter rewrote lines outside your own edits, revert those lines with Edit: formatting is judged on the lines you touched. Then: Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md; the one read-only exception is `git diff -- <files you changed>`, for the formatter check above. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return. Then `Line endings (check)` from TOOLCHAIN.md on every file you wrote or changed, when the row exists; report it in the block, or `not checked` without the row; a path with no output line is `not checked`.
 
 ## Step 4: Update task files
 
@@ -50,6 +54,7 @@ Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a te
 - Files added / changed: `path` [outside the plan]
 - Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
 - Run result (own tests only): pass | fail — [what failed, suspected production defect]
+- Format: applied | applied; N pre-existing findings left in place in `path` | no row
 - Line endings: ok per TOOLCHAIN | not checked
 ```
 
@@ -61,7 +66,7 @@ Your handoff may carry an `external context` block: material the orchestrator ga
 
 Rendered evidence is never coverage. A screenshot or a captured console line can tell you which scenarios are worth a test; it cannot stand in for one. If a change can only be verified by looking at a page, write the test the project's conventions allow and record the gap under "Coverage" rather than reporting the evidence as a passing check.
 
-Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md.
+Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md, except the `git diff` of Step 3.
 
 ## Rules
 
