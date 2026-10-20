@@ -93,7 +93,7 @@ This repository, and equally the project's `.claude/` after deployment:
 ```
 team-manifest.json             the contract: what must exist, where, and what to check
 agents/                        seven role prompts
-skills/                        three commands
+skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode
 tools/                         the clients for the optional decision-routing service and update check
@@ -385,3 +385,4 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup fix` |
 | Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |
 | An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
+| /team starts but behaves like an older version, or says a workflow file is missing | skills/team/references/ was not copied, or the session still holds the old prompts | Re-copy the team into .claude/ and reopen the session |

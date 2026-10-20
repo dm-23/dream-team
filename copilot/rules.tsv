@@ -12,23 +12,24 @@ skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS`	Arguments: the text t
 skills/generate-knowledge/SKILL.md	one AskUserQuestion call	one question-tool call
 #
 # orchestrator
-skills/team/SKILL.md	`.claude/agents/`	`.github/agents/`
-skills/team/SKILL.md	Task: $ARGUMENTS	Task: the text the user typed after the command
-skills/team/SKILL.md	 Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.	
-skills/team/SKILL.md	never a published Artifact.	never a page published to a hosting service.
-skills/team/SKILL.md	Never publish a report through the Artifact tool:	Never publish a report to a hosting service:
-skills/team/SKILL.md	- "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.\n	
-skills/team/SKILL.md	run in parallel on opus or above, so	run in parallel, so
-skills/team/SKILL.md	honestly: it selects the model tier under "Model routing".	honestly.
-skills/team/SKILL.md	, and its model comes from the cell `change_set.reviewer`.	.
-skills/team/SKILL.md	3. AskUserQuestion:	3. Ask through the question tool:
-skills/team/SKILL.md	5. AskUserQuestion:	5. Ask through the question tool:
-skills/team/SKILL.md	 Its model is the cell `bug_fix.tester`.	
-skills/team/SKILL.md	 The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.	
-skills/team/SKILL.md	, model from the cell `small_change.tester`	
-skills/team/SKILL.md	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
-skills/team/SKILL.md	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
-skills/team/SKILL.md	 The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one.	
+skills/team/*	`.claude/agents/`	`.github/agents/`
+skills/team/*	Task: $ARGUMENTS	Task: the text the user typed after the command
+skills/team/*	 Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.	
+skills/team/*	never a published Artifact.	never a page published to a hosting service.
+skills/team/*	Never publish a report through the Artifact tool:	Never publish a report to a hosting service:
+skills/team/*	- "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.\n	
+skills/team/*	run in parallel on opus or above, so	run in parallel, so
+skills/team/*	honestly: it selects the model tier under "Model routing".	honestly.
+skills/team/*	, and its model comes from the cell `change_set.reviewer`.	.
+skills/team/*	3. AskUserQuestion:	3. Ask through the question tool:
+skills/team/*	5. AskUserQuestion:	5. Ask through the question tool:
+skills/team/*	 Its model is the cell `bug_fix.tester`.	
+skills/team/*	 The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.	
+skills/team/*	, model from the cell `small_change.tester`	
+skills/team/*	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
+skills/team/*	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
+skills/team/*	 The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one.	
+skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
 #
 # setup
 skills/team-setup/SKILL.md	required plugins, and knowledge presence	optional capabilities, and knowledge presence
@@ -69,6 +70,7 @@ team-manifest.json	    "routingSummary": "bash checks/verify-routing-summary.sh"
 team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
 team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
 team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	
+team-manifest.json	    "teamReferences": "bash checks/verify-team-references.sh",\n	
 #
 # everywhere
 *	AskUserQuestion	the question tool

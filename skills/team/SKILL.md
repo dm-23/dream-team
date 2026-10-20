@@ -14,7 +14,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Global rules
 
-- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`, under "Operations" below.
+- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`; before running one, read `.claude/skills/team/references/operations.md` and follow it.
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
@@ -78,7 +78,7 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 1. Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check it exists under `knowledge.dir`. If any is missing: stop and tell the user to run `/generate-knowledge` (list the missing files). Do not attempt to generate knowledge yourself.
 2. If `LEARNINGS.md` is missing, create it from `knowledge.persistentTemplates`.
 3. Read `TOOLCHAIN.md → Missing on this machine`. If it lists tools, warn the user once (they may continue).
-3b. Read `CAPABILITIES.md` if it exists (see "Optional capabilities"). Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
+3b. Read `CAPABILITIES.md` if it exists; when it does, read `.claude/skills/team/references/capabilities.md` and follow it. Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
 4. Resume check: read the marker at `hooks.marker` if it exists. Then, in Bash, `ls -d .dream-team-tracking/*/` and read the first line of each directory's `status.md` (`head -1`); the Glob and Grep tools skip this directory because it is git-ignored, and a tool that returns nothing looks exactly like no open runs. A run is closed when that first line contains `[DONE]` anywhere — runs closed by older versions wrote `# [DONE] …` or ended the heading with `— [DONE]`; a directory without `status.md` is not a run and is ignored. The open ones are the candidates below. If the argument is `resume`, if the marker names an open run, or if the task clearly refers to one of them, ask via AskUserQuestion: "Resume {context_id} from phase {N} / start new (the open run stays parked) / discard the open run". On resume: read its status.md, refresh the marker, and continue from the first unchecked phase. If its "Process notes" carry `Team update … parked` and no phase after 0 is checked, first re-take `Baseline` (`git rev-parse --short HEAD`, `git status --porcelain`) and rebuild `status.md` from the current template, carrying over the task, language, workflow, context id, `Started`, Decisions log and Process notes: the update changed the team's own files under `.claude/`, and a baseline taken before it would put them in the run's diff.
 
 ## Step 0: Workflow selection and context
@@ -96,47 +96,22 @@ Detect from the task (any language): analysis verbs → Analyze; "update the rea
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker, the service script under "Decision routing (shadow mode)", the client under "Update check" and the rows of `TOOLCHAIN.md → Operations` under the rules of "Operations" below are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then run the update check.
+Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker, the service script in `.claude/skills/team/references/decision-routing.md`, the client in `.claude/skills/team/references/update-check.md` and the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker. Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then, if `CAPABILITIES.md` lists `decision-routing` as available, read `.claude/skills/team/references/decision-routing.md` and follow it, now and again before the run closes as `[DONE]`. Then read `.claude/skills/team/references/update-check.md` and follow it.
 
-## Update check (new runs only)
+## Workflow references
 
-Run it once, in Step 0 of a new run, and never again inside that run. Skip it entirely for `stop`, `status` and `resume`, for a run continued through the marker or the injected `<TEAM-MODE-ACTIVE>` block, and when the user chose to resume an open run in Step -1.
+Each workflow's steps live in one file. Read it in full before the workflow's first step, and again after a resume, before continuing; nothing else in `references/` is read until a step names it.
 
-Run `bash .claude/tools/update-check.sh`. It decides on its own whether the user agreed to the check and whether it is due, and it never asks the network more than once a day.
+| Workflow | Read |
+|----------|------|
+| Analyze | `.claude/skills/team/references/analyze.md` |
+| Docs | `.claude/skills/team/references/docs.md` |
+| Bug Fix | `.claude/skills/team/references/bug_fix.md` |
+| Small Change | `.claude/skills/team/references/small_change.md` |
+| Change Set | `.claude/skills/team/references/change_set.md` |
+| Full Feature | `.claude/skills/team/references/full_feature.md` |
 
-- **No output:** say nothing and never mention the check.
-- **Output `L R`** (the version this project runs, then the newer one): ask via AskUserQuestion, in the task's language: "Team version R is available; this project runs L. Changes: {`updateCheck.repository` from the manifest}". Options:
-  1. **Continue on L** — the run proceeds.
-  2. **Park and update** — first add `Team update L → R available: parked` to status.md → "Process notes", since resuming depends on that line; then delete the marker exactly as `stop` does, leave `status.md` at phase 0, show `updateCheck.instructions` from the manifest verbatim, and stop. You never run the update yourself.
-  3. **Skip R** — run `bash .claude/tools/update-check.sh skip R`; the run proceeds. R is not mentioned again; a later version is.
-
-For options 1 and 3, add one line to status.md → "Process notes": `Team update L → R available: continued` or `… skipped`.
-
-## Learnings check (every workflow except Docs, before any Brainstorm or research)
-
-Read `LEARNINGS.md`. In the current shape it is an index and nothing else, so read it whole. **If it still carries `## [` entry bodies below the index, this deployment has not been migrated yet**: read only from `## Index` down to the first `## [` line, stop there, and tell the user once that `/generate-knowledge fix` will shrink it — reading an un-migrated log whole is the cost this shape exists to remove, and the team layer updates before the knowledge layer does. Match rows whose title or tags overlap the task terms, then open the matched entries: from `learnings/` once they live there, otherwise from the entry bodies further down the same file. An entry's file is `.claude/knowledge/learnings/YYYY-MM-DD-{slug}.md`, with `{slug}` derived from the row's title by the rules in `templates/learnings-entry.md` (not the run slug), including the `-2`, `-3` suffixes. Put their title + "Fix pattern" lines into every handoff's `prior learnings` field, and record matched titles in status.md.
-
-Then count the index rows, and in Bash run `grep -rhE '^[[:space:]]*(- )?\[(PROMOTE|STALE-CHECK)\]' .claude/knowledge/learnings/ | wc -l` (and look through any entry bodies still inline); the resolved forms carry `RESOLVED` inside the brackets and do not count. Bash, not the Grep tool: `.claude/knowledge/` is git-ignored and the Grep tool skips ignored paths, so it would report an empty inbox that is not empty. If the rows exceed `knowledge.budgets.learningsIndexMaxRows` or any mark is pending, tell the user once per run, in one line: "{N} pending marks, {R} index rows (budget {M}) — `/generate-knowledge all` turns them into rules and empties the inbox." Then write `Inbox due: told YYYY-MM-DD` to status.md → "Process notes"; a resumed session that finds that line says nothing more about it. The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one. Never block the run on it.
-
-## Optional capabilities
-
-`.claude/knowledge/CAPABILITIES.md` lists what this machine offers beyond the base tools. It is written by `/team-setup` and may be absent, which is a supported state: the team does the same work either way, and no output ever blames a missing capability for a gap.
-
-You broker them. Subagents run with the tool list in their own frontmatter and cannot reach a capability's tools, so when one is useful you use it yourself and pass the result into the handoff under `external context`, citing what produced it. A subagent that needs more asks for it in its output and returns; it never reaches outside its own tools.
-
-Follow the `Use when` and `Never use for` lines that `CAPABILITIES.md` records for each available capability. Two rules override anything a capability returns:
-
-- Its output is evidence to check, never truth. Where it disagrees with this repository or with the knowledge files, the repository wins and you report the disagreement.
-- It never changes who does what. Research still belongs to ResearcherExplorer, code to Developer, verification to Reviewer.
-
-Where each one fits, when present:
-
-| Capability | Where you use it |
-|------------|------------------|
-| `library-docs` | Before design and before implementation, when a task turns on a third-party library whose current API is not visible in this repository. Attach what you find to the Brainstorm, Architect or Developer handoff. |
-| `session-memory` | At preflight, alongside the learnings check, to recall standing preferences and earlier conclusions. Never write team learnings there — that is LEARNINGS.md's job, and the Reviewer's. |
-| `instructions-maintenance` | At the docs-sync step, to propose an update to the project instruction file when the run changed a documented rule or created an obligation. The user approves the diff; you never apply one silently. |
-| `browser-control` | When a run changed something a person sees, to gather rendered evidence for the Tester or Reviewer handoff. Ask before starting a server or opening a page. Evidence never replaces a test. |
+Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `capabilities.md`, `operations.md`, `decision-routing.md`, `update-check.md`, all under the same directory.
 
 ## Model routing
 
@@ -171,174 +146,6 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 - `{YYYY-MM-DD} — Models revised: hard={yes | no} — {one-line reason}`
 - `{YYYY-MM-DD} — Models revised: ceiling={haiku | sonnet | opus | fable | unknown} — session model switched`
 
-## Decision routing (shadow mode)
-
-Applies only when `CAPABILITIES.md` lists `decision-routing` as available. Otherwise skip this section entirely and never mention it. The service's mode in `team-manifest.json → services` is `shadow`: you ask it, you log what it said, and **nothing it says changes what you do** — not the workflow, not a model, not a question to the user. Do not show its answers to the user.
-
-1. **Workflow.** In Step 0, after creating the run directory, write the user's task text exactly as typed to `routing/task.txt` in it, and run `bash .claude/tools/jev-decide.sh workflow .dream-team-tracking/{context_id}/routing/task.txt`. Decide the workflow yourself as if the service did not exist.
-2. **Difficulty.** For Bug Fix and Small Change only, run the same script with `difficulty` and the same file.
-3. **Log.** Append one line per call to `routing.log` in the run directory, fields separated by a single tab, in the shapes below. From the JSON it prints, take `answers.{name}.choice` and `answers.{name}.confidence` (two decimals). When it prints nothing, write `jev=unavailable` and `conf=-`. `{provider}` is the provider named in the Services row of `CAPABILITIES.md`, so a change of provider shows in the numbers. Never retry.
-   - `{YYYY-MM-DD}	workflow	jev={choice}	conf={confidence}	team={your workflow}	provider={provider}`
-   - `{YYYY-MM-DD}	difficulty	jev={choice}	conf={confidence}	provider={provider}`
-4. **Outcome.** When the run closes as `[DONE]`, before marking it, append:
-   - `{YYYY-MM-DD}	outcome	workflow={workflow the run finished as}	override={yes if the user switched the workflow, else no}	files={N}	rework={N}`
-   - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer returned `needs rework` or `manual` findings; an `Unverified` line alone is not rework.
-   - A run that is stopped or discarded gets no outcome line.
-
-Workflow keys are the workflow names lowercased with spaces as underscores: `analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`. The only text that leaves the machine is `routing/task.txt`; never put anything but the user's own words there. `bash .claude/checks/summarize-routing.sh` turns the logs into the numbers the owner uses to decide whether the service may ever act.
-
-## Quorum (Brainstorm ×3)
-
-Always launch three Brainstorm instances in parallel with lenses `minimalism`, `risk`, `reuse`. Agreement of 2 of 3 on a point → accepted. When proposals differ in complexity, prefer the simpler unless the complex one solves a stated problem the simple one does not.
-
-**Reconcile round.** The three lenses again, in the phase the workflow used, with `inputs`: the path they read before, the items below (verbatim, or named by section for trigger 2), the learnings lines. Quorum per item; every resolution goes to status.md → "Decisions log". Three triggers, each counted from an output, never weighed:
-
-1. Three different answers on a point → one round with all three outputs; still split → AskUserQuestion with the options.
-2. `Decision marks: N` with N > 0 in the pointer block of an open-facts pass → one round; the handoff names the section (`### Answers to open facts` or `## Answers to open facts`) and the lenses, which read the file in full, resolve its `decision` entries. At most one such round per run; a later `decision` mark goes to the user through AskUserQuestion with the entry's options, and that entry is the one section of the report you read.
-3. (Full Feature) the Architect returns `Design decision needed:` → one round over its question and options; append each resolution to the draft plan's `## Approach`, then the Architect again. At most one such round per run; a second request goes to the user the same way.
-
-An entry marked `decision` is never resolved by you. You count marks; you do not pick between the options they list.
-
-**Evidence route.** After any `solution` or `diagnosis` quorum, read the `### Missing Evidence` section of each lens. When every lens says `none`, nothing runs. Otherwise one handoff → ResearcherExplorer, `mode: targeted`, `inputs`: the union of the lines (in Full Feature, plus the files the quorum's `## Approach` names), `expected output`: `### Answers to open facts` appended to `plans/draft-plan.md` (Full Feature) or `## Answers to open facts` appended to `research/exploration.md` (every other workflow). Then apply trigger 2 to its pointer block. The lenses never read the answers unless trigger 2 fires; the Architect, or the inline plan you present, consumes them.
-
-## Scope gate (Small Change and Bug Fix)
-
-After targeted research read the `Scope Count` and `Wiring/surface` lines of the ResearcherExplorer's pointer block — the report itself stays unread; those two lines are what the gate is decided from. If the total is more than 3 files, or `Wiring/surface` names anything other than `none`, ask via AskUserQuestion: "This is larger than a Small Change (N files). Upgrade to Change Set / Full Feature, or continue as Small Change?". Record the decision.
-
-## Operations
-
-Some work ends with a step no role may take: a deploy, a rollback, a restart, a reading from a running system. `TOOLCHAIN.md → ## Operations` lists those commands, each with who runs it and whether it is read-only. That section is the whole permission; a command not in it is the user's, and you hand them the command and wait.
-
-- A row marked `user` is never run by you or a subagent. Give the command verbatim via AskUserQuestion, with the option to run it themselves or to skip, and record their answer.
-- A row marked `orchestrator with per-command approval` you may run yourself, one AskUserQuestion per command quoting it exactly, never batched, never rephrased. A read-only row may instead be handed to the ResearcherExplorer by handoff, naming the row under `constraints`.
-- Every command run under this section is logged in status.md → "Operations log" with its exit code and one line of output; longer captures are kept under the run's `run/` directory and the log names the file.
-- An operations script that happens to build or test on the way (a deploy that runs the suite first) is still an operations command: run it as listed, report what it ran, and never treat its green as the Reviewer's verdict — the review already happened, or has not happened yet and still must.
-- Nothing here changes a workflow's gates. A deploy comes after the final review and the commit the user approved, never in place of either.
-
-Without an `## Operations` section in TOOLCHAIN.md, this section does nothing, and `/generate-knowledge` is where it would be added.
-
-## Workflow: Analyze
-
-1. Clarify (≤3 questions) only if needed.
-2. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Read that file yourself before concluding — here you are the consumer.
-3. Conclude yourself. If the task asked for a report, produce it exactly as "Report requests" describes. Otherwise: a short answer in chat, or `.dream-team-tracking/{context_id}/reports/{topic}.md` when the findings are too long for chat.
-4. Close status.md.
-
-## Workflow: Docs
-
-Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no LEARNINGS entry — the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
-
-1. Clarify only when the target files or the intent are genuinely ambiguous (≤2 questions).
-2. Establish the file list: which documentation files this touches, by name. Look for yourself if the request does not say.
-3. AskUserQuestion: the files you will touch and a one-line plan per file — approve / edit the list / reject.
-4. On approval: handoff → DocWriter. `inputs` carries the request and the agreed file list; `constraints` says that no other file may change and that source files are out of bounds.
-5. Verify it yourself — this is the step that replaces the Reviewer:
-   - `git diff` against the baseline. Every changed file is on the approved list; nothing else moved.
-   - Every line under "Claims verified" names a source path you can open. Spot-check the ones that carry weight.
-   - "Gaps / could not verify" is empty, or you tell the user what is in it.
-   - Anything under "Code change required": do not act on it. Ask the user via AskUserQuestion whether to open a Small Change or a Bug Fix for it, as a separate run.
-   - A diff that does not match the block, or a claim that does not hold: one handoff back to the DocWriter with the specifics, then escalate to the user. There is no second rework cycle here.
-6. Close status.md. Tick phases 0, 1, 4 and 5; mark 2, 3, 6, 7, 8 and 9 as `n/a — Docs`. Delete the marker.
-
-The learnings check is skipped: nothing in this workflow consumes it, and the Reviewer who would write the entry never runs. Doc-only items inside a code run are a different matter — see Change Set step 6 — and documentation obligations that `PROJECT-RULES.md` attaches to a code change stay with the Developer, in the same change as the code.
-
-## Workflow: Bug Fix
-
-1. Clarify (symptoms, reproduction, environment; ≤3 questions).
-2. Learnings check.
-3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.
-4. Brainstorm ×3 (`phase: diagnosis`); each handoff's `inputs` is the exploration **path** plus the learnings lines, never the exploration text. Quorum on root cause and fix. Then the evidence route and, if it fires, the reconcile round ("Quorum").
-5. AskUserQuestion: "Problem: X. Cause: Y. Proposed fix: Z (files: ...)". The fix must be surgical — strip refactoring.
-6. On approval: handoff → Developer (inline task plus the exploration **path** — never the notes themselves; you have not read them and do not need to). Then, when the approved fix needs a test — the user asked for one, `PROJECT-RULES.md` requires one, or the fix changes behaviour an existing test pins — handoff → Tester, one call, with the test cases from the approved fix in `inputs`; the Developer never writes tests, so a fix without this call ships untested or not at all. Its model is the cell `bug_fix.tester`. Record `Tests (Tester: run)` or `skipped — reason` in status.md → "Decisions log" either way.
-7. Handoff → Reviewer (single pass, baseline attached). Reviewer classifies what the run taught (its Step 5).
-8. If Reviewer returns `manual` findings or `needs rework`: handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user).
-9. Report; close status.md.
-
-## Workflow: Small Change
-
-1. Clarify if ambiguous (≤3).
-2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the pointer block's `Scope Count` line.
-3. Brainstorm ×3 (`phase: solution`); `inputs` is the exploration **path** plus the learnings lines. Quorum. Then the evidence route and, if it fires, the reconcile round ("Quorum").
-4. Present a 2–5 bullet plan (concrete actions, files) via AskUserQuestion for approval.
-5. Handoff → Developer (1–2 inline tasks, disjoint files if 2). Then, under the same condition as Bug Fix step 6 — the plan names a test, a rule requires one, or an existing test pins the changed behaviour — handoff → Tester, one call, model from the cell `small_change.tester`. Record the decision in status.md.
-6. Handoff → Reviewer (single pass). Rework loop as in Bug Fix step 8.
-7. Report; close status.md.
-
-## Workflow: Change Set
-
-1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
-2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it.
-3. Brainstorm ×3 (`phase: solution`) over the whole list; `inputs` is the exploration **path** plus the learnings lines. Quorum per item. Then the evidence route and, if it fires, the reconcile round ("Quorum").
-4. Group items into batches by **disjoint file sets**. Write `plans/change-set.md`: per batch → items, files, acceptance criteria, verify by hand; and `tasks/task-{N}-*.md` per item (same format the Architect uses, including its split: `Test files` for every test the item creates or changes, `Acceptance Criteria` only what the diff or a TOOLCHAIN.md command confirms, everything else under `Verify by hand`) — fill each task's `Complexity` honestly: it selects the model tier under "Model routing".
-5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
-6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway. A Developer's `Plan conflicts with convention:` return is handled as in Full Feature Phase 4.
-7. Tester: one call for the whole change set; it triages per its own table.
-8. Reviewer: one combined review of all batches; it judges the whole diff, and its model comes from the cell `change_set.reviewer`. Rework loop as in Bug Fix step 8.
-9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
-10. Report; close status.md. Reviewer has classified what the run taught.
-
-## Workflow: Full Feature
-
-Phase 1 — Intake: Brainstorm ×3 (`phase: questions`); quorum; ask 3–7 questions via AskUserQuestion.
-
-Phase 2 — Research & design: learnings check. Write `plans/draft-plan.md` with the task and a `## User decisions (binding)` section holding the intake answers, nothing else. Handoff → ResearcherExplorer (`mode: wide`, draft-plan path); it appends `## Repository Analysis & Batch Suggestions`. Then Brainstorm ×3 (`phase: solution`); `inputs` is the draft-plan **path** plus the learnings lines. Quorum; append `## Approach` and the simplicity statement to the draft plan; evidence route, whose `inputs` also carries the files `## Approach` names; reconcile if it fires, each resolution appended to `## Approach`. The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.
-
-Phase 3 — Architecture: handoff → Architect. Three outcomes: a plan; a block headed `Research needed:` listing files or facts → one open-facts pass with its list, `expected output`: the matching subsection of the draft plan (`### Neighbours in files that grow` for files, `### Answers to open facts` for facts), apply trigger 2 to its pointer block, then the Architect again, once per run, a second halt → AskUserQuestion with the list; or `Design decision needed:` → "Quorum" trigger 3. Verify `detailed-plan.md` has `## Public API Surface`, `## Simplicity Justification`, `## Documentation Obligations` and a `## Batching Strategy` with files per batch — if not, send the Architect back.
-
-**Resumed runs designed under 4.1.0.** On resume at phase 2 or 3, open `plans/draft-plan.md`. Without `## Repository Analysis & Batch Suggestions` and with anything beyond `## User decisions (binding)`, it was designed before the research: run the wide pass now, then the Architect. With only the user decisions, or absent, continue Phase 2 from the wide pass. With the research section and no `## Approach`, continue from the Brainstorm quorum. Never recreate an existing draft plan.
-
-**Stop & Approval Gate:** Present `detailed-plan.md` via AskUserQuestion. The question text carries, before the options, the plan's `## Public API Surface` section verbatim and the batch list (batch names, task titles), then the plan path for the rest. If the section runs past about forty lines, show type and member names only and name the section. The options:
-1. "Approve plan and PAUSE execution (recommended: execute in a fresh session to save context)"
-2. "Approve plan and CONTINUE execution in current session"
-3. "Approve with changes / Reject"
-
-If Option 1 ("Approve and PAUSE") is selected:
-- Update `status.md` and set `phase=3.5 (Plan Approved - Awaiting Implementation)` in `.team-mode`.
-- Output the Pause Instruction Template (below) containing the exact prompt for resuming in a clean session.
-- Stop execution here. Do NOT proceed to Phase 4 in this session.
-
-Phase 4 — Implementation: 
-Execute batches according to the Batching Strategy. For each batch:
-1. Per task, run ResearcherExplorer (`mode: targeted`) **only when the task needs it**: when its `Complexity` is `medium` or `high`, or when its `Insertion Points` line reads `not established`. A `Complexity: low` task with both `Files` and `Insertion Points` filled goes straight to the Developer, whose handoff then carries the task path plus `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` in place of an exploration path — the wide pass already verified those paths. List the tasks you skipped it for in status.md → "Process notes". Then: Developers in parallel → Tester → Reviewer. The Reviewer's toolchain run is the first batch-wide check; nothing before it is one. A task whose files are all documentation goes to the DocWriter instead of a Developer; the Batching Strategy has already placed it after the code it describes, so the DocWriter checks its claims against that code. Its model is the cell `full_feature.doc-writer`; a documentation-only task gets no Tester call.
-   Rework: if the Reviewer returns `manual` findings or `needs rework`, loop as in Bug Fix step 8 inside this batch. A Developer that returns `Plan conflicts with convention:` has not coded: ask via AskUserQuestion — keep the contract as planned, or adopt the file's convention — record the answer in "Decisions log", correct every task file whose `Contract` or `Description` names that member, then hand the task to the Developer again. A `⚠️ Convention note:` in a task file is not a conflict; the Reviewer judges it. Any change made after the batch review — a finding, a user decision — goes back through the Reviewer before the gate; the final review never stands in for it.
-   Batches the Batching Strategy marks parallel-safe with each other may run as one wave; the gate below then comes once, after every batch of the wave is approved. Record the wave in "Process notes".
-2. **Batch Completion Gate (STOP between batches):** When Reviewer approves Batch {N}, **DO NOT** automatically start the next batch. If status.md → "Verify by hand" holds items for this batch, list them in the question text before the options. Ask via AskUserQuestion:
-   - **Option 1 (Commit & Continue):** Commit Batch {N} changes and execute the next batch directly in THIS session.
-   - **Option 2 (Commit & Fresh Session - Recommended):** Commit Batch {N} changes, pause execution, and output the command to start the next batch in a fresh session.
-   - **Option 3 (Custom):** Wait for user instructions.
-
-3. **If Option 2 is selected:**
-   - Run `git commit` for Batch {N}.
-   - Update `status.md` and `.team-mode` (`phase=4.{N} Batch {N} Complete - Awaiting the next batch`).
-   - Output the fresh session prompt:
-     ```text
-     Batch {N} completed and committed!
-     To execute the next batch in a fresh session:
-     1. Run /clear or open a new terminal session.
-     2. Run: /team resume {context_id}
-     ```
-   - Stop execution here.
-
-Phase 5 — Final review: Reviewer reviews ALL changes against baseline, runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) → escalate to the user.
-
-Phase 6 — Close: summarize, update status.md, mark `[DONE]`, delete the marker. Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself". The question names every item from the Reviewer's `After commit:` line, or says there are none. If `TOOLCHAIN.md → Operations` has a deploy row, offer it next, under "Operations"; never before the commit.
-
-### Pause Instruction Template
-
-When the user approves the plan and selects Option 1 (PAUSE for a fresh session), output the following response (synthesized in the user's task language):
-
-```markdown
-Implementation plan approved and saved to:
-`.dream-team-tracking/{context_id}/plans/detailed-plan.md`
-
-To run the implementation phase in a **clean session** (recommended to optimize context size and token limits):
-
-1. Clear current context or open a new session (`/clear` or start a new CLI instance).
-2. Paste and run the following command:
-
-`/team resume {context_id}`
-```
-
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
 `status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
@@ -352,6 +159,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "Small task, skip the approval gate" → gates are mandatory for every workflow that writes a file, prose included. Only Analyze, which writes nothing into the repository, has none.
 - "Docs are trivial, the user does not need to see the file list first" → the same gate, the same words: nothing is written until they approve.
 - "They asked me to write up the findings, that is documentation" → a report is the HTML file in the tracking directory; the Docs workflow edits the repository's own documentation. A message asking for a report gets a report, whichever workflow is open.
+- "I remember how this workflow goes, no need to read its file" → the file is the workflow; read it before the first step and after every resume.
 - "First Brainstorm result is obviously right" → always three, always quorum.
 - "The options in that `decision` entry are obvious, I'll pick" → you count marks; the lenses pick. One round, then the user.
 - "A lens asked for a snippet, I'll paste it from memory" → the evidence route is a ResearcherExplorer pass; you have not read the code.
