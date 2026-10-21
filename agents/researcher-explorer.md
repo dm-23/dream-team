@@ -35,6 +35,7 @@ Steps:
 5. Check wiring and boundaries (registration/startup per DI-AND-STARTUP.md, module dependencies).
 6. Map existing tests for the impacted areas (per TESTING-CONVENTIONS.md).
 7. List the documentation obligations from `PROJECT-RULES.md` that the plan will trigger.
+8. Match the paths under `### Relevant Existing Files` against `PROJECT-RULES.md → ## Critical zones` and write the `Critical zones touched` line, so the Architect and the plan audit see it without opening PROJECT-RULES.md.
 
 Output — append to `draft-plan.md` (never replace):
 
@@ -55,6 +56,7 @@ Output — append to `draft-plan.md` (never replace):
 
 ### Potential Conflicts / Risks
 - risk
+- Critical zones touched: <paths from the files above that match PROJECT-RULES.md → Critical zones, comma-separated> | none | section missing
 ```
 
 "Files that grow" are the files your own trace puts in the path of the user decisions: the entry points, handlers, services and utilities under `### Relevant Existing Files` where the change will land. Silence about a file reads downstream as "not researched", so a file you expect to grow is listed even when it has nothing comparable.
