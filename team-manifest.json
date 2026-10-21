@@ -12,7 +12,8 @@
     "developer",
     "doc-writer",
     "tester",
-    "reviewer"
+    "reviewer",
+    "verifier"
   ],
   "skills": [
     "team",
@@ -29,7 +30,8 @@
       "developer": "sonnet",
       "doc-writer": "sonnet",
       "tester": "haiku",
-      "reviewer": "sonnet"
+      "reviewer": "sonnet",
+      "verifier": "sonnet"
     },
     "workflows": {
       "analyze": {
@@ -43,14 +45,16 @@
         "brainstorm": "opus",
         "developer": "sonnet",
         "tester": "sonnet",
-        "reviewer": "sonnet"
+        "reviewer": "sonnet",
+        "verifier": "sonnet"
       },
       "small_change": {
         "researcher-explorer": "sonnet",
         "brainstorm": "opus",
         "developer": "sonnet",
         "tester": "sonnet",
-        "reviewer": "sonnet"
+        "reviewer": "sonnet",
+        "verifier": "sonnet"
       },
       "change_set": {
         "researcher-explorer": "sonnet",
@@ -58,7 +62,8 @@
         "developer": { "low": "sonnet", "medium": "opus", "high": "opus" },
         "doc-writer": "sonnet",
         "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
-        "reviewer": "opus"
+        "reviewer": "opus",
+        "verifier": "opus"
       },
       "full_feature": {
         "brainstorm": "opus",
@@ -69,7 +74,8 @@
         "doc-writer": "sonnet",
         "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
         "reviewer": { "low": "sonnet", "medium": "opus", "high": "opus" },
-        "reviewer:final": "ceiling"
+        "reviewer:final": "ceiling",
+        "verifier": { "low": "sonnet", "medium": "opus", "high": "opus" }
       }
     }
   },
