@@ -10,7 +10,7 @@ It knows nothing about your technology and nothing about your project. Everythin
 
 ## Install into a project
 
-The team's contents are placed directly in your project's `.claude/`. That is the directory Claude Code already scans for agents and commands, so nothing has to be linked, duplicated or registered afterwards. The commands below are bash; on Windows run them from Git Bash, which the hook needs anyway.
+The team's contents are placed directly in your project's `.claude/`. That is the directory Claude Code already scans for agents and commands, so nothing has to be linked, duplicated or registered afterwards. The commands below are bash; on Windows run them from Git Bash, which the hooks need anyway.
 
 ```bash
 cd <your project>
@@ -67,7 +67,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 
 ## Requirements
 
-Claude Code, a version-controlled project, and a bash shell (Git Bash or WSL on Windows). Bash runs the sticky-mode hook, the neutrality check and the two scripts under `checks/`. Without it those are unavailable; the workflows themselves still run.
+Claude Code, a version-controlled project, and a bash shell (Git Bash or WSL on Windows). Bash runs the sticky-mode hook, the guard, the neutrality check and the scripts under `checks/`. Without it those are unavailable: a run does not follow you across sessions and the guard denies nothing. The workflows themselves still run.
 
 ---
 
@@ -93,17 +93,19 @@ This repository, and equally the project's `.claude/` after deployment:
 
 ```
 team-manifest.json             the contract: what must exist, where, and what to check
-agents/                        seven role prompts
+agents/                        nine role prompts
 skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
 hooks/                         sticky team mode and the guard
 tools/                         the clients for the optional decision-routing service and update check
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
-                               workflow consistency, text encoding, the integrity check
-                               `/generate-knowledge fix` must pass, and the learnings
-                               inbox check, and the sticky-hook check
+                               workflow consistency, text encoding, agent and skill frontmatter,
+                               the orchestrator's reference files, the integrity check
+                               `/generate-knowledge fix` must pass, the learnings inbox
+                               check, and the hook check for sticky mode and the guard
 copilot/                       the GitHub Copilot edition: translation rules, overlays, the
                                installer and its tests
+.github/workflows/             this repository's CI; the install removes it from .claude/
 docs/                          the team's own documents; never read as project documentation
 .gitignore                     hides knowledge/ once deployed
 .gitattributes                 pins LF on the hook files and the clients under tools/; a CRLF checkout breaks them
@@ -131,7 +133,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm, Architect and PlanAuditor opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
-**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer and Reviewer on sonnet. Change Set and Full Feature tasks follow their `Complexity`. The Architect and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block or lacks a cell for a call that workflow makes (the check's own table lists them), a tier is misspelt, or an agent file pins a model.
+**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer, Reviewer and Verifier on sonnet. Change Set and Full Feature tasks follow their `Complexity`; the Verifier takes the `Complexity` of the Reviewer call whose findings it judges. The Architect, the Full Feature plan audit and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block or lacks a cell for a call that workflow makes (the check's own table lists them), a tier is misspelt, or an agent file pins a model.
 
 ## The six workflows
 
@@ -139,7 +141,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 |----------|---------|-------|
 | Analyze | explain, trace, find out | Research, then an answer. No code changes. |
 | Docs | update the readme, the documentation, the changelog | Your approval of the file list, then one role writes the prose and verifies every claim against the code. No brainstorm, no review, no toolchain. |
-| Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, a test when one is needed, review |
+| Bug Fix | something is broken | Research, three diagnoses, your approval, a test that fails before the fix when one is needed, a surgical fix, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, a test when the plan names one, review |
 | Change Set | a list of independent small items | One research pass, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
 | Full Feature | a new capability across modules | Questions, wide research, design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
@@ -239,11 +241,11 @@ This is deliberately not a memory or an instruction that lives in context. The h
 - A marker whose run is already closed, or whose `status.md` is gone, is reported as stale instead of hijacking the message; the orchestrator deletes it.
 - While the pre-4.0.0 run-state directory still exists, every prompt carries a one-line notice that `/team` starts nothing until `/team-setup fix` has moved it. The notice comes from the hook, not from the skill, so it cannot be skipped.
 - On the prompt that starts a run, the hook also says when the learnings inbox is due, so the reminder does not depend on the model counting marks in a directory its search tools skip.
-- If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions.
+- If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions, and the guard below denies nothing.
 
 Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session. The command in the snippet is a plain project-relative path with no bash syntax, because VS Code Copilot reads hooks from the same file and runs them in PowerShell on Windows; `/team-setup` reports an entry with an older spelling as stale wiring, and `fix` offers to replace it.
 
-**The guard.** A second hook, `hooks/guard-command`, runs before every shell command the model issues and denies the ones no role should run: killing processes by name or pattern (`pkill`, `killall`, `kill $(pgrep …)`, `xargs kill`, `kill -1`, `kill 0`); a recursive `rm` whose target is a glob, `/`, `~`, `$HOME`, `.`, `..`, a path above the project, or a path one level under `/` or the home directory; a force push; `git clean -f`; and `git reset --hard`, `git checkout -- <path>` and `git restore <path>`, which discard uncommitted work. Each denial carries a one-line reason that says what to do instead. The guard acts only while a run is open, that is while the marker exists, so a developer's own session in the same project is never affected. A command written verbatim in a Command cell of `.claude/knowledge/TOOLCHAIN.md`, such as a clean-build row, is exempt; the match is the whole command, never a prefix. The command is scanned as text, so a harmless `echo pkill` is refused too. `/team-setup fix` wires the guard from the same snippet, into the `PreToolUse` array.
+**The guard.** A second hook, `hooks/guard-command`, runs before every command the model issues through the Bash tool and denies the ones no role should run: killing processes by name or pattern (`pkill`, `killall`, `kill $(pgrep …)`, `xargs kill`, `kill -1`, `kill 0`); a recursive `rm` whose target is a glob, `/`, `~`, `$HOME`, `.`, `..`, a path above the project, or a path one level under `/` or the home directory; a force push; `git clean -f`; and `git reset --hard`, `git checkout -- <path>` and `git restore <path>`, which discard uncommitted work. Each denial carries a one-line reason that says what to do instead. The guard acts only while a run is open, that is while the marker exists, so a developer's own session in the same project is never affected. A command written verbatim in a Command cell of `.claude/knowledge/TOOLCHAIN.md`, such as a clean-build row, is exempt; the match is the whole command, never a prefix. The command is scanned as text, so a harmless `echo pkill` is refused too. `/team-setup fix` wires the guard from the same snippet, into the `PreToolUse` array.
 
 ## The manifest
 
@@ -278,7 +280,7 @@ cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dre
 
 A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
 
-Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
+Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. A `PROJECT-RULES.md` written before 4.3.0 has no critical zones section: runs still work, the Reviewer notes the missing section in its report, and `/generate-knowledge PROJECT-RULES.md` adds it. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
 
 ### Moving run state from the legacy directory
 
@@ -326,7 +328,7 @@ Then:
 
 | Path | Contents |
 |------|----------|
-| `.github/agents/<role>.agent.md` | The seven roles, hidden from the agent picker and called as subagents |
+| `.github/agents/<role>.agent.md` | The nine roles, hidden from the agent picker and called as subagents |
 | `.github/skills/<command>/SKILL.md` | `/team`, `/generate-knowledge`, `/team-setup` |
 | `.github/hooks/dream-team.json` | The session-start hook and the guard |
 | `.github/dream-team/` | Manifest, templates, clients, runtime checks, and `.installed`, the list of what was installed |
@@ -356,7 +358,7 @@ The Copilot edition keeps its own knowledge and shares run state with a Claude C
 
 `bash copilot/check.sh` builds the edition from fixtures and from this repository, then installs it into throwaway projects. It prints one `ok [case]` line per case and takes about thirty minutes on Windows with Git Bash, because each case spawns many processes; run `bash copilot/build.sh <empty-dir>` after every prompt change (under a minute, and it fails on a broken anchor or rule) and the full check before a release.
 
-The repository's own CI (`.github/workflows/check.yml`) runs every `checks/*.sh`, the neutrality grep, the frontmatter parse and `copilot/build.sh` on each pull request; `copilot/check.sh` stays a manual step before a release.
+The repository's own CI (`.github/workflows/check.yml`) runs the neutrality grep, every `checks/verify-*.sh` that takes no arguments (the frontmatter parse among them) and `copilot/build.sh` on each pull request and each push to `main`; `copilot/check.sh` stays a manual step before a release.
 
 The translation is data:
 
@@ -371,7 +373,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 
 | Check | VS Code | Copilot CLI |
 |-------|---------|-------------|
-| The seven roles are callable as subagents | not yet checked | not yet checked |
+| The nine roles are callable as subagents | not yet checked | not yet checked |
 | The roles are absent from the agent picker | not yet checked | not yet checked |
 | `/team <task>` receives the task text | not yet checked | not yet checked |
 | Gates appear as questions with options | not yet checked | not yet checked |
@@ -394,6 +396,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup fix` |
 | Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |
 | An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
-| /team starts but behaves like an older version, or says a workflow file is missing | skills/team/references/ was not copied, or the session still holds the old prompts | Re-copy the team into .claude/ and reopen the session |
-| The Reviewer reports "Critical zones: section missing" | PROJECT-RULES.md predates 4.3.0 | /generate-knowledge PROJECT-RULES.md |
-| A command the Reviewer needs is denied by the guard | It is destructive and not listed in TOOLCHAIN.md | Add the exact command as a TOOLCHAIN.md row, or run it yourself |
+| `/team` starts but behaves like an older version, or says a workflow file is missing | `skills/team/references/` was not copied, or the session still holds the old prompts | Re-copy the team into `.claude/` and reopen the session |
+| The Reviewer reports "Critical zones: section missing" | `PROJECT-RULES.md` predates 4.3.0 | `/generate-knowledge PROJECT-RULES.md` |
+| A command the Reviewer needs is denied by the guard | It is destructive and not listed in `TOOLCHAIN.md` | Add the exact command as a `TOOLCHAIN.md` row, or run it yourself |
+| A destructive command is not denied during a run | The guard is not wired (a team updated from before 4.3.0), or no bash | `/team-setup check` reports `Guard: NOT wired` or `bash: absent`; `/team-setup fix`, then open `/hooks` once |
