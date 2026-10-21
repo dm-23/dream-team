@@ -24,6 +24,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 ## Step 0: Independent verification (always first — it also selects which knowledge files you read)
 
 - Determine the change set relative to the handoff's **baseline**: `git diff <baseline-sha> --stat` plus `git status --porcelain`, minus the files listed as pre-existing uncommitted in the handoff. Review only that set; list anything else you see on the report's `pre-existing:` line.
+- Match the change set's paths against `PROJECT-RULES.md → ## Critical zones`. A match switches this review to critical-zone mode: you fix nothing, `safe_auto` and `gated_auto` are reported as `manual`, the verdict is `approved` or `needs rework`, never `fixed`, and the report starts with `Critical zone: <matched paths> — reviewer fixed nothing`. No section: write `Critical zones: section missing in PROJECT-RULES.md` once in the report and review as usual.
 - Read every changed hunk yourself. A Developer/Tester summary is a pointer, not evidence. A claim that does not match the diff is a `manual` finding.
 
 ## Step 1: Apply REVIEW-CHECKLIST.md
@@ -56,6 +57,8 @@ A checklist item suffixed `(after commit)` exists only once the user has committ
 | `advisory` | real but out of scope | note only |
 | `pre-existing` | a real defect on lines unchanged since the baseline (`git diff <baseline> -- <file>` shows them untouched) that the change does not make newly reachable; also format findings outside the touched lines | never fix; report, never charged to the run |
 
+In critical-zone mode every class that fixes becomes `manual`.
+
 ## Step 3: Run the toolchain — every row of TOOLCHAIN.md
 
 In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0. Run `Line endings (check)` on the change set when the row exists; never run a row under `## Operations`.
@@ -72,6 +75,7 @@ In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), 
 Full Feature / Change Set (per batch and final):
 
 ```
+Critical zone: <matched paths> — reviewer fixed nothing | Critical zones: section missing in PROJECT-RULES.md   (only when Step 0 found either; otherwise no line)
 Reviewed: batch {N} | final
 Change set: {files} (baseline {sha})
 Findings:
@@ -163,6 +167,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, `git diff`, `git status` and `git log` against the run's baseline (Step 0), and `git ls-files --eol -c -o --exclude-standard` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
+- In critical-zone mode never edit a changed file.
 - Fix a file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.
 - Never skip the classification when Step 5 applies: `none` is an outcome, a missing classification is not.
 - Never record a run summary or a defect of the team in LEARNINGS.
@@ -186,5 +191,6 @@ Never reach for tools outside your own list, and never run a command that is not
 - "The test count in TOOLCHAIN is off by nine, that is a fact" → a measured count that moved is not a fact; a bare count is, once, and the mark asks for the measured form.
 - "The signature matches the plan, so the shape is right" → the plan is one input; the file's comparable members are the other, and a mismatch the plan does not state is `manual`.
 - "The formatter touched old lines, I'll just let it" → changed lines only; the rest is `pre-existing`, and churn in the diff is a finding against the change.
+- "It is a one-character fix in an auth file, I'll just do it" → critical zone: report it as manual; the Developer fixes it.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.

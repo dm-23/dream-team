@@ -213,6 +213,7 @@ Procedure: take candidates from CI/pipeline files first, then task runners/READM
 M. ... (from PROJECT-RULES.md obligations, one item each)
 K. ... (from BACKEND/FRONTEND-ARCHITECTURE.md conventions that a reviewer can verify mechanically)
 L. ... (from "Duplicated code paths that must change together")
+N. If any changed file is under a path of PROJECT-RULES.md → Critical zones, review in critical-zone mode (the Reviewer's Step 0).
 ```
 
 Flat numbered list, no headings, each item verifiable by reading the diff or running a TOOLCHAIN command.
@@ -236,9 +237,14 @@ Sources: CLAUDE.md, README, CI, .claude/PROJECT.md, .claude/docs (cite each)
 
 ## Documents to keep in sync
 - path — what it tracks — who updates it (team run: yes/no)
+
+## Critical zones
+- <path or glob> — <auth | permissions | money | personal data | data migration | secrets and deploy config | CI> — source: <file:line, or "user">
 ```
 
 Extract only rules that are actually written in the sources; do not invent. The one exception is an item promoted from learnings — see "Items promoted from learnings".
+
+**Critical zones.** Derived from the code and the documentation only: authentication and authorization middleware, permission checks, payment and billing integrations, migration folders, deployment and CI definitions, secret handling. Never an invented path. Lines ending `— source: user` are preserved verbatim across regenerations, as learnings-promoted items are (read the existing section first; a line whose path no longer exists is reported, not kept).
 
 ### LEARNINGS.md (persistent)
 
@@ -251,6 +257,8 @@ A mark's text names its evidence: `says "<quote>"` or `says nothing about <subje
 ### Items promoted from learnings
 
 A rule promoted from the inbox lives only in a generated file; its entry is gone. So when regenerating any file, carry over every item that ends `— source: learnings <date> <title>` — searching all of `.claude/knowledge/` recursively, topic directories included, because a `subset` file keeps its items in topics its index only names: keep it, re-verify it against the repository, and keep the suffix. An item the repository now contradicts or no longer needs is listed in the report and removed only with the user's consent — asked with the triage question when `all` runs, on its own otherwise. Its source is a real run's finding, recorded by the Reviewer and accepted by the user, which is why it is the one exception to extracting only what the sources say. It counts toward its file's budget like any other line.
+
+A line of `PROJECT-RULES.md → ## Critical zones` ending `— source: user` is carried over the same way, except that it is kept verbatim and checked only for its path: the user named the zone, so no source in the repository has to confirm it. A line whose path no longer exists is listed in the report, not kept.
 
 ## Triage the learnings inbox (`all` only)
 
@@ -286,7 +294,7 @@ Report: entries per class before, what was applied, entries left, the backup pat
 
 ## Check mode (`check`)
 
-For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
+For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every path under `PROJECT-RULES.md → Critical zones` still exists (`STALE: critical zone path missing: <path>`), and the section itself exists (`STALE: Critical zones section missing — run /generate-knowledge PROJECT-RULES.md`), every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
 
 ## Fix mode (`fix`)
 
@@ -344,7 +352,7 @@ alongside the budget:
 4. Draft TOOLCHAIN.md and verify commands.
 5. Write architecture/testing/playbook files.
 6. Annotate cards → CODING-STANDARDS.md.
-7. Derive PROJECT-RULES.md from human documentation.
+7. Derive PROJECT-RULES.md from human documentation, and its Critical zones from the code and the documentation, keeping every `— source: user` line whose path still exists.
 8. Compose REVIEW-CHECKLIST.md last (it depends on all others).
 9. Resolve STALE-CHECK lines; with `all`, triage the learnings inbox.
 10. Cross-check consistency across files (same paths, same commands), and that every

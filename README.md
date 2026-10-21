@@ -159,7 +159,7 @@ If research shows a Small Change is bigger than three files, or touches a schema
 | `TOOLCHAIN.md` | developer, tester, reviewer | Every command they may run, each marked verified or not, with its source |
 | `CODING-STANDARDS.md` | developer, reviewer | Stack card plus your observed conventions; where they conflict, yours wins |
 | `REVIEW-CHECKLIST.md` | reviewer | A flat numbered list the reviewer applies to every changed file |
-| `PROJECT-RULES.md` | all | Obligations lifted from your own documentation, such as what must be updated alongside a change |
+| `PROJECT-RULES.md` | all | Obligations lifted from your own documentation, such as what must be updated alongside a change, and the critical zones: paths where a mistake is a security or data incident; the Reviewer fixes nothing there and sends every finding back for rework |
 
 **Shape and size.** The manifest gives every knowledge file a class and a token budget, and the generator keeps it inside that budget. A file every reader needs whole stays one file and is shortened to fit. A file a reader only needs part of becomes an index at its own path plus a sibling directory of topics — `BACKEND-ARCHITECTURE.md` next to `backend-architecture/` — so an agent reads the short index and then only the topic its task selects. The numbers live in `team-manifest.json` under `knowledge.budgets`; `checks/verify-manifest-budgets.sh` keeps them consistent with each other.
 
@@ -389,3 +389,4 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |
 | An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
 | /team starts but behaves like an older version, or says a workflow file is missing | skills/team/references/ was not copied, or the session still holds the old prompts | Re-copy the team into .claude/ and reopen the session |
+| The Reviewer reports "Critical zones: section missing" | PROJECT-RULES.md predates 4.3.0 | /generate-knowledge PROJECT-RULES.md |
