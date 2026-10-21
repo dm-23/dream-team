@@ -3,7 +3,11 @@
 # stdin and the deny JSON, if any, on stdout; a bash on PATH is used only when
 # it is not the WSL one, which cannot read this Windows path. Without a bash
 # it exits quietly: the guard is simply unavailable. It always exits 0,
-# because the Copilot CLI denies the tool call when a pre-tool hook fails.
+# because the Copilot CLI denies the tool call when a pre-tool hook fails;
+# the hook entry calls it through -Command with a Test-Path and a catch, so a
+# missing or broken launcher exits 0 too. It reads the payload from the
+# process's stdin itself, because a script called with & inside -Command gets
+# no pipeline input.
 $ErrorActionPreference = 'SilentlyContinue'
 $script = Join-Path $PSScriptRoot 'guard-command'
 $candidates = @(
@@ -17,5 +21,5 @@ if (-not $bash) {
   if ($cmd -and $cmd.Source -notmatch '\\System32\\') { $bash = $cmd.Source }
 }
 if (-not $bash) { exit 0 }
-$input | & $bash $script
+[Console]::In.ReadToEnd() | & $bash $script
 exit 0

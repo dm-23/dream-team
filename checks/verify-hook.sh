@@ -270,5 +270,40 @@ printf '| Purpose | Command |\n|---|---|\n| Clean | `rm -rf ./build/*` |\n' > "$
 copy_guard "$p" 'rm -rf ./build/*'
 [ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-toolchain "expected silence, got exit $RC: $OUT"
 
+# the Copilot entry's commands fail open: the CLI denies the call when a
+# pre-tool hook exits non-zero, so a missing or crashing script must exit 0
+CONFIG="$ROOT/copilot/files/hooks/dream-team.json"
+entry_cmd() { # field -> the PreToolUse entry's command string, JSON-unescaped
+  sed -n '/"PreToolUse"/,$p' "$CONFIG" | sed -n "s/^[[:space:]]*\"$1\": \"\\(.*\\)\",\$/\\1/p" | head -1 | sed 's/\\"/"/g'
+}
+COPILOT_BASH="$(entry_cmd bash)"
+[ -n "$COPILOT_BASH" ] || fail guard-copilot-entry "no bash command in the PreToolUse entry of dream-team.json"
+copilot_entry() { # PROJECT RUNNER... -> OUT, RC: the entry's command run from the project root
+  local dir="$1"; shift
+  OUT="$(cd "$dir" && printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | env -u CLAUDE_PROJECT_DIR "$@" 2>&1)"; RC=$?
+}
+p="$(project guard-copilot-entry)"; marker "$p" bug_fix_m_2026-10-20 "5 Implement"; status "$p" bug_fix_m_2026-10-20 "# Status: m"
+copilot_entry "$p" bash -c "$COPILOT_BASH"
+[ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-entry-missing "bash entry, no script: expected exit 0 and silence, got exit $RC: $OUT"
+mkdir -p "$p/.github/dream-team/hooks"
+printf '#!/usr/bin/env bash\nexit 3\n' > "$p/.github/dream-team/hooks/guard-command"
+copilot_entry "$p" bash -c "$COPILOT_BASH"
+[ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-entry-crash "bash entry, failing script: expected exit 0 and silence, got exit $RC: $OUT"
+cp "$COPY" "$p/.github/dream-team/hooks/guard-command"
+copilot_entry "$p" bash -c "$COPILOT_BASH"
+case "$RC:$OUT" in 0:*'"permissionDecision":"deny"'*) ;; *) fail guard-copilot-entry-bash "bash entry, real script: exit $RC: $OUT" ;; esac
+if command -v powershell.exe >/dev/null 2>&1; then
+  COPILOT_PS="$(entry_cmd powershell)"
+  [ -n "$COPILOT_PS" ] || fail guard-copilot-entry "no powershell command in the PreToolUse entry of dream-team.json"
+  copilot_entry "$p" powershell.exe -NoProfile -NonInteractive -Command "$COPILOT_PS"
+  [ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-entry-ps-missing "PowerShell entry, no launcher: expected exit 0 and silence, got exit $RC: $OUT"
+  printf 'throw "broken"\n' > "$p/.github/dream-team/hooks/guard-command.ps1"
+  copilot_entry "$p" powershell.exe -NoProfile -NonInteractive -Command "$COPILOT_PS"
+  [ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-entry-ps-crash "PowerShell entry, failing launcher: expected exit 0 and silence, got exit $RC: $OUT"
+  cp "$ROOT/copilot/files/dream-team/hooks/guard-command.ps1" "$p/.github/dream-team/hooks/"
+  copilot_entry "$p" powershell.exe -NoProfile -NonInteractive -Command "$COPILOT_PS"
+  case "$RC:$OUT" in 0:*'"permissionDecision":"deny"'*) ;; *) fail guard-copilot-entry-ps "PowerShell entry, real launcher: exit $RC: $OUT" ;; esac
+fi
+
 [ "$fails" -eq 0 ] && echo "hook: ok"
 exit $(( fails > 0 ))

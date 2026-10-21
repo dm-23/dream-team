@@ -14,8 +14,8 @@
       {
         "type": "command",
         "matcher": "Bash",
-        "bash": "bash .github/dream-team/hooks/guard-command",
-        "powershell": "powershell -NoProfile -ExecutionPolicy Bypass -File .github/dream-team/hooks/guard-command.ps1",
+        "bash": "[ ! -f .github/dream-team/hooks/guard-command ] || bash .github/dream-team/hooks/guard-command || true",
+        "powershell": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"try { if (Test-Path .github/dream-team/hooks/guard-command.ps1) { & .github/dream-team/hooks/guard-command.ps1 } } catch {}; exit 0\"",
         "cwd": ".",
         "timeoutSec": 10
       }
