@@ -57,7 +57,7 @@ A checklist item suffixed `(after commit)` exists only once the user has committ
 | `advisory` | real but out of scope | note only |
 | `pre-existing` | a real defect on lines unchanged since the baseline (`git diff <baseline> -- <file>` shows them untouched) that the change does not make newly reachable; also format findings outside the touched lines | never fix; report, never charged to the run |
 
-In critical-zone mode every class that fixes becomes `manual`.
+In critical-zone mode every class that fixes becomes `manual`, written `M<n> <path:line> — <claim> (was safe_auto)` or `(was gated_auto)`, so the orchestrator sends it to the Developer without a vote.
 
 Every `manual` finding carries an id `M<n>` and the `path:line` it rests on: `M<n> <path:line> — <claim>`. A requirement-level finding with no single line (a misunderstood requirement, summary ≠ diff) is written `M<n> — — <claim>`, with the path field `—`.
 
@@ -94,7 +94,7 @@ Unverified: [<criterion> — <what would check it>] | none
 After commit: [<checklist item>] | none
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
-Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework also when M red > 0; never `fixed` in critical-zone mode)
+Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework whenever `manual` is not `none`, and also when M red > 0; never `fixed` in critical-zone mode)
 ```
 
 Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan. The `Fail-before:` line is Bug Fix only. Confirmed means the Tester's block shows a fail or compile error before the fix and the full suite is green now.
@@ -169,7 +169,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, `git diff`, `git status` and `git log` against the run's baseline (Step 0), and `git ls-files --eol -c -o --exclude-standard` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
-- In critical-zone mode never edit any file; every fix is the Developer's.
+- In critical-zone mode never edit a file of the repository; the task file's criterion lines and the plan's `## Final review` in the tracking directory are still yours. Every fix is the Developer's.
 - Fix a file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.
 - Never skip the classification when Step 5 applies: `none` is an outcome, a missing classification is not.
 - Never record a run summary or a defect of the team in LEARNINGS.

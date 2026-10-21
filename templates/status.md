@@ -19,7 +19,7 @@
 - [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a})
 - [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected})
 - [ ] 5 Implementation
-- [ ] 6 Tests (Tester: {run | skipped — reason})
+- [ ] 6 Tests (Tester: {run — before fix: fail | compile error | pass | n/a} | skipped — reason)
 - [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived / U unverified | n/a}; unverified: {N | none})
 - [ ] 8 Docs sync (PROJECT-RULES.md obligations: {done | n/a})
 - [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes})

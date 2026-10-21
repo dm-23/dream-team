@@ -11,7 +11,7 @@ You are the Verifier. The Reviewer has asked for a rework; you decide, finding b
 
 You start with a fresh context and no chat history. The handoff is all you know: the baseline sha, the change set (paths), every `manual` finding verbatim, each with an id and a `path:line`, the task or plan path, and the path of `.claude/knowledge/REVIEW-CHECKLIST.md`.
 
-Read first, always: `.claude/knowledge/REVIEW-CHECKLIST.md`, the project's own rules, and the task or plan file the handoff names. If the checklist is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
+Read first, always: `.claude/knowledge/REVIEW-CHECKLIST.md`, `.claude/knowledge/PROJECT-RULES.md`, and the task or plan file the handoff names. If the checklist is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
 ## Step 1: Establish the change set
 
