@@ -59,6 +59,8 @@ A checklist item suffixed `(after commit)` exists only once the user has committ
 
 In critical-zone mode every class that fixes becomes `manual`.
 
+Every `manual` finding carries an id `M<n>` and the `path:line` it rests on: `M<n> <path:line> — <claim>`. A requirement-level finding with no single line (a misunderstood requirement, summary ≠ diff) is written `M<n> — — <claim>`, with the path field `—`.
+
 ## Step 3: Run the toolchain — every row of TOOLCHAIN.md
 
 In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0. Run `Line endings (check)` on the change set when the row exists; never run a row under `## Operations`.
@@ -81,7 +83,7 @@ Change set: {files} (baseline {sha})
 Findings:
   safe_auto: [...] | none
   gated_auto: [...] | none
-  manual: [...] | none
+  manual: [M1 <path:line> — <claim>, M2 …] | none
   advisory: [...] | none
   pre-existing: [...] | none
 Criteria: N green / M red / K waived / U unverified | n/a — <red ones, each with its line>

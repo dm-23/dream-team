@@ -9,7 +9,7 @@ Applies only when `CAPABILITIES.md` lists `decision-routing` as available. Other
    - `{YYYY-MM-DD}	difficulty	jev={choice}	conf={confidence}	provider={provider}`
 4. **Outcome.** When the run closes as `[DONE]`, before marking it, append:
    - `{YYYY-MM-DD}	outcome	workflow={workflow the run finished as}	override={yes if the user switched the workflow, else no}	files={N}	rework={N}`
-   - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer returned `needs rework` or `manual` findings; an `Unverified` line alone is not rework.
+   - `files` is the number of distinct paths changed since the baseline (`git diff --name-only {baseline}` plus new untracked files, excluding the baseline's pre-existing ones). `rework` is the number of times a Reviewer's `needs rework` led to a Developer rework handoff; a vote that confirms nothing is not rework; an `Unverified` line alone is not rework.
    - A run that is stopped or discarded gets no outcome line.
 
 Workflow keys are the workflow names lowercased with spaces as underscores: `analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`. The only text that leaves the machine is `routing/task.txt`; never put anything but the user's own words there. `bash .claude/checks/summarize-routing.sh` turns the logs into the numbers the owner uses to decide whether the service may ever act.
