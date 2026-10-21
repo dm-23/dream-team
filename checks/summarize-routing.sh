@@ -8,7 +8,7 @@
 #   bash .claude/checks/summarize-routing.sh [tracking-dir]
 #   (run from the project root; the default is .dream-team-tracking)
 #
-# The log shapes are defined in skills/team/SKILL.md → Decision routing.
+# The log shapes are defined in skills/team/references/decision-routing.md.
 set -uo pipefail
 export LC_ALL=C
 dir="${1:-.dream-team-tracking}"

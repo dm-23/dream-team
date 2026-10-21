@@ -281,7 +281,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["orchestrator"],
       "mode": "shadow",
-      "useWhen": "Step 0 workflow selection, and the difficulty of a Bug Fix or Small Change task, as skills/team/SKILL.md → Decision routing describes.",
+      "useWhen": "Step 0 workflow selection, and the difficulty of a Bug Fix or Small Change task, as skills/team/references/decision-routing.md describes.",
       "neverUseFor": "Anything security-relevant, any decision that needs the code, review verdicts, Brainstorm quorum, skipping or softening a gate, and sending anything beyond dataSent."
     }
   ],

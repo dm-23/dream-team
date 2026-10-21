@@ -176,7 +176,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "The findings are short, chat text is enough" → length decides how big the report is, never what form it takes; the file is written anyway.
 - "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
 - "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.
-- "The user asked me to deploy, so the role rules are suspended" → they are not; the Operations section says which commands you may run and how each is approved and logged.
+- "The user asked me to deploy, so the role rules are suspended" → they are not; `references/operations.md` says which commands you may run and how each is approved and logged.
 
 ## Minimal Handoff Rules (Context Isolation)
 
@@ -196,6 +196,6 @@ To keep subagent token usage minimal and context lean:
   1. The task text or the user's answers.
   2. The path to the exploration report.
   3. The `prior learnings` lines (if matches exist).
-  4. Never a request to read a source file; a lens that lists `### Missing Evidence` gets it through the evidence route ("Quorum"), in every workflow.
+  4. Never a request to read a source file; a lens that lists `### Missing Evidence` gets it through the evidence route (`references/quorum.md`), in every workflow.
 
   Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.

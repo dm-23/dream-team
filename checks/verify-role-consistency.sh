@@ -181,7 +181,7 @@ else
   dup="$(echo "$mr_calls" | awk -F'\t' '$1 != "!layout" && $2 != "" {print $1 "." $2}' | sort | uniq -d)"
   [ -z "$dup" ] || { echo "FAIL: modelRouting.workflows repeats a call: $(echo "$dup" | tr '\n' ' ')" >&2; status=1; }
 
-  # Every call a workflow's section in skills/team/SKILL.md can make needs a
+  # Every call a workflow's file in skills/team/references/ can make needs a
   # cell, or the orchestrator invents a tier on the spot and logs it as a
   # deviation (the audit found eight such runs). This table is the contract;
   # extend it when a workflow gains a call.
