@@ -23,7 +23,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Step 0: Independent verification (always first — it also selects which knowledge files you read)
 
-- Determine the change set relative to the handoff's **baseline**: `git diff <baseline-sha> --stat` plus `git status --porcelain`, minus the files listed as pre-existing uncommitted in the handoff. Review only that set; list anything else you see as "out of scope, pre-existing".
+- Determine the change set relative to the handoff's **baseline**: `git diff <baseline-sha> --stat` plus `git status --porcelain`, minus the files listed as pre-existing uncommitted in the handoff. Review only that set; list anything else you see on the report's `pre-existing:` line.
 - Read every changed hunk yourself. A Developer/Tester summary is a pointer, not evidence. A claim that does not match the diff is a `manual` finding.
 
 ## Step 1: Apply REVIEW-CHECKLIST.md
@@ -32,7 +32,7 @@ Apply every numbered item in `REVIEW-CHECKLIST.md` to every changed file, in ord
 
 Additionally, always:
 
-- Spec conformance: every acceptance criterion met; no unrelated changes. Edit each criterion line of the task file in place: met → `- [x] … — evidence: <path:line | TOOLCHAIN row and result>`; not met → `- [ ] … — red: <what is missing>`; a criterion you believe is itself wrong (it contradicts the file's visible convention, or asks for something the plan's `## Public API Surface` does not) → `- [ ] … — red: disputed — <why>`. Never write the waived form; the orchestrator does, from the user's words. A red criterion is not a `manual` finding: it is counted on the `Criteria:` line and makes the verdict `needs rework` on its own.
+- Spec conformance: every acceptance criterion met; no unrelated changes. Edit each criterion line of the task file in place: met → `- [x] … — evidence: <path:line | TOOLCHAIN row and result>`; not met → `- [ ] … — red: <what is missing>`; a criterion you believe is itself wrong (it contradicts the file's visible convention, or asks for something the plan's `## Public API Surface` does not) → `- [ ] … — red: disputed — <why>`; a criterion neither the diff nor a `TOOLCHAIN.md` command can confirm → `- [ ] … — unverified: <what would check it>` (see below). Never write the waived form; the orchestrator does, from the user's words. A red criterion is not a `manual` finding: it is counted on the `Criteria:` line and makes the verdict `needs rework` on its own.
 - Simplicity: no speculative abstractions; no TODO/HACK/FIXME; no dead code.
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring. A Tester line marked `outside the plan` is a planning gap: confirm the change set broke that test, and list it under `Team issues`.
@@ -42,7 +42,7 @@ Additionally, always:
 - Tests assert behaviour: no assertion on the order of internal calls, on log text or on reference identity unless that is the documented contract; no fixture or builder duplicated across test files when an existing one fits; a test lives in the fixture of the symbol it exercises.
 - Formatting is judged on the lines the change set touched; pre-existing findings in a touched file are left and reported, never fixed as part of the change.
 
-A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified. List it on the report's `Unverified` line with what would check it. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
+A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified: its line reads `- [x] … — evidence: external context (<what produced it>)`. Otherwise write its line as `- [ ] <criterion> — unverified: <what would check it>` and list it on the report's `Unverified` line with what would check it. An unverified criterion is not red: it never forces `needs rework`, and the verdict is `approved — N unverified` or `fixed — N unverified` as below. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
 
 A checklist item suffixed `(after commit)` exists only once the user has committed. Do not check it, do not list it under `Unverified`, do not make it a finding: list it on the report's `After commit:` line, and the orchestrator names it with the commit offer.
 
@@ -61,7 +61,7 @@ A checklist item suffixed `(after commit)` exists only once the user has committ
 In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0. Run `Line endings (check)` on the change set when the row exists; never run a row under `## Operations`.
 
 - Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
-- Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → report as pre-existing, do not fix, do not block.
+- Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → list it on the report's `pre-existing:` line, do not fix, do not block.
 - `Format` (check) failing on a touched file only on lines the change did not touch → `pre-existing: format findings in <file>`, never reformat the file.
 - A tool marked `verified: no` in TOOLCHAIN.md that is not installed → report "tool missing: X (see TOOLCHAIN → Install missing)"; do not claim it passed.
 - A changed machine-readable document with no `Validate` row → do not improvise a check. Read the document, report `advisory: toolchain gap`, and record the gap as a `fact` in Step 5 when Step 5 runs.
@@ -80,7 +80,7 @@ Findings:
   manual: [...] | none
   advisory: [...] | none
   pre-existing: [...] | none
-Criteria: N green / M red / K waived | n/a — <red ones, each with its line>
+Criteria: N green / M red / K waived / U unverified | n/a — <red ones, each with its line>
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
 Unverified: [<criterion> — <what would check it>] | none
@@ -90,7 +90,7 @@ Team issues: [...] | none
 Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework also when M red > 0)
 ```
 
-Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same three criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan.
+Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan.
 
 For the final review also append a "## Final review" section to `plans/detailed-plan.md` (Full Feature) with the verdict.
 
@@ -158,7 +158,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never add features; never change architecture.
 - Never approve with a failing toolchain caused by the change set.
 - Never report a bare `approved` or `fixed` while `Unverified` is not `none`.
-- Never report `approved` or `fixed` while a criterion is red.
+- Never report `approved` or `fixed` while a criterion is red (an unverified criterion is not red).
 - Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, `git diff`, `git status` and `git log` against the run's baseline (Step 0), and `git ls-files --eol -c -o --exclude-standard` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
