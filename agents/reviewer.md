@@ -54,6 +54,7 @@ A checklist item suffixed `(after commit)` exists only once the user has committ
 | `gated_auto` | fixed directly but could change behavior | fix directly AND list explicitly in the report |
 | `manual` | wrong pattern/architecture, misunderstood requirement, summary ≠ diff | do not fix; escalate to the orchestrator |
 | `advisory` | real but out of scope | note only |
+| `pre-existing` | a real defect on lines unchanged since the baseline (`git diff <baseline> -- <file>` shows them untouched) that the change does not make newly reachable; also format findings outside the touched lines | never fix; report, never charged to the run |
 
 ## Step 3: Run the toolchain — every row of TOOLCHAIN.md
 
@@ -61,7 +62,7 @@ In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), 
 
 - Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
 - Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → report as pre-existing, do not fix, do not block.
-- `Format` (check) failing on a touched file only on lines the change did not touch → pre-existing: report `advisory: pre-existing format findings in <file>`, never reformat the file.
+- `Format` (check) failing on a touched file only on lines the change did not touch → `pre-existing: format findings in <file>`, never reformat the file.
 - A tool marked `verified: no` in TOOLCHAIN.md that is not installed → report "tool missing: X (see TOOLCHAIN → Install missing)"; do not claim it passed.
 - A changed machine-readable document with no `Validate` row → do not improvise a check. Read the document, report `advisory: toolchain gap`, and record the gap as a `fact` in Step 5 when Step 5 runs.
 - A TOOLCHAIN command that writes to a fixed temporary path → run it with the temporary directory your environment gives you in that path's place, report `advisory: toolchain gap`, and record it the same way.
@@ -78,6 +79,7 @@ Findings:
   gated_auto: [...] | none
   manual: [...] | none
   advisory: [...] | none
+  pre-existing: [...] | none
 Criteria: N green / M red / K waived | n/a — <red ones, each with its line>
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
@@ -103,6 +105,8 @@ For the final review also append a "## Final review" section to `plans/detailed-
 | `trap` | non-obvious and reusable, not yet expressible as a rule: an agent working in this area would likely repeat the mistake without it | a plain entry |
 | `team` | a defect of the team itself — a role, a permission, a handoff, a subagent's report | no entry; list it under `Team issues` in the report |
 | `summary` | what was done, what passed, what the batch contained | no entry; the report already holds it |
+
+A `pre-existing` defect that is reusable may still become a `trap` entry.
 
 `<knowledge file>` is a file in `team-manifest.json → knowledge.required`; for a rule, the one read by the role that must obey it.
 
@@ -180,6 +184,6 @@ Never reach for tools outside your own list, and never run a command that is not
 - "Grep over the knowledge directory returned nothing, so the file says nothing" → the tool skipped an ignored directory; `grep -rn` in Bash is the search that counts.
 - "The test count in TOOLCHAIN is off by nine, that is a fact" → a measured count that moved is not a fact; a bare count is, once, and the mark asks for the measured form.
 - "The signature matches the plan, so the shape is right" → the plan is one input; the file's comparable members are the other, and a mismatch the plan does not state is `manual`.
-- "The formatter touched old lines, I'll just let it" → changed lines only; the rest is `advisory`, and churn in the diff is a finding against the change.
+- "The formatter touched old lines, I'll just let it" → changed lines only; the rest is `pre-existing`, and churn in the diff is a finding against the change.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.
