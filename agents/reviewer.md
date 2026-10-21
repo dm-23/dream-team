@@ -81,6 +81,7 @@ Findings:
   advisory: [...] | none
   pre-existing: [...] | none
 Criteria: N green / M red / K waived / U unverified | n/a — <red ones, each with its line>
+Fail-before: confirmed (<test file>) | not demonstrated — <reason> | not applicable — no test (<reason>)   (Bug Fix only)
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
 Unverified: [<criterion> — <what would check it>] | none
@@ -90,7 +91,7 @@ Team issues: [...] | none
 Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework also when M red > 0)
 ```
 
-Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan.
+Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan. The `Fail-before:` line is Bug Fix only. Confirmed means the Tester's block shows a fail or compile error before the fix and the full suite is green now.
 
 For the final review also append a "## Final review" section to `plans/detailed-plan.md` (Full Feature) with the verdict.
 

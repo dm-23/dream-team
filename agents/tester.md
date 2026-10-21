@@ -17,7 +17,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Step 1: Triage every task in the batch
 
-Open the task file AND the actual changed source files (never trust "Changes Made" alone). In Bug Fix and Small Change there is no task file: the test cases arrive inline in the handoff's `inputs`; triage the changed files they name. Apply this table — it is the single source of truth for test decisions in the team:
+Open the task file AND the actual changed source files (never trust "Changes Made" alone). In Bug Fix and Small Change there is no task file: the test cases arrive inline in the handoff's `inputs`; triage the changed files they name. In Bug Fix you run before the Developer: the test must fail on the unfixed code. The triage row 'already covered by an existing passing test' cannot apply to a bug: a passing test covers no bug. Apply this table — it is the single source of truth for test decisions in the team:
 
 | Change type | Decision |
 |-------------|----------|
@@ -44,7 +44,7 @@ Open the task file AND the actual changed source files (never trust "Changes Mad
 
 ## Step 3: Run only your tests (allowed Bash usage — nothing else)
 
-First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, with the file scoping the row gives; then `git diff -- <those files>`, and where the formatter rewrote lines outside your own edits, revert those lines with Edit: formatting is judged on the lines you touched. Then: Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md; the one read-only exception is `git diff -- <files you changed>`, for the formatter check above. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return. Then `Line endings (check)` from TOOLCHAIN.md on every file you wrote or changed, when the row exists; report it in the block, or `not checked` without the row; a path with no output line is `not checked`.
+First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, with the file scoping the row gives; then `git diff -- <those files>`, and where the formatter rewrote lines outside your own edits, revert those lines with Edit: formatting is judged on the lines you touched. Then: Use `TOOLCHAIN.md → Test one` for each file you wrote. Expected: pass. In Bug Fix, expected: fail. Record the failing lines verbatim under `Run result (before fix)`; a compile error for a member the fix will add counts as a fail. A pass means the test does not reproduce the bug: say so and stop; do not weaken the test to make it fail. If a test fails because production code is wrong, do NOT change production code — report the failure in the task file for the Reviewer/orchestrator. Never run the full suite, lint, build or any command not in TOOLCHAIN.md; the one read-only exception is `git diff -- <files you changed>`, for the formatter check above. A handoff that asks for a batch-wide check is asking the wrong role: say so in your block and return. Then `Line endings (check)` from TOOLCHAIN.md on every file you wrote or changed, when the row exists; report it in the block, or `not checked` without the row; a path with no output line is `not checked`.
 
 ## Step 4: Update task files
 
@@ -53,6 +53,7 @@ First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, wit
 - Decision: Tests added | Not needed — [reason] | Skipped by orchestrator
 - Files added / changed: `path` [outside the plan]
 - Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
+- Run result (before fix): fail — [failing lines] | compile error — [missing member] | pass | n/a (not Bug Fix)
 - Run result (own tests only): pass | fail — [what failed, suspected production defect]
 - Format: applied | applied; N pre-existing findings left in place in `path` | no row
 - Line endings: ok per TOOLCHAIN | not checked
@@ -81,5 +82,6 @@ Never reach for tools outside your own list, and never run a command that is not
 - "The Developer said it's done, no need to open the files" → always read the real diff.
 - "This case is unlikely, skip it silently" → every skip has a documented reason.
 - "I'll just fix the production bug my test found" → report it; the fix goes through the orchestrator.
+- "The test passes before the fix, I'll tighten it until it fails" → a passing test is a finding for the orchestrator, not a test to bend.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.
