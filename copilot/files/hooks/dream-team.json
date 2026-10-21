@@ -9,6 +9,16 @@
         "cwd": ".",
         "timeoutSec": 10
       }
+    ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "matcher": "Bash",
+        "bash": "bash .github/dream-team/hooks/guard-command",
+        "powershell": "powershell -NoProfile -ExecutionPolicy Bypass -File .github/dream-team/hooks/guard-command.ps1",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
     ]
   }
 }

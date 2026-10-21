@@ -33,7 +33,7 @@ Open Claude Code in the project and run three commands in order.
 
 | Step | Command | What it does |
 |------|---------|--------------|
-| 1 | `/team-setup fix` | Checks the install, hides generated files from version control, wires the sticky-mode hook, asks about each optional capability separately before installing anything, and asks whether to check for new team versions |
+| 1 | `/team-setup fix` | Checks the install, hides generated files from version control, wires the sticky-mode hook and the guard, asks about each optional capability separately before installing anything, and asks whether to check for new team versions |
 | 2 | `/generate-knowledge` | Explores your repository and writes the ten knowledge files the team reads |
 | 3 | `/team <task>` | Runs the workflow |
 
@@ -96,7 +96,7 @@ team-manifest.json             the contract: what must exist, where, and what to
 agents/                        seven role prompts
 skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
 templates/                     status, handoff, learnings, report, capabilities, and stack cards
-hooks/                         sticky team mode
+hooks/                         sticky team mode and the guard
 tools/                         the clients for the optional decision-routing service and update check
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
                                workflow consistency, text encoding, the integrity check
@@ -243,6 +243,8 @@ This is deliberately not a memory or an instruction that lives in context. The h
 
 Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session. The command in the snippet is a plain project-relative path with no bash syntax, because VS Code Copilot reads hooks from the same file and runs them in PowerShell on Windows; `/team-setup` reports an entry with an older spelling as stale wiring, and `fix` offers to replace it.
 
+**The guard.** A second hook, `hooks/guard-command`, runs before every shell command the model issues and denies the ones no role should run: killing processes by name or pattern (`pkill`, `killall`, `kill $(pgrep …)`, `xargs kill`, `kill -1`, `kill 0`); a recursive `rm` whose target is a glob, `/`, `~`, `$HOME`, `.`, `..`, a path above the project, or a path one level under `/` or the home directory; a force push; `git clean -f`; and `git reset --hard`, `git checkout -- <path>` and `git restore <path>`, which discard uncommitted work. Each denial carries a one-line reason that says what to do instead. The guard acts only while a run is open, that is while the marker exists, so a developer's own session in the same project is never affected. A command written verbatim in a Command cell of `.claude/knowledge/TOOLCHAIN.md`, such as a clean-build row, is exempt; the match is the whole command, never a prefix. The command is scanned as text, so a harmless `echo pkill` is refused too. `/team-setup fix` wires the guard from the same snippet, into the `PreToolUse` array.
+
 ## The manifest
 
 `team-manifest.json` is the single source of truth for what a correct install looks like. It lists the agents and commands, the required and persistent knowledge files, the template paths, the paths hidden from version control, the plugins the team expects, the hook wiring, and the neutrality check.
@@ -326,7 +328,7 @@ Then:
 |------|----------|
 | `.github/agents/<role>.agent.md` | The seven roles, hidden from the agent picker and called as subagents |
 | `.github/skills/<command>/SKILL.md` | `/team`, `/generate-knowledge`, `/team-setup` |
-| `.github/hooks/dream-team.json` | The session-start hook |
+| `.github/hooks/dream-team.json` | The session-start hook and the guard |
 | `.github/dream-team/` | Manifest, templates, clients, runtime checks, and `.installed`, the list of what was installed |
 
 **What it touches.** The installer replaces only the files it installed itself, and only if nobody has edited them since. It never writes, moves or deletes:
@@ -348,6 +350,7 @@ The Copilot edition keeps its own knowledge and shares run state with a Claude C
 2. **Open runs.** An open run is announced when a session starts, not on every message: Copilot lets no hook add context per prompt. After a compaction, use `/team resume`.
 3. **Capabilities.** `/team-setup` installs nothing. Optional capabilities are MCP servers; it reports which are missing and gives the VS Code and CLI steps to add each. The session-memory and instruction-file capabilities exist only as Claude Code plugins and are not offered.
 4. **Hooks in VS Code.** They run only while `chat.useHooks` is on, a preview feature.
+5. **The guard.** It is installed with the team in `.github/hooks/dream-team.json`; `/team-setup fix` has nothing to wire. It reads bash command lines, so a PowerShell command, which is what the CLI runs on Windows, such as `Remove-Item -Recurse`, is not recognised.
 
 ### Maintaining the port
 
@@ -374,6 +377,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | Gates appear as questions with options | not yet checked | not yet checked |
 | Three Brainstorm calls run in parallel | not yet checked | not yet checked |
 | With an open run, a new session receives the `TEAM-MODE-ACTIVE` text | not yet checked | not yet checked |
+| With an open run, `git push --force` is denied with the guard's reason | not yet checked | not yet checked |
 | Side by side with a Claude install: one `/team` and the Copilot roles only | not yet checked | not yet checked |
 
 ## Troubleshooting
@@ -392,3 +396,4 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
 | /team starts but behaves like an older version, or says a workflow file is missing | skills/team/references/ was not copied, or the session still holds the old prompts | Re-copy the team into .claude/ and reopen the session |
 | The Reviewer reports "Critical zones: section missing" | PROJECT-RULES.md predates 4.3.0 | /generate-knowledge PROJECT-RULES.md |
+| A command the Reviewer needs is denied by the guard | It is destructive and not listed in TOOLCHAIN.md | Add the exact command as a TOOLCHAIN.md row, or run it yourself |

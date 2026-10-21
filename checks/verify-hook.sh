@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Exercises hooks/team-mode-prompt against scratch project directories.
+# Exercises hooks/team-mode-prompt and hooks/guard-command against scratch
+# project directories.
 #
 #   verify-hook.sh     (run from anywhere; it locates the team root from its own path)
 #
-# Each case builds a throwaway project, feeds the hook a UserPromptSubmit
-# payload on stdin with CLAUDE_PROJECT_DIR pointing at it, and asserts on the
-# text the hook prints. No JSON parser: the assertions are greps on the exact
+# Each case builds a throwaway project, feeds a hook its payload on stdin
+# (UserPromptSubmit or PreToolUse) with CLAUDE_PROJECT_DIR pointing at it, and
+# asserts on the text the hook prints. No JSON parser: the assertions are greps on the exact
 # strings the skill and the harness depend on. Exit 0 = every case passed,
 # 1 = at least one failed; each failure names its case.
 set -uo pipefail
@@ -13,6 +14,7 @@ export LC_ALL=C
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOOK="$ROOT/hooks/team-mode-prompt"
+GUARD="$ROOT/hooks/guard-command"
 LAUNCHER="$ROOT/hooks/run-hook.cmd"
 TMP="$(mktemp -d)" || exit 1
 trap 'rm -rf "$TMP"' EXIT
@@ -148,6 +150,125 @@ sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-old "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
+
+# 13. the guard: PreToolUse on Bash, silent outside a run
+json_string() { # raw text -> a JSON string literal
+  local s="$1"
+  s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; s="${s//$'\n'/\\n}"; s="${s//$'\t'/\\t}"
+  printf '"%s"' "$s"
+}
+guard() { # CASE PROJECT COMMAND -> sets OUT and RC; COMMAND is raw text, encoded here
+  OUT="$(printf '{"session_id":"s","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":%s}}' "$(json_string "$3")" \
+    | CLAUDE_PROJECT_DIR="$2" bash "$GUARD" 2>&1)"; RC=$?
+}
+expect_deny() { # CASE PROJECT COMMAND REASON-KEYWORD
+  guard "$1" "$2" "$3"
+  [ "$RC" = 0 ] || fail "$1" "exit $RC: $OUT"
+  case "$OUT" in *'"hookEventName": "PreToolUse"'*'"permissionDecision": "deny"'*) ;; *) fail "$1" "no deny for '$3': $OUT"; return ;; esac
+  case "$OUT" in *"$4"*) ;; *) fail "$1" "reason lacks '$4': $OUT" ;; esac
+}
+expect_silence() { # CASE PROJECT COMMAND
+  guard "$1" "$2" "$3"
+  [ "$RC" = 0 ] && [ -z "$OUT" ] || fail "$1" "expected silence for '$3', got exit $RC: $OUT"
+}
+toolchain() { # dir command-cell: a TOOLCHAIN.md whose one row has the given Command cell
+  mkdir -p "$1/.claude/knowledge"
+  printf '# Toolchain\n\n| Purpose | Command | Verified | Source | Cost |\n|---------|---------|----------|--------|------|\n| Clean build | %s | yes | README | cheap |\n' "$2" > "$1/.claude/knowledge/TOOLCHAIN.md"
+}
+
+p="$(project guard-no-marker)"
+expect_silence guard-no-marker "$p" 'git push --force origin x'
+
+p="$(project guard)"; marker "$p" bug_fix_g_2026-10-20 "5 Implement"; status "$p" bug_fix_g_2026-10-20 "# Status: g"
+expect_deny guard-force-push "$p" 'git push --force origin x' 'force push'
+expect_deny guard-force-push-short "$p" 'git push -f origin x' 'force push'
+expect_deny guard-force-push-lease "$p" 'git push --force-with-lease origin x' 'force push'
+expect_deny guard-force-push-plus "$p" 'git push origin +main' 'force push'
+expect_deny guard-pkill "$p" 'pkill -f node' 'by name or pattern'
+expect_deny guard-killall "$p" 'killall node' 'by name or pattern'
+expect_deny guard-kill-pgrep "$p" 'kill $(pgrep -f node)' 'by name or pattern'
+expect_deny guard-xargs-kill "$p" 'pgrep -f node | xargs kill -9' 'by name or pattern'
+expect_deny guard-kill-all "$p" 'kill -9 -1' 'by name or pattern'
+expect_deny guard-kill-group "$p" 'kill 0' 'by name or pattern'
+expect_deny guard-rm-glob "$p" 'rm -rf ./out/*' 'recursive rm'
+expect_deny guard-rm-home "$p" 'rm -rf ~/x' 'recursive rm'
+expect_deny guard-rm-dotdot "$p" 'rm -rf ../x' 'recursive rm'
+expect_deny guard-rm-root "$p" 'rm -r /' 'recursive rm'
+expect_deny guard-rm-top "$p" 'rm -rf /usr' 'recursive rm'
+expect_deny guard-rm-dot "$p" 'rm -fr .' 'recursive rm'
+expect_deny guard-rm-flag-last "$p" 'rm ./out/* -rf' 'recursive rm'
+expect_deny guard-git-clean "$p" 'git clean -fd' 'git clean'
+expect_deny guard-reset-hard "$p" 'git reset --hard HEAD~1' 'uncommitted work'
+expect_deny guard-checkout-dashdash "$p" 'git checkout -- src/a.cs' 'uncommitted work'
+expect_deny guard-restore "$p" 'git restore src/a.cs' 'uncommitted work'
+expect_deny guard-chained "$p" 'cd src && git push --force' 'force push'
+expect_deny guard-newline "$p" 'echo start
+rm -rf ./out/*' 'recursive rm'
+expect_deny guard-quoted "$p" 'rm -rf "./out/"*' 'recursive rm'
+n="$(printf '%s' "$OUT" | tr -cd '"' | wc -c)"
+[ $((n % 2)) -eq 0 ] || fail guard-quoted "odd number of double quotes in output"
+
+expect_silence guard-allowed-rm-marker "$p" 'rm -f .dream-team-tracking/.team-mode'
+expect_silence guard-allowed-rm-dir "$p" 'rm -rf ./build-out'
+expect_silence guard-allowed-rm-deep "$p" 'rm -rf /tmp/dt-build'
+expect_silence guard-allowed-push "$p" 'git push origin feature'
+expect_silence guard-allowed-restore-staged "$p" 'git restore --staged src/a.cs'
+expect_silence guard-allowed-stash "$p" 'git stash'
+expect_silence guard-allowed-clean-dry "$p" 'git clean -n'
+expect_silence guard-allowed-kill-pid "$p" 'kill 12345'
+expect_silence guard-allowed-kill-signal "$p" 'kill -1 12345'
+expect_silence guard-allowed-checkout "$p" 'git checkout -b feature'
+
+# the TOOLCHAIN.md exemption: the whole command equals a Command cell, with the
+# backticks around the whole cell stripped once; never a prefix or a substring
+p="$(project toolchain-row-exempt)"; marker "$p" bug_fix_t_2026-10-20 "5 Implement"; status "$p" bug_fix_t_2026-10-20 "# Status: t"
+toolchain "$p" '`rm -rf ./build/*`'
+expect_silence toolchain-row-exempt "$p" 'rm -rf ./build/*'
+expect_deny toolchain-other-glob "$p" 'rm -rf ./out/*' 'recursive rm'
+
+p="$(project toolchain-row-with-backticks)"; marker "$p" bug_fix_b_2026-10-20 "5 Implement"; status "$p" bug_fix_b_2026-10-20 "# Status: b"
+toolchain "$p" '`rm -rf ./build/*` && npm run build'
+expect_silence toolchain-row-with-backticks "$p" '`rm -rf ./build/*` && npm run build'
+expect_deny toolchain-row-part-not-exempt "$p" 'rm -rf ./build/*' 'recursive rm'
+
+p="$(project toolchain-prefix-not-exempt)"; marker "$p" bug_fix_p_2026-10-20 "5 Implement"; status "$p" bug_fix_p_2026-10-20 "# Status: p"
+toolchain "$p" '`rm -rf ./build`'
+expect_deny toolchain-prefix-not-exempt "$p" 'rm -rf ./build /' 'recursive rm'
+
+p="$(project toolchain-escapes)"; marker "$p" bug_fix_e_2026-10-20 "5 Implement"; status "$p" bug_fix_e_2026-10-20 "# Status: e"
+toolchain "$p" '`rm -rf "./tmp dir"/* && echo "a\b"`'
+expect_silence toolchain-escapes "$p" 'rm -rf "./tmp dir"/* && echo "a\b"'
+expect_deny toolchain-escapes-differs "$p" 'rm -rf "./tmp dir"/* && echo "a\c"' 'recursive rm'
+
+# the launcher reaches the guard, and so does the snippet's command run from the project root
+p="$(project guard-launcher)"; marker "$p" bug_fix_k_2026-10-20 "5 Implement"; status "$p" bug_fix_k_2026-10-20 "# Status: k"
+OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" guard-command 2>&1)"
+case "$OUT" in *'"permissionDecision": "deny"'*'force push'*) ;; *) fail guard-launcher "launcher output: $OUT" ;; esac
+GUARD_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*guard-command\)",$/\1/p' "$ROOT/hooks/settings-snippet.json" | head -1)"
+[ -n "$GUARD_CMD" ] || fail guard-snippet "no guard-command entry in settings-snippet.json"
+mkdir -p "$p/.claude/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$GUARD" "$p/.claude/hooks/" 2>/dev/null
+OUT="$(cd "$p" && printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | env -u CLAUDE_PROJECT_DIR bash -c "$GUARD_CMD" 2>&1)"
+case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail guard-snippet "snippet guard command under bash: $OUT" ;; esac
+
+# the Copilot edition's copy: the same patterns and exemption, the project as
+# the working directory, its knowledge under .github/dream-team/, both deny forms
+COPY="$ROOT/copilot/files/dream-team/hooks/guard-command"
+body() { sed -n '/^# Building blocks/,/^  done < "\$TOOLCHAIN"/p' "$1" | tr -d '\r'; }
+[ -n "$(body "$GUARD")" ] && [ "$(body "$GUARD")" = "$(body "$COPY")" ] \
+  || fail guard-copilot-drift "the patterns or the exemption differ between hooks/guard-command and its Copilot copy"
+copy_guard() { # PROJECT COMMAND -> OUT, RC
+  OUT="$(cd "$1" && printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$(json_string "$2")" | env -u CLAUDE_PROJECT_DIR bash "$COPY" 2>&1)"; RC=$?
+}
+p="$(project guard-copilot)"
+copy_guard "$p" 'git push --force'
+[ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-no-marker "expected silence, got exit $RC: $OUT"
+marker "$p" bug_fix_c_2026-10-20 "5 Implement"; status "$p" bug_fix_c_2026-10-20 "# Status: c"
+copy_guard "$p" 'git push --force'
+case "$OUT" in '{"permissionDecision":"deny","permissionDecisionReason":"'*'force push'*'"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny"'*) ;; *) fail guard-copilot-deny "exit $RC: $OUT" ;; esac
+mkdir -p "$p/.github/dream-team/knowledge"
+printf '| Purpose | Command |\n|---|---|\n| Clean | `rm -rf ./build/*` |\n' > "$p/.github/dream-team/knowledge/TOOLCHAIN.md"
+copy_guard "$p" 'rm -rf ./build/*'
+[ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-toolchain "expected silence, got exit $RC: $OUT"
 
 [ "$fails" -eq 0 ] && echo "hook: ok"
 exit $(( fails > 0 ))

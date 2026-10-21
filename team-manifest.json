@@ -154,10 +154,11 @@
     "settingsSnippet": "hooks/settings-snippet.json",
     "launcher": "hooks/run-hook.cmd",
     "events": [
-      "UserPromptSubmit"
+      "UserPromptSubmit",
+      "PreToolUse"
     ],
     "marker": ".dream-team-tracking/.team-mode",
-    "purpose": "Sticky team mode: while the marker file exists, every user prompt is routed back through the /team orchestrator, surviving model switches, pauses, compaction and restarts.",
+    "purpose": "Sticky team mode: while the marker file exists, every user prompt is routed back through the /team orchestrator, surviving model switches, pauses, compaction and restarts; the guard denies destructive shell commands while a run is open, except commands listed verbatim in TOOLCHAIN.md.",
     "requires": "a bash shell (Git Bash or WSL on Windows); without one the hook exits quietly and sticky mode is simply unavailable"
   },
   "templates": {

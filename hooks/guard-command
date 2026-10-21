@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Dream Team — PreToolUse hook on the Bash tool: the guard.
+#
+# Denies the shell commands no role should ever run, with a one-line reason
+# that says what to do instead:
+#
+#   kills by name or pattern     pkill, killall, kill $(pgrep ...), ... | xargs kill,
+#                                kill -1, kill 0
+#   recursive rm of a wide tree  a target that is a glob, /, ~, $HOME, ., .., a
+#                                path above the project, or one level under / or
+#                                the home directory
+#   force push                   --force, -f, --force-with-lease, a +ref
+#   git clean -f                 any flag cluster containing f, or --force
+#   discarding uncommitted work  git reset --hard, git checkout -- <path>,
+#                                git restore <path> without --staged
+#
+# It acts only inside a team run: without the marker .dream-team-tracking/.team-mode
+# it prints nothing, so a developer's own session is never affected. A command
+# whose whole text equals a Command cell of .claude/knowledge/TOOLCHAIN.md (any
+# table; the backticks around the whole cell stripped once) is exempt: the
+# knowledge file is the permission. The match is literal, never a prefix.
+#
+# The command is scanned as text, substitutions included, so a quoted literal
+# such as echo pkill is refused too, with a readable reason.
+#
+# Exit 0 with no output = allowed. The hook must never break a session, so
+# every failure path is silent.
+
+set -uo pipefail
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
+MARKER="${PROJECT_DIR}/.dream-team-tracking/.team-mode"
+TOOLCHAIN="${PROJECT_DIR}/.claude/knowledge/TOOLCHAIN.md"
+
+payload="$(cat 2>/dev/null || true)"
+
+[ -f "$MARKER" ] || exit 0
+
+# tool_input.command, still JSON-escaped, then unescaped: \\ first through a
+# placeholder, so \\n stays a backslash and an n.
+raw="$(printf '%s' "$payload" | sed -n -E 's/.*"command"[[:space:]]*:[[:space:]]*"((\\.|[^"\\])*)".*/\1/p' 2>/dev/null | head -1)"
+[ -n "$raw" ] || exit 0
+cmd="${raw//\\\\/$'\001'}"
+cmd="${cmd//\\\"/\"}"
+cmd="${cmd//\\n/$'\n'}"
+cmd="${cmd//\\t/$'\t'}"
+cmd="${cmd//\\r/$'\r'}"
+cmd="${cmd//\\\//\/}"
+cmd="${cmd//$'\001'/\\}"
+
+escape_for_json() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+# Building blocks. A simple command ends at ; & | or a line break.
+S='(^|[;&|(`[:space:]])'        # start of a word that names a command
+E='([[:space:];&|)`]|$)'        # end of a word
+A='[^;&|]*'                     # the rest of one simple command
+Q="[\"']?"                      # an optional quote around a target
+RMF='(-[[:alpha:]]*[rR][[:alpha:]]*|--recursive)'
+RMT="(${Q}[^[:space:];&|]*[*?][^[:space:];&|]*|${Q}(/|~|\\\$HOME|\\\$\\{HOME\\}|\\.|\\.\\.)/?${Q}|${Q}\\.\\./[^[:space:];&|]*|${Q}(/|~/|\\\$HOME/|\\\$\\{HOME\\}/)[^/[:space:];&|]+/?${Q})"
+
+# One pattern per line, in the spec's order: name, regex, reason.
+KILL_RE="${S}(pkill|killall)${E}|${S}kill[[:space:]]${A}(\\\$\\(|\`)[[:space:]]*pgrep|${S}xargs([[:space:]]${A})?[[:space:]]kill${E}|${S}kill([[:space:]]+-[[:alnum:]]+)*[[:space:]]+(-1|0)[[:space:]]*([;&|)\`]|\$)"
+KILL_WHY="Dream Team guard: killing processes by name or pattern (pkill, killall, kill \$(pgrep ...), xargs kill, kill -1, kill 0) can reach the developer's own processes. Kill the exact process ID your own command started, or ask the developer to stop the process."
+
+RM_RE="${S}rm([[:space:]]${A})?[[:space:]]${RMF}[[:space:]](${A}[[:space:]])?${RMT}${E}|${S}rm([[:space:]]${A})?[[:space:]]${RMT}[[:space:]](${A}[[:space:]])?${RMF}${E}"
+RM_WHY="Dream Team guard: a recursive rm whose target is a glob, /, ~, \$HOME, ., .., a path above the project, or a path one level under / or the home directory can delete the wrong tree. Delete an exact relative path inside the project instead, or ask the developer to run the command."
+
+PUSH_RE="${S}git([[:space:]]${A})?[[:space:]]push([[:space:]]${A})?[[:space:]](--force(-with-lease)?(=[^[:space:];&|]*)?|-[[:alpha:]]*f[[:alpha:]]*|\\+[^[:space:];&|]+)${E}"
+PUSH_WHY="Dream Team guard: a force push rewrites a shared branch. Push without --force, or ask the developer to force-push."
+
+CLEAN_RE="${S}git([[:space:]]${A})?[[:space:]]clean([[:space:]]${A})?[[:space:]](-[[:alpha:]]*f[[:alpha:]]*|--force)${E}"
+CLEAN_WHY="Dream Team guard: git clean -f deletes untracked files, which may be other work in the checkout. Delete the exact files your own commands created instead, or ask the developer to clean."
+
+DISCARD_RE="${S}git([[:space:]]${A})?[[:space:]](reset([[:space:]]${A})?[[:space:]]--hard|checkout([[:space:]]${A})?[[:space:]]--[[:space:]]+[^[:space:];&|]|restore${E}${A})"
+DISCARD_UNLESS='restore[[:space:]]([^;&|]*[[:space:]])?(--staged|-S)([[:space:]]|$)'
+DISCARD_WHY="Dream Team guard: git reset --hard, git checkout -- <path> and git restore <path> discard uncommitted work. Leave the working tree as it is: change files with edits, set work aside with git stash, or ask the developer to discard it."
+
+reason=""
+# deny_if REASON REGEX [UNLESS]: a hit whose matched text also matches UNLESS does not count.
+deny_if() {
+  [ -z "$reason" ] || return 0
+  local hits
+  hits="$(printf '%s\n' "$cmd" | grep -oE -- "$2" 2>/dev/null)" || return 0
+  if [ -n "${3:-}" ]; then
+    hits="$(printf '%s\n' "$hits" | grep -vE -- "$3" 2>/dev/null)" || return 0
+  fi
+  [ -z "$hits" ] || reason="$1"
+}
+deny_if "$KILL_WHY" "$KILL_RE"
+deny_if "$RM_WHY" "$RM_RE"
+deny_if "$PUSH_WHY" "$PUSH_RE"
+deny_if "$CLEAN_WHY" "$CLEAN_RE"
+deny_if "$DISCARD_WHY" "$DISCARD_RE" "$DISCARD_UNLESS"
+
+[ -n "$reason" ] || exit 0
+
+# The exemption: the whole command equals the second cell of a table row in
+# TOOLCHAIN.md, trimmed, with one pair of backticks around the whole cell
+# removed. An escaped pipe \| inside the cell reads as |.
+if [ -f "$TOOLCHAIN" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    case "$line" in '|'*) ;; *) continue ;; esac
+    rest="${line#|}"
+    rest="${rest//\\|/$'\001'}"
+    case "$rest" in *'|'*) ;; *) continue ;; esac
+    cell="${rest#*|}"
+    cell="${cell%%|*}"
+    cell="${cell//$'\001'/|}"
+    cell="${cell#"${cell%%[![:space:]]*}"}"
+    cell="${cell%"${cell##*[![:space:]]}"}"
+    if [ "${#cell}" -ge 2 ] && [ "${cell:0:1}" = '`' ] && [ "${cell: -1}" = '`' ]; then
+      cell="${cell:1:${#cell}-2}"
+    fi
+    [ "$cell" = "$cmd" ] && exit 0
+  done < "$TOOLCHAIN" 2>/dev/null
+fi
+
+printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "PreToolUse",\n    "permissionDecision": "deny",\n    "permissionDecisionReason": "%s"\n  }\n}\n' "$(escape_for_json "$reason")"
+exit 0
