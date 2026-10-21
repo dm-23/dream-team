@@ -24,7 +24,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 ## Step 0: Independent verification (always first — it also selects which knowledge files you read)
 
 - Determine the change set relative to the handoff's **baseline**: `git diff <baseline-sha> --stat` plus `git status --porcelain`, minus the files listed as pre-existing uncommitted in the handoff. Review only that set; list anything else you see on the report's `pre-existing:` line.
-- Match the change set's paths against `PROJECT-RULES.md → ## Critical zones`. A match switches this review to critical-zone mode: you fix nothing, `safe_auto` and `gated_auto` are reported as `manual`, the verdict is `approved` or `needs rework`, never `fixed`, and the report starts with `Critical zone: <matched paths> — reviewer fixed nothing`. No section: write `Critical zones: section missing in PROJECT-RULES.md` once in the report and review as usual.
+- Match the change set's paths against `PROJECT-RULES.md → ## Critical zones`. A match switches this review to critical-zone mode: you fix nothing, `safe_auto` and `gated_auto` are reported as `manual`, the verdict is `approved` or `needs rework`, never `fixed`, and the report starts with `Critical zone: <matched paths> — reviewer fixed nothing`. No section: write `Critical zones: section missing in PROJECT-RULES.md` once in the report and review as usual. A section holding only `- none found` is present and matches nothing: no line, review as usual.
 - Read every changed hunk yourself. A Developer/Tester summary is a pointer, not evidence. A claim that does not match the diff is a `manual` finding.
 
 ## Step 1: Apply REVIEW-CHECKLIST.md
@@ -63,7 +63,7 @@ In critical-zone mode every class that fixes becomes `manual`.
 
 In this order, exactly the commands from `TOOLCHAIN.md`: `Format` (check mode), `Lint`, `Build`, `Test all` (and any additional test runners the file lists, e.g. a separate UI test command), then `Test one` for every test file the Tester reported that those runners do not reach (one it kept in the tracking directory, for example), then the `Validate` row of every document in the change set that has one. Expected: all exit 0. Run `Line endings (check)` on the change set when the row exists; never run a row under `## Operations`.
 
-- Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate.
+- Failure caused by the change set → fix (max 2 attempts) → rerun. Still failing → escalate. (in critical-zone mode: no fix; report it as `manual` and the verdict is `needs rework`)
 - Failure pre-existing at baseline (verify by the baseline note or by reasoning about the diff) → list it on the report's `pre-existing:` line, do not fix, do not block.
 - `Format` (check) failing on a touched file only on lines the change did not touch → `pre-existing: format findings in <file>`, never reformat the file.
 - A tool marked `verified: no` in TOOLCHAIN.md that is not installed → report "tool missing: X (see TOOLCHAIN → Install missing)"; do not claim it passed.
@@ -92,7 +92,7 @@ Unverified: [<criterion> — <what would check it>] | none
 After commit: [<checklist item>] | none
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
-Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework also when M red > 0)
+Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework also when M red > 0; never `fixed` in critical-zone mode)
 ```
 
 Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan. The `Fail-before:` line is Bug Fix only. Confirmed means the Tester's block shows a fail or compile error before the fix and the full suite is green now.
@@ -167,7 +167,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, `git diff`, `git status` and `git log` against the run's baseline (Step 0), and `git ls-files --eol -c -o --exclude-standard` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.
-- In critical-zone mode never edit a changed file.
+- In critical-zone mode never edit any file; every fix is the Developer's.
 - Fix a file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently.
 - Never skip the classification when Step 5 applies: `none` is an outcome, a missing classification is not.
 - Never record a run summary or a defect of the team in LEARNINGS.
