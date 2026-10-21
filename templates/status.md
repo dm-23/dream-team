@@ -20,7 +20,7 @@
 - [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected})
 - [ ] 5 Implementation
 - [ ] 6 Tests (Tester: {run | skipped — reason})
-- [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; unverified: {N | none})
+- [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived | n/a}; unverified: {N | none})
 - [ ] 8 Docs sync (PROJECT-RULES.md obligations: {done | n/a})
 - [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes})
 

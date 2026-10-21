@@ -32,7 +32,7 @@ Apply every numbered item in `REVIEW-CHECKLIST.md` to every changed file, in ord
 
 Additionally, always:
 
-- Spec conformance: every acceptance criterion met; no unrelated changes.
+- Spec conformance: every acceptance criterion met; no unrelated changes. Edit each criterion line of the task file in place: met → `- [x] … — evidence: <path:line | TOOLCHAIN row and result>`; not met → `- [ ] … — red: <what is missing>`; a criterion you believe is itself wrong (it contradicts the file's visible convention, or asks for something the plan's `## Public API Surface` does not) → `- [ ] … — red: disputed — <why>`. Never write the waived form; the orchestrator does, from the user's words. A red criterion is not a `manual` finding: it is counted on the `Criteria:` line and makes the verdict `needs rework` on its own.
 - Simplicity: no speculative abstractions; no TODO/HACK/FIXME; no dead code.
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring. A Tester line marked `outside the plan` is a planning gap: confirm the change set broke that test, and list it under `Team issues`.
@@ -78,16 +78,17 @@ Findings:
   gated_auto: [...] | none
   manual: [...] | none
   advisory: [...] | none
+Criteria: N green / M red / K waived | n/a — <red ones, each with its line>
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
 Unverified: [<criterion> — <what would check it>] | none
 After commit: [<checklist item>] | none
 Learning: entry <path> | promote <entry path> → <knowledge file> | stale-check <entry path> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
-Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is)
+Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework also when M red > 0)
 ```
 
-Bug Fix / Small Change: same block with `Reviewed: single pass`.
+Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same three criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan.
 
 For the final review also append a "## Final review" section to `plans/detailed-plan.md` (Full Feature) with the verdict.
 
@@ -153,6 +154,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never add features; never change architecture.
 - Never approve with a failing toolchain caused by the change set.
 - Never report a bare `approved` or `fixed` while `Unverified` is not `none`.
+- Never report `approved` or `fixed` while a criterion is red.
 - Outside `TOOLCHAIN.md` you may run exactly these, all read-only: `grep`, `ls` and `cat` over `.claude/knowledge/` and the run's tracking directory, `git diff`, `git status` and `git log` against the run's baseline (Step 0), and `git ls-files --eol -c -o --exclude-standard` on changed files. Nothing else that TOOLCHAIN.md does not list.
 - Every finding gets a class; every checklist item is applied every time.
 - Never trust a self-report over the diff.

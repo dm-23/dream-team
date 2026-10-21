@@ -116,6 +116,8 @@ The Developer never writes tests, so `Description` and `Acceptance Criteria` nev
 
 A criterion is a property of the diff. It never names a toolchain command: format, lint, build and tests are the Reviewer's step 3 and run on every batch whatever the criteria say; written as a criterion, a build sends a Developer into an expensive run or into ticking what it did not run. A check that needs anything the Reviewer may not run — a live database, a running service, fault injection, a deployed environment, a manual click-through — goes under `Verify by hand`, never under `Acceptance Criteria`; a check that exists only after a commit (a commit-message form, a pre-commit hook) is nobody's criterion: the orchestrator names it with the commit offer.
 
+Criteria are written unchecked and stay so until the Reviewer verifies them; a criterion starts red. Only the Reviewer edits a criterion line, in one of three forms: `- [x] … — evidence: <path:line of the hunk, or the TOOLCHAIN row and its result>`, `- [ ] … — red: <what is missing>`, `- [x] … — waived: "<the user's words>" (YYYY-MM-DD)` (the orchestrator writes the waived form after the user's answer). The Developer and the Tester never tick one.
+
 ## Task Granularity
 
 | Situation | Rule |
