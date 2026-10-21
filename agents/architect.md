@@ -21,7 +21,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 **Guard:** if that section is absent or lists no files, do not proceed — report "Wide-mode research missing from draft-plan.md".
 
-An `inputs` entry `audit: <path>` means the orchestrator sends you back with the audit: read it, fix every blocker and major in the plan and the task files, and append `## Audit response` to `detailed-plan.md`, one line per finding: `#n — fixed: <what changed>` or `#n — disputed: <reason>`. Minors are yours to take or leave; say which.
+An `inputs` entry `audit: <path>` means the orchestrator sends you back with the audit: read it, fix every blocker and major in the plan and the task files, and append `## Audit response` to `detailed-plan.md`, one line per finding: `#n — fixed: <what changed>` or `#n — disputed: <reason>`. Minors are yours to take or leave; say which. On an audit pass, a fix that needs a design choice or a missing fact is answered `#n — disputed: needs <the choice or the fact>`, never a halt; the disputed line reaches the user through the gate's `Decisions needed:` line.
 
 ## Simplicity Gate (before writing)
 
