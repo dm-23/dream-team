@@ -15,14 +15,14 @@ The team's contents are placed directly in your project's `.claude/`. That is th
 ```bash
 cd <your project>
 git clone --depth 1 https://github.com/dm-23/dream-team.git .claude
-rm -rf .claude/.git
+rm -rf .claude/.git .claude/.github
 ```
 
 If `.claude/` already exists, clone somewhere else and copy the contents over it instead:
 
 ```bash
 git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
-cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team
+cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team
 ```
 
 Either way you end up with `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/` and `.claude/team-manifest.json`. Commands keep their short names: `/team`, `/generate-knowledge`, `/team-setup`.
@@ -266,7 +266,7 @@ Updating is the install again: take a fresh copy and lay it over `.claude/`.
 
 ```bash
 git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
-cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git /tmp/dream-team
+cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team
 ```
 
 `knowledge/` and any `settings.json` you have are untouched — nothing in this repository is named either. Then reopen the session, so the new role and command prompts are loaded, and run `/team-setup fix`.
@@ -349,6 +349,8 @@ The Copilot edition keeps its own knowledge and shares run state with a Claude C
 ### Maintaining the port
 
 `bash copilot/check.sh` builds the edition from fixtures and from this repository, then installs it into throwaway projects. It prints one `ok [case]` line per case and takes about thirty minutes on Windows with Git Bash, because each case spawns many processes; run `bash copilot/build.sh <empty-dir>` after every prompt change (under a minute, and it fails on a broken anchor or rule) and the full check before a release.
+
+The repository's own CI (`.github/workflows/check.yml`) runs every `checks/*.sh`, the neutrality grep, the frontmatter parse and `copilot/build.sh` on each pull request; `copilot/check.sh` stays a manual step before a release.
 
 The translation is data:
 

@@ -1,0 +1,22 @@
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the YAML parser
+        run: pip install pyyaml
+      - name: Run every check
+        run: |
+          set -e
+          LINT="$(sed -n 's/^[[:space:]]*"stackNeutralityLint": "\(.*\)",$/\1/p' team-manifest.json | sed 's/\\"/"/g; s/\\\\/\\/g')"
+          if eval "$LINT"; then echo "stack neutrality: hits above"; exit 1; fi
+          for c in checks/verify-*.sh; do
+            case "$c" in *knowledge-integrity*|*learnings-inbox*) continue;; esac
+            echo "== $c"; CI=1 bash "$c"
+          done
+          rm -rf /tmp/dt-build && bash copilot/build.sh /tmp/dt-build

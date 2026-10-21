@@ -61,6 +61,13 @@ done <<< "$(tr -d '\r' < "$SKILL" | grep -n '^## Workflow:')"
 for name in $(tr -d '\r' < "$SKILL" | grep -o 'references/[a-z_-]*\.md' | sed 's|^references/||' | sort -u); do
   [ -f "$REFS/$name" ] || fail "$SKILL names references/$name, which does not exist"
 done
+# A "Read first:" line in a reference names bare <name>.md files beside it.
+for f in "$REFS"/*.md; do
+  [ -f "$f" ] || continue
+  for name in $(tr -d '\r' < "$f" | grep '^Read first:' | grep -o '[A-Za-z0-9_-]*\.md' | sort -u); do
+    [ -f "$REFS/$name" ] || fail "$f names $name, which does not exist"
+  done
+done
 for f in "$REFS"/*.md; do
   [ -f "$f" ] || continue
   name="${f##*/}"
