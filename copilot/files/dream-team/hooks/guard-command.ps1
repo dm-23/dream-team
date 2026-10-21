@@ -4,10 +4,12 @@
 # it is not the WSL one, which cannot read this Windows path. Without a bash
 # it exits quietly: the guard is simply unavailable. It always exits 0,
 # because the Copilot CLI denies the tool call when a pre-tool hook fails;
-# the hook entry calls it through -Command with a Test-Path and a catch, so a
-# missing or broken launcher exits 0 too. It reads the payload from the
-# process's stdin itself, because a script called with & inside -Command gets
-# no pipeline input.
+# the hook entry runs it with -File only after a Test-Path and ends in exit 0,
+# so a missing or broken launcher exits 0 too. It is run with -File, not
+# inside -Command, because a -Command host reads stdin before this script can
+# set its encoding. The payload is read and piped as UTF-8: Windows
+# PowerShell 5.1 would otherwise re-encode it as ASCII, and a non-ASCII path
+# would reach bash as "?", which the rm rule reads as a glob.
 $ErrorActionPreference = 'SilentlyContinue'
 $script = Join-Path $PSScriptRoot 'guard-command'
 $candidates = @(
@@ -21,5 +23,11 @@ if (-not $bash) {
   if ($cmd -and $cmd.Source -notmatch '\\System32\\') { $bash = $cmd.Source }
 }
 if (-not $bash) { exit 0 }
-[Console]::In.ReadToEnd() | & $bash $script
+try {
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  $OutputEncoding = $utf8
+  [Console]::InputEncoding = $utf8
+  [Console]::OutputEncoding = $utf8
+} catch {}
+try { [Console]::In.ReadToEnd() | & $bash $script } catch {}
 exit 0

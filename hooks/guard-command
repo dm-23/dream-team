@@ -81,6 +81,7 @@ CLEAN_WHY="Dream Team guard: git clean -f deletes untracked files, which may be 
 
 DISCARD_RE="${S}git([[:space:]]${A})?[[:space:]](reset([[:space:]]${A})?[[:space:]]--hard|checkout([[:space:]]${A})?[[:space:]]--[[:space:]]+[^[:space:];&|]|restore${E}${A})"
 DISCARD_UNLESS='restore[[:space:]]([^;&|]*[[:space:]])?(--staged|-S)([[:space:]]|$)'
+WORKTREE_RE="${S}git([[:space:]]${A})?[[:space:]]restore([[:space:]]${A})?[[:space:]](--worktree|-[[:alpha:]]*W[[:alpha:]]*)${E}"
 DISCARD_WHY="Dream Team guard: git reset --hard, git checkout -- <path> and git restore <path> discard uncommitted work. Leave the working tree as it is: change files with edits, set work aside with git stash, or ask the developer to discard it."
 
 reason=""
@@ -99,6 +100,7 @@ deny_if "$RM_WHY" "$RM_RE"
 deny_if "$PUSH_WHY" "$PUSH_RE"
 deny_if "$CLEAN_WHY" "$CLEAN_RE"
 deny_if "$DISCARD_WHY" "$DISCARD_RE" "$DISCARD_UNLESS"
+deny_if "$DISCARD_WHY" "$WORKTREE_RE"   # --staged with --worktree or -W still discards
 
 [ -n "$reason" ] || exit 0
 

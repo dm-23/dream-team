@@ -201,6 +201,8 @@ expect_deny guard-git-clean "$p" 'git clean -fd' 'git clean'
 expect_deny guard-reset-hard "$p" 'git reset --hard HEAD~1' 'uncommitted work'
 expect_deny guard-checkout-dashdash "$p" 'git checkout -- src/a.cs' 'uncommitted work'
 expect_deny guard-restore "$p" 'git restore src/a.cs' 'uncommitted work'
+expect_deny guard-restore-staged-worktree "$p" 'git restore --staged --worktree src/a.cs' 'uncommitted work'
+expect_deny guard-restore-staged-w "$p" 'git restore -W --staged src/a.cs' 'uncommitted work'
 expect_deny guard-chained "$p" 'cd src && git push --force' 'force push'
 expect_deny guard-newline "$p" 'echo start
 rm -rf ./out/*' 'recursive rm'
@@ -253,7 +255,7 @@ case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail guard-snippet "snipp
 # the Copilot edition's copy: the same patterns and exemption, the project as
 # the working directory, its knowledge under .github/dream-team/, both deny forms
 COPY="$ROOT/copilot/files/dream-team/hooks/guard-command"
-body() { sed -n '/^# Building blocks/,/^  done < "\$TOOLCHAIN"/p' "$1" | tr -d '\r'; }
+body() { sed -n '/^payload=/,/^  done < "\$TOOLCHAIN"/p' "$1" | tr -d '\r'; }
 [ -n "$(body "$GUARD")" ] && [ "$(body "$GUARD")" = "$(body "$COPY")" ] \
   || fail guard-copilot-drift "the patterns or the exemption differ between hooks/guard-command and its Copilot copy"
 copy_guard() { # PROJECT COMMAND -> OUT, RC
@@ -303,6 +305,13 @@ if command -v powershell.exe >/dev/null 2>&1; then
   cp "$ROOT/copilot/files/dream-team/hooks/guard-command.ps1" "$p/.github/dream-team/hooks/"
   copilot_entry "$p" powershell.exe -NoProfile -NonInteractive -Command "$COPILOT_PS"
   case "$RC:$OUT" in 0:*'"permissionDecision":"deny"'*) ;; *) fail guard-copilot-entry-ps "PowerShell entry, real launcher: exit $RC: $OUT" ;; esac
+  # a non-ASCII path must reach bash intact: re-encoded as "?" it reads as a glob
+  # and an allowed rm is denied. The name is built from octal escapes so this
+  # file stays ASCII.
+  name="$(printf 'caf\303\251-d\303\274n')"
+  OUT="$(cd "$p" && printf '{"tool_name":"Bash","tool_input":{"command":"rm -r ./%s"}}' "$name" \
+    | env -u CLAUDE_PROJECT_DIR powershell.exe -NoProfile -NonInteractive -Command "$COPILOT_PS" 2>&1)"; RC=$?
+  [ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-entry-ps-utf8 "PowerShell entry, non-ASCII path in an allowed rm: expected silence, got exit $RC: $OUT"
 fi
 
 [ "$fails" -eq 0 ] && echo "hook: ok"
