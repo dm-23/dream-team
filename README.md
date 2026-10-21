@@ -57,7 +57,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 
 - You are asked up to a handful of clarifying questions, then shown a plan.
 - Nothing is written until you approve.
-- A Full Feature run stops at gates you control: once when the plan is ready, and again after every batch. At each one you choose to carry on here, or to park the run, commit what is done, and pick it up in a clean session with `/team resume`. Splitting a long run that way is the recommended path, not a fallback.
+- A Full Feature run stops at gates you control: once when the plan is ready (the plan comes with an HTML page under the run's `reports/`, built after an auditor has attacked it against your code), and again after every batch. At each one you choose to carry on here, or to park the run, commit what is done, and pick it up in a clean session with `/team resume`. Splitting a long run that way is the recommended path, not a fallback.
 - Every run leaves a diary in `.dream-team-tracking/`. In runs that change code the reviewer also classifies what the run taught, and a trap worth keeping becomes an entry in the learnings inbox; `Analyze` has no reviewer and so leaves none.
 - An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.

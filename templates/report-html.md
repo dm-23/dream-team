@@ -31,6 +31,8 @@ CSP restrictions that don't apply here.
 | Simple status / yes-no question | Chat text | — |
 | Internal agent coordination | Markdown | `.dream-team-tracking/{context_id}/` |
 
+**Plan page (Full Feature).** `reports/plan-{slug}.html` is a rendering of `plans/detailed-plan.md` and `tasks/*.md`, never a second source of truth; regenerate it whenever those files change before approval. Order of sections: overview and the decisions needed from the user; Public API Surface; batches, each task a collapsible card (description, files, contract, criteria, test cases, verify by hand); documentation obligations; simplicity justification; the audit's findings and the `## Audit response`; the plan path and the task paths. Dark theme, collapsibles, no frameworks, as every report.
+
 ## JS Libraries (CDN — no install)
 
 ### Mermaid.js — Diagrams & Flowcharts

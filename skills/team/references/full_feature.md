@@ -10,14 +10,16 @@ Phase 3 — Architecture: handoff → Architect. Three outcomes: a plan; a block
 
 Then handoff → `plan-auditor` (mode `audit`; `inputs`: the plan path, every task path, the knowledge dir, the baseline; `expected output`: `plans/plan-audit.md`; its model from the cell `full_feature.plan-auditor`). Read only its pointer block. On `rethink`, skip the Architect response: the audit goes to the gate as it is, under `Decisions needed:`, with the auditor's verdict first. Otherwise, with any blocker or major: one handoff → Architect with `audit: <path>`; verify `## Audit response` exists and that `## Public API Surface`, `## Simplicity Justification`, `## Documentation Obligations` and `## Batching Strategy` still do, since the response edits the plan; a finding the Architect disputes goes into the gate question's `Decisions needed:` line. Exactly one audit and one response per run; a second disagreement is the user's at the gate. Record the verdict in status.md phase 3.
 
+Then write `reports/plan-{slug}.html` from `.claude/templates/report-html.md` ("Plan page"), in the task's language, yourself: you have just read the plan. The page is never published anywhere; its path is given in chat.
+
 **Resumed runs designed under 4.1.0.** On resume at phase 2 or 3, open `plans/draft-plan.md`. Without `## Repository Analysis & Batch Suggestions` and with anything beyond `## User decisions (binding)`, it was designed before the research: run the wide pass now, then the Architect. With only the user decisions, or absent, continue Phase 2 from the wide pass. With the research section and no `## Approach`, continue from the Brainstorm quorum. Never recreate an existing draft plan.
 
 **Resumed runs approved under 4.2.0.** A plan already approved before 4.3.0 is not audited.
 
-**Stop & Approval Gate:** Present `detailed-plan.md` via AskUserQuestion. The question text carries, before the options, the plan's `## Public API Surface` section verbatim and the batch list (batch names, task titles), then the plan path for the rest. If the section runs past about forty lines, show type and member names only and name the section. Before the options it also carries the line "Audit: <verdict>, <B> blocker(s) and <M> major(s) fixed, <D> disputed (see `plans/plan-audit.md` and `## Audit response`)", then the line `Decisions needed: <each disputed finding as "#n — <claim> — Architect: <reason>">`, or `Decisions needed: none`. The options:
+**Stop & Approval Gate:** Present `detailed-plan.md` via AskUserQuestion. The question text carries, before the options, the plan's `## Public API Surface` section verbatim and the batch list (batch names, task titles), then the plan path for the rest, and the page path on its own line. If the section runs past about forty lines, show type and member names only and name the section. Before the options it also carries the line "Audit: <verdict>, <B> blocker(s) and <M> major(s) fixed, <D> disputed (see `plans/plan-audit.md` and `## Audit response`)", then the line `Decisions needed: <each disputed finding as "#n — <claim> — Architect: <reason>">`, or `Decisions needed: none`. The options:
 1. "Approve plan and PAUSE execution (recommended: execute in a fresh session to save context)"
 2. "Approve plan and CONTINUE execution in current session"
-3. "Approve with changes / Reject"
+3. "Approve with changes / Reject" — after the plan files change, regenerate the page before asking again.
 
 If Option 1 ("Approve and PAUSE") is selected:
 - Update `status.md` and set `phase=3.5 (Plan Approved - Awaiting Implementation)` in `.team-mode`.
