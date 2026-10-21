@@ -26,7 +26,7 @@ CSP restrictions that don't apply here.
 | Output type | Format | Location |
 |-------------|--------|----------|
 | Analysis report | HTML | `.dream-team-tracking/{context_id}/reports/{topic}.html` |
-| Detailed plan presentation | HTML | `.dream-team-tracking/{context_id}/reports/plan-{feature}.html` |
+| Detailed plan presentation | HTML | `.dream-team-tracking/{context_id}/reports/plan-{slug}.html` |
 | Architecture explanation | HTML | `.dream-team-tracking/{context_id}/reports/{topic}.html` |
 | Simple status / yes-no question | Chat text | — |
 | Internal agent coordination | Markdown | `.dream-team-tracking/{context_id}/` |
