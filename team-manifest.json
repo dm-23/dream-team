@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "4.2.0",
+    "version": "4.3.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -159,7 +159,7 @@
     ],
     "marker": ".dream-team-tracking/.team-mode",
     "purpose": "Sticky team mode: while the marker file exists, every user prompt is routed back through the /team orchestrator, surviving model switches, pauses, compaction and restarts; the guard denies destructive shell commands while a run is open, except commands listed verbatim in TOOLCHAIN.md.",
-    "requires": "a bash shell (Git Bash or WSL on Windows); without one the hook exits quietly and sticky mode is simply unavailable"
+    "requires": "a bash shell (Git Bash or WSL on Windows); without one both hooks exit quietly: sticky mode is unavailable and the guard denies nothing"
   },
   "templates": {
     "dir": ".claude/templates",
