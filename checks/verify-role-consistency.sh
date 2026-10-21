@@ -189,8 +189,8 @@ else
 docs:doc-writer
 bug_fix:researcher-explorer brainstorm developer tester reviewer verifier
 small_change:researcher-explorer brainstorm developer tester reviewer verifier
-change_set:researcher-explorer brainstorm developer doc-writer tester reviewer verifier
-full_feature:brainstorm researcher-explorer:wide researcher-explorer architect developer doc-writer tester reviewer reviewer:final verifier"
+change_set:researcher-explorer brainstorm plan-auditor developer doc-writer tester reviewer verifier
+full_feature:brainstorm researcher-explorer:wide researcher-explorer architect plan-auditor developer doc-writer tester reviewer reviewer:final verifier"
   while IFS=: read -r wf cells; do
     for c in $cells; do
       echo "$mr_calls" | awk -F'\t' -v w="$wf" -v k="$c" '$1 == w && $2 == k {found=1} END {exit !found}' \

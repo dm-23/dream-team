@@ -118,6 +118,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Brainstorm | read only | Three parallel instances propose questions, solutions or a diagnosis | Reads your source; talks to you |
 | ResearcherExplorer | read, search, git history, write to run state | Finds the exact files, symbols and insertion points | Modifies source |
 | Architect | read, search, write to run state | Detailed plan and task breakdown for a full feature | Writes production code |
+| PlanAuditor | read, search, git history, write to run state | Attacks the Full Feature or Change Set plan against the code before you approve it | Edits the plan; reads the research that produced it |
 | Developer | read, edit, write, formatter and compile check, a diff of its own files | Implements exactly one task | Writes or runs tests |
 | DocWriter | read, search, edit, write — no shell | Writes documentation, verifying every claim against the code first | Touches source code or tests |
 | Tester | read, edit, write, formatter, runs only its own tests, a diff of its own files | Decides what needs tests and writes them | Touches production code |
@@ -128,7 +129,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question. A lens that needs a piece of code it was not given says so, and the team fetches it rather than letting the lens guess; a choice the research or the Architect finds afterwards goes back to the three lenses once, by a count, before it can reach you.
 
-**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm and Architect opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
+**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm, Architect and PlanAuditor opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
 **Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer and Reviewer on sonnet. Change Set and Full Feature tasks follow their `Complexity`. The Architect and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block or lacks a cell for a call that workflow makes (the check's own table lists them), a tier is misspelt, or an agent file pins a model.
 
@@ -140,8 +141,8 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Docs | update the readme, the documentation, the changelog | Your approval of the file list, then one role writes the prose and verifies every claim against the code. No brainstorm, no review, no toolchain. |
 | Bug Fix | something is broken | Research, three diagnoses, your approval, a surgical fix, a test when one is needed, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, a test when the plan names one, review |
-| Change Set | a list of independent small items | One research pass, batches with non-overlapping files run in parallel, one combined review |
-| Full Feature | a new capability across modules | Questions, wide research, design, architecture, your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
+| Change Set | a list of independent small items | One research pass, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
+| Full Feature | a new capability across modules | Questions, wide research, design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
 
 If research shows a Small Change is bigger than three files, or touches a schema, a public interface or wiring, you are asked whether to upgrade it rather than being quietly let through.
 

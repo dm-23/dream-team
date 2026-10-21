@@ -151,7 +151,7 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
+`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
 
 ## Simplicity enforcement
 
