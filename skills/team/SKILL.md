@@ -26,6 +26,8 @@ Answer in the language the task is written in. Record that language in status.md
 - Anything that deviates from this skill is recorded in status.md → "Process notes".
 - A Reviewer report's `Team issues` line is copied into status.md → "Process notes" and named in the final report to the user. It never goes into LEARNINGS: the inbox is about the project, not the team.
 - Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch, each item once — a rework pass or the final review that reports it again adds nothing: task lines when the plan is approved, Reviewer lines after each review. The final report names each of them, or says there are none. A verdict `approved — N unverified` or `fixed — N unverified` is an approval: it does not start the rework loop and does not count as rework.
+- Every message you send while a run is open, gate questions included, ends with one line in the task's language: `Waiting on you: <the one thing>` or `Waiting on you: nothing`. Write it after re-reading `status.md` in the same turn, never from memory; in an AskUserQuestion it is the last line of the question text.
+- Status words in `status.md → Result`, the final report and the Operations log are exactly: `BUILT` (the change set is in the working tree and the Reviewer's verdict is approved or fixed), `COMMITTED <sha>` (the user committed), `DEPLOYED <environment>` (an Operations row ran with exit 0), `VERIFIED` (the user confirmed every Verify by hand line). Never a stronger word than the evidence allows: a deployed change with open Verify by hand lines is `DEPLOYED dev, not VERIFIED`.
 
 ## Report requests
 
@@ -177,6 +179,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
 - "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.
 - "The user asked me to deploy, so the role rules are suspended" → they are not; `references/operations.md` says which commands you may run and how each is approved and logged.
+- "It works on dev, so it is done" → DEPLOYED is not VERIFIED; say which word the evidence supports.
 
 ## Minimal Handoff Rules (Context Isolation)
 

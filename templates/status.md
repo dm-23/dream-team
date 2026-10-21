@@ -52,6 +52,7 @@ Commands from `TOOLCHAIN.md → Operations` run during this run, one line each: 
 
 ## Result
 
+<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED — see the team skill's Global rules. -->
 {final summary for the user, filled at close}
 
 <!--
