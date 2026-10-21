@@ -5,14 +5,15 @@
 # that says what to do instead:
 #
 #   kills by name or pattern     pkill, killall, kill $(pgrep ...), ... | xargs kill,
-#                                kill -1, kill 0
+#                                kill -1, kill 0 (after any signal or -- form)
 #   recursive rm of a wide tree  a target that is a glob, /, ~, $HOME, ., .., a
 #                                path above the project, or one level under / or
 #                                the home directory
 #   force push                   --force, -f, --force-with-lease, a +ref
 #   git clean -f                 any flag cluster containing f, or --force
 #   discarding uncommitted work  git reset --hard, git checkout -- <path>,
-#                                git restore <path> without --staged
+#                                git checkout . (or .., ./<path>), git restore
+#                                <path> without --staged
 #
 # It acts only inside a team run: without the marker .dream-team-tracking/.team-mode
 # it prints nothing, so a developer's own session is never affected. A command
@@ -67,7 +68,8 @@ RMF='(-[[:alpha:]]*[rR][[:alpha:]]*|--recursive)'
 RMT="(${Q}[^[:space:];&|]*[*?][^[:space:];&|]*|${Q}(/|~|\\\$HOME|\\\$\\{HOME\\}|\\.|\\.\\.)/?${Q}|${Q}\\.\\./[^[:space:];&|]*|${Q}(/|~/|\\\$HOME/|\\\$\\{HOME\\}/)[^/[:space:];&|]+/?${Q})"
 
 # One pattern per line, in the spec's order: name, regex, reason.
-KILL_RE="${S}(pkill|killall)${E}|${S}kill[[:space:]]${A}(\\\$\\(|\`)[[:space:]]*pgrep|${S}xargs([[:space:]]${A})?[[:space:]]kill${E}|${S}kill([[:space:]]+-[[:alnum:]]+)*[[:space:]]+(-1|0)[[:space:]]*([;&|)\`]|\$)"
+KSIG='(-[sn][[:space:]]+[[:alnum:]]+|--signal(=|[[:space:]]+)[[:alnum:]]+|-[[:alnum:]]+|--)'   # a signal option, or -- before the target
+KILL_RE="${S}(pkill|killall)${E}|${S}kill[[:space:]]${A}(\\\$\\(|\`)[[:space:]]*pgrep|${S}xargs([[:space:]]${A})?[[:space:]]kill${E}|${S}kill([[:space:]]+${KSIG})*[[:space:]]+(-1|0)[[:space:]]*([;&|)\`]|\$)"
 KILL_WHY="Dream Team guard: killing processes by name or pattern (pkill, killall, kill \$(pgrep ...), xargs kill, kill -1, kill 0) can reach the developer's own processes. Kill the exact process ID your own command started, or ask the developer to stop the process."
 
 RM_RE="${S}rm([[:space:]]${A})?[[:space:]]${RMF}[[:space:]](${A}[[:space:]])?${RMT}${E}|${S}rm([[:space:]]${A})?[[:space:]]${RMT}[[:space:]](${A}[[:space:]])?${RMF}${E}"
@@ -79,10 +81,10 @@ PUSH_WHY="Dream Team guard: a force push rewrites a shared branch. Push without 
 CLEAN_RE="${S}git([[:space:]]${A})?[[:space:]]clean([[:space:]]${A})?[[:space:]](-[[:alpha:]]*f[[:alpha:]]*|--force)${E}"
 CLEAN_WHY="Dream Team guard: git clean -f deletes untracked files, which may be other work in the checkout. Delete the exact files your own commands created instead, or ask the developer to clean."
 
-DISCARD_RE="${S}git([[:space:]]${A})?[[:space:]](reset([[:space:]]${A})?[[:space:]]--hard|checkout([[:space:]]${A})?[[:space:]]--[[:space:]]+[^[:space:];&|]|restore${E}${A})"
+DISCARD_RE="${S}git([[:space:]]${A})?[[:space:]](reset([[:space:]]${A})?[[:space:]]--hard|checkout([[:space:]]${A})?[[:space:]]--[[:space:]]+[^[:space:];&|]|checkout([[:space:]]${A})?[[:space:]]+${Q}\\.{1,2}(/[^[:space:];&|]*)?${Q}${E}|restore${E}${A})"
 DISCARD_UNLESS='restore[[:space:]]([^;&|]*[[:space:]])?(--staged|-S)([[:space:]]|$)'
 WORKTREE_RE="${S}git([[:space:]]${A})?[[:space:]]restore([[:space:]]${A})?[[:space:]](--worktree|-[[:alpha:]]*W[[:alpha:]]*)${E}"
-DISCARD_WHY="Dream Team guard: git reset --hard, git checkout -- <path> and git restore <path> discard uncommitted work. Leave the working tree as it is: change files with edits, set work aside with git stash, or ask the developer to discard it."
+DISCARD_WHY="Dream Team guard: git reset --hard, git checkout -- <path>, git checkout . and git restore <path> discard uncommitted work. Leave the working tree as it is: change files with edits, set work aside with git stash, or ask the developer to discard it."
 
 reason=""
 # deny_if REASON REGEX [UNLESS]: a hit whose matched text also matches UNLESS does not count.
