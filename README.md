@@ -1,6 +1,6 @@
 # Dream Team
 
-A multi-agent development team for Claude Code: nine subagents, three commands, one manifest.
+A multi-agent development team for Claude Code: ten subagents, three commands, one manifest.
 
 It knows nothing about your technology and nothing about your project. Everything specific is generated locally on first run and never committed. The same repository plugs into any codebase unchanged.
 
@@ -60,6 +60,7 @@ The two task lines above are not decoration. The team answers in whichever langu
 - A Full Feature run stops at gates you control: once when the plan is ready (the plan comes with an HTML page under the run's `reports/`, built after an auditor has attacked it against your code), and again after every batch. At each one you choose to carry on here, or to park the run, commit what is done, and pick it up in a clean session with `/team resume`. Splitting a long run that way is the recommended path, not a fallback.
 - Every run leaves a diary in `.dream-team-tracking/`. In runs that change code the reviewer also classifies what the run taught, and a trap worth keeping becomes an entry in the learnings inbox; `Analyze` has no reviewer and so leaves none.
 - An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long.
+- A task about the interface itself — audit it, review it, say what is wrong with a page — is an `Analyze` run with a designer in it: findings ranked by what they cost a person, with the pages to change in order. A user-facing feature gets a design brief before anyone designs the code, and a change to one of your interface conventions is asked, never assumed.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.
 - The team reports the build and test results it actually ran, not a promise.
 - Every message from the team while a run is open ends with `Waiting on you: …`, and the result is named with one of four words: built, committed, deployed to a named environment, or verified by you.
@@ -93,9 +94,9 @@ This repository, and equally the project's `.claude/` after deployment:
 
 ```
 team-manifest.json             the contract: what must exist, where, and what to check
-agents/                        nine role prompts
+agents/                        ten role prompts
 skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
-templates/                     status, handoff, learnings, report, capabilities, and stack cards
+templates/                     status, handoff, learnings, report, capabilities, stack cards and the interface card
 hooks/                         sticky team mode and the guard
 tools/                         the clients for the optional decision-routing service and update check
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
@@ -140,12 +141,12 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 | Workflow | Trigger | Shape |
 |----------|---------|-------|
-| Analyze | explain, trace, find out | Research, then an answer. No code changes. |
+| Analyze | explain, trace, find out | Research, then an answer; when the subject is the interface itself, a designer audits it against your users' tasks first. No code changes. |
 | Docs | update the readme, the documentation, the changelog | Your approval of the file list, then one role writes the prose and verifies every claim against the code. No brainstorm, no review, no toolchain. |
 | Bug Fix | something is broken | Research, three diagnoses, your approval, a test that fails before the fix when one is needed, a surgical fix, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, a test when the plan names one, review |
-| Change Set | a list of independent small items | One research pass, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
-| Full Feature | a new capability across modules | Questions, wide research, design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
+| Change Set | a list of independent small items | One research pass, a design brief when the items are user-facing, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
+| Full Feature | a new capability across modules | Questions, wide research, a design brief when the feature is user-facing (its open decisions asked before anything is designed), design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
 
 If research shows a Small Change is bigger than three files, or touches a schema, a public interface or wiring, you are asked whether to upgrade it rather than being quietly let through.
 
@@ -157,7 +158,7 @@ If research shows a Small Change is bigger than three files, or touches a schema
 |------|---------|----------|
 | `PROJECT-OVERVIEW.md` | all | What the project is, its stack, its domains, its build facts |
 | `BACKEND-ARCHITECTURE.md` | most | Layers, patterns, dependencies, anti-patterns, code paths that must change together |
-| `FRONTEND-ARCHITECTURE.md` | most | The same for the user interface, or a note that there is none |
+| `FRONTEND-ARCHITECTURE.md` | most | The same for the user interface, plus its design language — what each interface element is here, how states and copy are done — or a note that there is none |
 | `DI-AND-STARTUP.md` | architect, developer | Boot sequence, wiring, configuration, background work |
 | `TESTING-CONVENTIONS.md` | tester, developer, reviewer | Frameworks, real examples, naming, what is deliberately not covered |
 | `SEARCH-PLAYBOOK.md` | researcher | Verified search recipes for this repository |
@@ -194,7 +195,7 @@ Four are declared in the manifest, each backed by the plugins that can provide i
 | `library-docs` | Current, version-specific documentation for third-party libraries, so an external call is written against today's API instead of a remembered one | Research, architecture, implementation, review |
 | `session-memory` | Recall of standing preferences and what earlier sessions concluded | The orchestrator, at preflight |
 | `instructions-maintenance` | A reviewed way to update the project's own instruction file when a run changes a documented rule | The orchestrator, at docs sync |
-| `browser-control` | Loading the running application to see what a change actually renders, and reading the real console and network behaviour | Testing and review |
+| `browser-control` | Loading the running application to see what a change actually renders, and reading the real console and network behaviour | Design, testing and review |
 
 Two rules hold for all of them. Whatever a capability returns is evidence to check, never truth: where it disagrees with your repository or the generated knowledge, the repository wins and the disagreement is reported. And a capability never moves work between roles — research stays with research, verification stays with review.
 
@@ -229,6 +230,8 @@ A card is one file per language in `templates/standards/`, with a fixed set of t
 `/generate-knowledge` matches every card's detection rules against your repository. Several can match at once, each labelled with the directories it applies to. It then annotates each rule against what your code actually does, marking it as followed, deliberately not followed, or irrelevant. Where a card and your codebase disagree, your codebase wins and the conflict is written down.
 
 **Adding a language.** Copy `_generic.md`, keep the twelve section headings, fill them in. No agent changes.
+
+**The interface card.** `templates/interface/_generic.md` is the same idea for the user interface: a vocabulary every interface shares, twelve heuristics written as checks, a state matrix, a severity scale and copy rules. `/generate-knowledge` applies it to your pages to write the design language into `FRONTEND-ARCHITECTURE.md` and adds its review checks to the checklist; the Designer works from both. It names no framework; your pages supply the elements.
 
 ## Sticky team mode
 
@@ -281,7 +284,7 @@ cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dre
 
 A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
 
-Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. A `PROJECT-RULES.md` written before 4.3.0 has no critical zones section: runs still work, the Reviewer notes the missing section in its report, and `/generate-knowledge PROJECT-RULES.md` adds it. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
+Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. A `PROJECT-RULES.md` written before 4.3.0 has no critical zones section: runs still work, the Reviewer notes the missing section in its report, and `/generate-knowledge PROJECT-RULES.md` adds it. A `FRONTEND-ARCHITECTURE.md` written before 4.4.0 has no design-language topic: the Designer works from the layout and says so, and `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` adds it together with its review checks. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
 
 ### Moving run state from the legacy directory
 
@@ -329,7 +332,7 @@ Then:
 
 | Path | Contents |
 |------|----------|
-| `.github/agents/<role>.agent.md` | The nine roles, hidden from the agent picker and called as subagents |
+| `.github/agents/<role>.agent.md` | The ten roles, hidden from the agent picker and called as subagents |
 | `.github/skills/<command>/SKILL.md` | `/team`, `/generate-knowledge`, `/team-setup` |
 | `.github/hooks/dream-team.json` | The session-start hook and the guard |
 | `.github/dream-team/` | Manifest, templates, clients, runtime checks, and `.installed`, the list of what was installed |
@@ -374,7 +377,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 
 | Check | VS Code | Copilot CLI |
 |-------|---------|-------------|
-| The nine roles are callable as subagents | not yet checked | not yet checked |
+| The ten roles are callable as subagents | not yet checked | not yet checked |
 | The roles are absent from the agent picker | not yet checked | not yet checked |
 | `/team <task>` receives the task text | not yet checked | not yet checked |
 | Gates appear as questions with options | not yet checked | not yet checked |
@@ -399,5 +402,6 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
 | `/team` starts but behaves like an older version, or says a workflow file is missing | `skills/team/references/` was not copied, or the session still holds the old prompts | Re-copy the team into `.claude/` and reopen the session |
 | The Reviewer reports "Critical zones: section missing" | `PROJECT-RULES.md` predates 4.3.0 | `/generate-knowledge PROJECT-RULES.md` |
+| The Designer reports `Design language: topic missing` | `FRONTEND-ARCHITECTURE.md` predates 4.4.0 | `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` |
 | A command the Reviewer needs is denied by the guard | It is destructive and not listed in `TOOLCHAIN.md` | Add the exact command as a `TOOLCHAIN.md` row, or run it yourself |
 | A destructive command is not denied during a run | The guard is not wired (a team updated from before 4.3.0), or no bash | `/team-setup check` reports `Guard: NOT wired` or `bash: absent`; `/team-setup fix`, then open `/hooks` once |
