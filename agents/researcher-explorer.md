@@ -57,11 +57,15 @@ Output — append to `draft-plan.md` (never replace):
 ### Potential Conflicts / Risks
 - risk
 - Critical zones touched: <paths from the files above that match PROJECT-RULES.md → Critical zones, comma-separated> | none | section missing
+
+### User-facing surface
+- <page or screen> — `path` — <what a person does there>
+(or `- none` when no file a person sees or operates is in the path of the user decisions)
 ```
 
 "Files that grow" are the files your own trace puts in the path of the user decisions: the entry points, handlers, services and utilities under `### Relevant Existing Files` where the change will land. Silence about a file reads downstream as "not researched", so a file you expect to grow is listed even when it has nothing comparable.
 
-Then return control to the orchestrator (it invokes the Brainstorm quorum).
+Then return control to the orchestrator with one line as your whole message: `User-facing: <the pages or screens of the subsection above, comma-separated> | none`. The orchestrator decides from that line whether the Designer runs; it does not open the draft plan to find out.
 
 ## Targeted Mode (per Developer task, or Analyze / Bug Fix / Small Change / Change Set)
 
@@ -121,12 +125,13 @@ Scope Count: files to modify N; files to create M; total N+M
 Files: {the paths, comma-separated, one line}
 Wiring/surface: {schema | public interface | registration — whichever the change touches, comma-separated; or "none"}
 Critical zone: {paths under Files to Modify or Files to Create that match a Critical zones line, comma-separated; "none"; or "section missing"}
+User-facing: {paths under Files to Modify or Files to Create that a person sees or operates — page templates, markup, styles, page scripts, text shown to the user — judged against FRONTEND-ARCHITECTURE.md's layout; or "none"}
 Top risk: {one line, or "none"}
 Decision marks: {N — count of entries marked decision in this pass; 0 outside an open-facts pass}
 Blockers: {what you could not establish, or "none"}
 ```
 
-Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. The orchestrator counts `Decision marks` without opening the report; a wrong count sends a design to the wrong place. The orchestrator reads `Critical zone` as it reads `Scope Count`, without opening the report; a match is a `hard` trigger for model routing and tells the Reviewer what to expect. `section missing` means `PROJECT-RULES.md` has no `## Critical zones` section, as knowledge generated before 4.3.0 does not; it is not a blocker, and the rest of the pass runs as usual. A section holding only `- none found` is present and matches nothing: write `none`, in this line and in wide mode's `Critical zones touched` line. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
+Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. The orchestrator counts `Decision marks` without opening the report; a wrong count sends a design to the wrong place. The orchestrator reads `Critical zone` as it reads `Scope Count`, without opening the report; a match is a `hard` trigger for model routing and tells the Reviewer what to expect. The orchestrator reads `User-facing` the same way, without opening the report: a line other than `none` is what makes the Designer run, so a user-facing path left out of it is a brief that is never written. `section missing` means `PROJECT-RULES.md` has no `## Critical zones` section, as knowledge generated before 4.3.0 does not; it is not a blocker, and the rest of the pass runs as usual. A section holding only `- none found` is present and matches nothing: write `none`, in this line and in wide mode's `Critical zones touched` line. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
 
 Then return control to the orchestrator.
 
