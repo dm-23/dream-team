@@ -26,6 +26,10 @@ skills/team/*	5. AskUserQuestion:	5. Ask through the question tool:
 skills/team/*	 Its model is the cell `bug_fix.tester`.	
 skills/team/*	 The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.	
 skills/team/*	, model from the cell `small_change.tester`	
+skills/team/*	, model from the cell `analyze.designer`	
+skills/team/*	, model from the cell `full_feature.designer`	
+skills/team/*	, model from the cell `change_set.designer`	
+skills/team/*	; model from the cell `{workflow}.designer`	
 skills/team/*	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
 skills/team/*	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
 skills/team/*	 The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one.	

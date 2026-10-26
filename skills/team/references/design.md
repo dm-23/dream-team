@@ -1,0 +1,23 @@
+# Design (the Designer's step)
+
+Read when a workflow step names it. The Designer speaks for the person who uses the interface. It runs only when the work is user-facing, and you learn that from a pointer line, never from a guess:
+
+- Targeted research (Change Set): the pointer block's `User-facing:` line. `none` → the Designer does not run.
+- Wide research (Full Feature): the ResearcherExplorer's whole message is one line, `User-facing: <pages> | none`.
+- Analyze: the task's subject is the interface itself — its usability, its design, how a page or a flow works for a person; a request to audit, review or critique it — in any language. A request to *change* the interface is not Analyze: it is Small Change, Change Set or Full Feature by size, as any change.
+
+**Rendered evidence.** When `CAPABILITIES.md` lists `browser-control` as available and the pages exist in a running application, ask via AskUserQuestion before starting a server or opening a page (`capabilities.md`). With agreement, capture each page of the surface: a file under `.dream-team-tracking/{context_id}/design/evidence/` when the tool can save one, otherwise one paragraph of what the page shows. Put the items under the handoff's `external context`, each labelled with its page and what produced it. Without the capability, or without agreement, the handoff says `external context: none` and the Designer works from the markup; nothing is said about the capability.
+
+**Handoff.** `role: designer`; `mode/phase`: `ux-audit` or `brief`; model from the cell `{workflow}.designer`; `inputs` per workflow:
+
+- Analyze: the task text and `.dream-team-tracking/{context_id}/research/exploration.md`; `expected output`: `.dream-team-tracking/{context_id}/reports/ux-audit.md`.
+- Full Feature: `.dream-team-tracking/{context_id}/plans/draft-plan.md` (task, user decisions, research section); `expected output`: `.dream-team-tracking/{context_id}/design/brief.md`.
+- Change Set: the numbered items and `.dream-team-tracking/{context_id}/research/exploration.md`; `expected output`: the same brief path.
+
+Read only the pointer block it returns. A whole message of `Not user-facing: …` means `FRONTEND-ARCHITECTURE.md` records no interface: write that to Process notes and continue without a brief. `Design language: topic missing` is named once in the final report, with `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` as the fix; it never blocks. Record the outcome in status.md phase 3 (`design:`).
+
+**Decisions.** `Decisions needed: N` with N > 0: open the brief's `## Decisions needed` section — the one section of it you read — and ask via AskUserQuestion, one question per decision with the brief's options as the choices, at most four decisions per call. Record every answer in the Decisions log as `{date} — Design D<n>: <answer> (user)`; in Full Feature also append each to `## User decisions (binding)` in the draft plan. A `[convention]` decision answered "keep" leaves the convention as the knowledge records it, and the brief's change is read with that option.
+
+**Where the brief travels.** After the decisions: the Brainstorm `inputs` carries the brief path beside the research path; the Architect's `inputs` carries `brief: <path>`; the PlanAuditor's `inputs` and every Reviewer's `inputs` (batch and final) carry the brief path. The brief's `[diff]` done-when lines become acceptance criteria and its `[hand]` lines `Verify by hand` lines of the task that builds the change — the Architect does it in Full Feature; you do it when you write the Change Set task files.
+
+**Audit.** In Analyze, step 3 concludes from `reports/ux-audit.md`: a report request renders it as the "UX audit page" of `templates/report-html.md`; otherwise the chat answer carries the `Findings:` counts, the `## Order of work` batches and the audit path.

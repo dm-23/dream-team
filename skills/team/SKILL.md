@@ -1,6 +1,6 @@
 ---
 name: team
-description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, ResearcherExplorer, Architect, Developer, DocWriter, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
+description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, ResearcherExplorer, Designer, Architect, Developer, DocWriter, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
 argument-hint: "task description | resume [context_id] | stop | status"
 disable-model-invocation: true
 user-invocable: true
@@ -89,14 +89,14 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 
 | Workflow | Use when | Ceremony |
 |----------|----------|----------|
-| Analyze | find/explain/trace; no code change | minimal |
+| Analyze | find/explain/trace, or audit the interface itself; no code change | minimal |
 | Docs | the change touches only documentation files | minimal |
 | Bug Fix | something is broken; a fix is needed | light (a Tester when the fix needs a test) |
 | Small Change | one concern, expected ≤3 files, not a bug | medium (a Tester when the plan names a test) |
 | Change Set | several independent small items (post-release polish, a list of tweaks), each small, files mostly disjoint | medium, parallel |
 | Full Feature | new capability across modules (new entity + API + user interface, new page, new integration) | full |
 
-Detect from the task (any language): analysis verbs → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
+Detect from the task (any language): analysis verbs, or the interface's usability or design as the subject → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
@@ -115,7 +115,7 @@ Each workflow's steps live in one file. Read it in full before the workflow's fi
 | Change Set | `.claude/skills/team/references/change_set.md` |
 | Full Feature | `.claude/skills/team/references/full_feature.md` |
 
-Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `capabilities.md`, `operations.md`, `decision-routing.md`, `update-check.md`, all under the same directory.
+Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `decision-routing.md`, `update-check.md`, all under the same directory.
 
 ## Model routing
 
@@ -152,7 +152,7 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
+`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md`, `design/evidence/` (Full Feature, Change Set, when user-facing) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
 
 ## Simplicity enforcement
 
@@ -182,6 +182,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.
 - "The user asked me to deploy, so the role rules are suspended" → they are not; `references/operations.md` says which commands you may run and how each is approved and logged.
 - "It works on dev, so it is done" → DEPLOYED is not VERIFIED; say which word the evidence supports.
+- "The brief is advice, the lenses decide" → its changes are the user's requirements; the lenses decide how they are built, and only the user changes a recorded convention.
 
 ## Minimal Handoff Rules (Context Isolation)
 
@@ -196,7 +197,7 @@ To keep subagent token usage minimal and context lean:
   2. The path to the exploration report for that task, when one was written. When the research pass was skipped, put `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` here instead — that one section, named as a section, is the substitute the task file's `Insertion Points` lean on.
   3. The `prior learnings` lines (if matches exist).
   Do NOT include the rest of the draft plan, brainstorm outputs, or previous batch reviews.
-- **For the Reviewer (Full Feature):** `inputs` also names `plans/detailed-plan.md → ## Public API Surface`, so a deviation the plan states can be told from one it does not.
+- **For the Reviewer (Full Feature):** `inputs` also names `plans/detailed-plan.md → ## Public API Surface`, so a deviation the plan states can be told from one it does not. In Full Feature and Change Set it also names `design/brief.md` when the run wrote one.
 - **For Brainstorm:** Include ONLY:
   1. The task text or the user's answers.
   2. The path to the exploration report.
