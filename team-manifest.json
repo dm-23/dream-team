@@ -168,6 +168,7 @@
     "reportHtml": "report-html.md",
     "capabilities": "capabilities.md",
     "learningsEntry": "learnings-entry.md",
+    "interface": "interface",
     "standards": "standards"
   },
   "gitExclude": [
