@@ -9,6 +9,7 @@
     "brainstorm",
     "researcher-explorer",
     "architect",
+    "designer",
     "plan-auditor",
     "developer",
     "doc-writer",
@@ -29,6 +30,7 @@
       "researcher-explorer": "haiku",
       "architect": "opus",
       "plan-auditor": "opus",
+      "designer": "opus",
       "developer": "sonnet",
       "doc-writer": "sonnet",
       "tester": "haiku",
@@ -37,7 +39,8 @@
     },
     "workflows": {
       "analyze": {
-        "researcher-explorer": "sonnet"
+        "researcher-explorer": "sonnet",
+        "designer": "opus"
       },
       "docs": {
         "doc-writer": "sonnet"
@@ -62,6 +65,7 @@
         "researcher-explorer": "sonnet",
         "brainstorm": "opus",
         "plan-auditor": "opus",
+        "designer": "opus",
         "developer": { "low": "sonnet", "medium": "opus", "high": "opus" },
         "doc-writer": "sonnet",
         "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
@@ -71,6 +75,7 @@
       "full_feature": {
         "brainstorm": "opus",
         "researcher-explorer:wide": "sonnet",
+        "designer": "opus",
         "researcher-explorer": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
         "architect": "ceiling",
         "plan-auditor": "ceiling",
