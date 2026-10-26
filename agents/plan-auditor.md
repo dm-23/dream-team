@@ -19,7 +19,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Step 1: Read the plan
 
-Read the plan and every task file the handoff lists. Then the knowledge files the tasks touch, by index, and the source files the tasks name under `Files`, `Insertion Points` and `Contract`. Open each source file yourself; a path in the plan is a claim, not evidence.
+Read the plan, every task file the handoff lists, and the brief (`design/brief.md`) when the handoff names one. Then the knowledge files the tasks touch, by index, and the source files the tasks name under `Files`, `Insertion Points` and `Contract`. Open each source file yourself; a path in the plan is a claim, not evidence.
 
 The baseline sha is the code the plan builds on. Use `git log`, `git show`, `git blame` and `git diff <baseline-sha> -- <path>` when a question needs history: whether a symbol was renamed or moved, whether a file changed since the baseline.
 
@@ -35,11 +35,12 @@ Run every check below. Each finding names the task (or `plan`), the claim, the `
 - Every `Values defined by a rule` line agrees with its rule: apply the rule to each example input yourself and compare the output with the one written.
 - Batches marked parallel-safe share no file: compare their `Files` and `Test files`, pair by pair.
 - No task whose files lie under a `PROJECT-RULES.md → Critical zones` path has `Complexity: low`. When the section is missing (knowledge generated before 4.3.0) or holds only `- none found`, this check finds nothing.
+- With a brief: every `Done when` line of every brief change appears in a task — a `[diff]` line as a criterion, a `[hand]` line under `Verify by hand` — and every `Copy:` line is in that task's `Description` verbatim. The evidence is the brief line and the task file. A missing line is `major`; a `[diff]` line placed under `Verify by hand` is `minor`.
 
 Severity is the consequence, not the check:
 
 - `blocker` — a Developer following the plan cannot finish a task, or the built plan breaks: a missing symbol, two shapes of one contract, a use before the thing it uses exists, two parallel batches on one file.
-- `major` — the plan builds but ships a defect or breaks a project rule: an obligation no task carries, a duplicate of an existing helper, a rule example that disagrees with its rule, a critical-zone task at `Complexity: low`.
+- `major` — the plan builds but ships a defect or breaks a project rule: an obligation no task carries, a duplicate of an existing helper, a rule example that disagrees with its rule, a critical-zone task at `Complexity: low`, a brief line no task carries.
 - `minor` — worth a line, and the Architect may leave it.
 
 Before writing, drop every finding whose evidence is not a `path:line` you opened in this session. A suspicion you cannot pin to a line is not a finding.

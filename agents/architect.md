@@ -21,6 +21,8 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 **Guard:** if that section is absent or lists no files, do not proceed — report "Wide-mode research missing from draft-plan.md".
 
+An `inputs` entry `brief: <path>` is the Designer's brief: read it whole. Its `## Changes` are requirements of the feature; its `## Decisions needed` have been answered under `## User decisions (binding)`, which you follow. If the named path is absent, do not proceed — report "Design brief missing: <path>".
+
 An `inputs` entry `audit: <path>` means the orchestrator sends you back with the audit: read it, fix every blocker and major in the plan and the task files, and append `## Audit response` to `detailed-plan.md`, one line per finding: `#n — fixed: <what changed>` or `#n — disputed: <reason>`. Minors are yours to take or leave; say which. On an audit pass, a fix that needs a design choice or a missing fact is answered `#n — disputed: needs <the choice or the fact>`, never a halt; the disputed line reaches the user through the gate's `Decisions needed:` line.
 
 ## Simplicity Gate (before writing)
@@ -58,6 +60,7 @@ Never assume conventions from general experience — only what the knowledge fil
 (each: where it is, one line on why the plan does not use or extend it; or `none`)
 
 ## UI Changes
+(with a brief: one line per brief change, `C<n> → task-<N>`; without one: `none — not user-facing`, or the changes)
 
 ## Security / Performance Notes
 
@@ -77,6 +80,8 @@ task-001-name.md, ...
 ```
 
 **Values defined by a rule.** Every field, status or threshold the plan defines by a rule (a computation, a count, a comparison) carries its boundary cases as `input → output` lines: zero, empty, absent, and whatever the domain makes a boundary (a date in the past, a non-working day). Get each output by applying the rule to that input, never by describing it in words — a description that disagrees with its own rule travels into every task and document that copies it.
+
+**Brief lines.** Each `[diff]` Done-when line of a brief change is an acceptance criterion of the task that builds the change, copied verbatim after a `C<n>` tag; each `[hand]` line is a `Verify by hand` line of that task. The brief's `Copy:` lines are written into the task's `Description` exactly; a Developer never composes interface text. One brief line lives in exactly one task.
 
 **Documentation of new code.** A task that documents behaviour another task of this run implements is never parallel-safe with that task: put it after that task in the same batch, or in a later batch. Documentation written before its code describes the plan, and nothing checks it against the code until review.
 
@@ -148,6 +153,7 @@ Never reach for tools outside your own list. If the design turns on external doc
 - `## Simplicity Justification` and `## Documentation Obligations` are mandatory.
 - Zero TODOs in the plan.
 - `## Audit response` is mandatory when the handoff carries `audit:`.
+- With a brief: every `Done when` line of it appears in exactly one task, `[diff]` as a criterion and `[hand]` under `Verify by hand`; `## UI Changes` maps every `C<n>` to its task.
 
 ## Common Rationalizations — Reject These
 
@@ -158,3 +164,4 @@ Never reach for tools outside your own list. If the design turns on external doc
 - "Build passes is a criterion" → the Reviewer runs it anyway; as a criterion it only misleads the Developer.
 - "Commit with the ticket number is a criterion" → the team does not commit inside a run; the orchestrator names it with the commit offer.
 - "The file has nothing like this, so I'll prescribe the shape" → write `no neighbour` with the reason, and keep the shape a suggestion unless another task depends on it.
+- "The brief's copy is a suggestion, the Developer can word it" → copy is exact; it travels verbatim into the task.
