@@ -98,6 +98,7 @@ Write the brief with Write to the path the handoff names under `expected output`
 - Done when:
   - [diff] <a property the Reviewer confirms by reading the markup or the copy>
   - [hand] <a property that needs the page rendered: what to open, what to see>
+  - [diff] (D1 b) <a property that holds only if the user answers D1 with option b>
 
 ## Decisions needed
 - D1 [convention | flow]: <question> — a) <option — cost> b) <option — cost> — <what the card says, if anything>
@@ -110,6 +111,10 @@ Write the brief with Write to the path the handoff names under `expected output`
 A `[convention]` decision is a change to something the `design-language` topic or the layout topic records as this project's way — a feedback pattern, a confirmation pattern, where the primary action sits. The brief never changes a recorded convention on its own: it writes the decision with both options and their cost, and the orchestrator takes it to the user before anyone designs on it. A `[flow]` decision is a choice between two sequences the user tasks allow equally. Everything else the brief decides, and says so.
 
 Every change carries at least one `[diff]` line, so a task can carry it as a criterion. A change whose every line is `[hand]` is one no review can hold; rewrite it until the markup shows something.
+
+You write the brief before the user answers `## Decisions needed`. A `Copy:` line, a `Done when` line or a `States:` cell that depends on a decision is written once per option, tagged `(D<n> a)` / `(D<n> b)`; a line without a tag holds for every option. The orchestrator appends the answer to the `D<n>` line, and only the answered option's lines bind.
+
+In Change Set each change names the item it serves: `### C1: <title> — <page or screen> — item <k>`. A change no listed item reaches goes under `## Out of scope`, not `## Changes`.
 
 ## Pointer block
 

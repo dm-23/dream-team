@@ -21,8 +21,8 @@
       "required": false,
       "detect": "a tool for navigating, inspecting or screenshotting a live browser page",
       "brokeredBy": "orchestrator",
-      "usedBy": ["tester", "reviewer"],
-      "useWhen": "A run changed something a person sees and the result can be observed by loading the running application: the Tester needs a check against real rendering, the Reviewer needs to confirm the change actually appears, or a diagnosis needs the real console or network behaviour.",
+      "usedBy": ["designer", "tester", "reviewer"],
+      "useWhen": "A run changed something a person sees and the result can be observed by loading the running application: the Tester needs a check against real rendering, the Reviewer needs to confirm the change actually appears, or a diagnosis needs the real console or network behaviour. The Designer needs to see the pages of its surface before an audit or a brief.",
       "neverUseFor": "Projects with no user interface; starting a server or opening a page without the user agreeing first; and never as a substitute for a test — a screenshot is evidence, not coverage."
     },
     {
@@ -34,7 +34,7 @@
       "required": false,
       "detect": "a tool for driving a browser through structured page data",
       "brokeredBy": "orchestrator",
-      "usedBy": ["tester", "reviewer"],
+      "usedBy": ["designer", "tester", "reviewer"],
       "alternativeTo": "chrome-devtools-mcp",
       "useWhen": "Same as the other browser-control entry. Install at most one of the two: two browser drivers competing for the same page waste context and produce contradictory observations.",
       "neverUseFor": "Same exclusions as the other browser-control entry."

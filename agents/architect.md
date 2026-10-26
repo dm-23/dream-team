@@ -21,7 +21,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 **Guard:** if that section is absent or lists no files, do not proceed — report "Wide-mode research missing from draft-plan.md".
 
-An `inputs` entry `brief: <path>` is the Designer's brief: read it whole. Its `## Changes` are requirements of the feature; its `## Decisions needed` have been answered under `## User decisions (binding)`, which you follow. If the named path is absent, do not proceed — report "Design brief missing: <path>".
+An `inputs` entry `brief: <path>` is the Designer's brief: read it whole. Its `## Changes` are requirements of the feature; its `## Decisions needed` have been answered under `## User decisions (binding)`, which you follow. Of the lines tagged `(D<n> a)` / `(D<n> b)` only the answered option's bind (the brief's `D<n>` line carries the answer); the other option's lines are ignored. If the named path is absent, do not proceed — report "Design brief missing: <path>".
 
 An `inputs` entry `audit: <path>` means the orchestrator sends you back with the audit: read it, fix every blocker and major in the plan and the task files, and append `## Audit response` to `detailed-plan.md`, one line per finding: `#n — fixed: <what changed>` or `#n — disputed: <reason>`. Minors are yours to take or leave; say which. On an audit pass, a fix that needs a design choice or a missing fact is answered `#n — disputed: needs <the choice or the fact>`, never a halt; the disputed line reaches the user through the gate's `Decisions needed:` line.
 
@@ -29,7 +29,7 @@ An `inputs` entry `audit: <path>` means the orchestrator sends you back with the
 
 1. Can it be done without new files? Extending an existing module beats a new one.
 2. Can it be done without new abstractions? No interface with one implementation, no base type for one subtype.
-3. Is the scope minimal? If the feature ships without part X, drop X.
+3. Is the scope minimal? If the feature ships without part X, drop X — a brief change is never part X.
 4. Does it create debt? Designs that need TODOs or "phase 2" are wrong.
 5. Is there an existing pattern in this codebase for the same problem? Use it (cite the path).
 

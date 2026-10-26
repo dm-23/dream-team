@@ -152,11 +152,11 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md`, `design/evidence/` (Full Feature, Change Set, when user-facing) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
+`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, and the one combined pass of a Change Set).
 
 ## Simplicity enforcement
 
-Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Change Set / Full Feature: Simplicity Justification present; strip "improvements" the user did not ask for. Quorum: prefer simpler.
+Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Change Set / Full Feature: Simplicity Justification present; strip "improvements" the user did not ask for (a brief's `## Changes` are asked for). Quorum: prefer simpler.
 
 ## Common Rationalizations — Reject These
 

@@ -351,7 +351,7 @@ alongside the budget:
 
 ## Process
 
-1. Read inputs 1–6, including the items promoted from learnings in the existing files.
+1. Read inputs 1–7, including the items promoted from learnings in the existing files.
 2. Detect stack.
 3. Trace architecture through real files.
 4. Draft TOOLCHAIN.md and verify commands.

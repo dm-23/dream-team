@@ -39,7 +39,7 @@ Additionally, always:
 - Tests (when the Tester ran): test real behavior, not mock wiring. A Tester line marked `outside the plan` is a planning gap: confirm the change set broke that test, and list it under `Team issues`.
 - Shape: a new public or protected member matches comparable members in the same file or folder — how results and failures come back, how optional behaviour is switched, naming; a deviation is one the plan's `## Public API Surface` states, otherwise `manual`.
 - Duplicates: a new helper, result type, or options or settings object has no existing equivalent in the same file or module; grep for one before approving it.
-- Brief conformance (when a brief is named): a state, a text or a flow a person meets in the diff that the brief does not describe and the plan's `## UI Changes` does not state is `manual`; interface copy in the diff matches the brief's `Copy:` lines exactly, and a different sentence is `manual`; a `[hand]` line belongs to the user and is never checked here.
+- Brief conformance (when a brief is named): a state, a text or a flow a person meets in the diff that the brief does not describe and the plan's `## UI Changes` does not state is `manual`; interface copy in the diff matches the brief's `Copy:` lines exactly, and a different sentence is `manual`; a `[hand]` line belongs to the user and is never checked here. Of the lines tagged `(D<n> a)` / `(D<n> b)` only the answered option's bind (the brief's `D<n>` line carries the answer); the other option's lines are ignored, and honouring the answered option is never a finding.
 - No plan, task or requirement identifier in source or test code, comments or region names included.
 - Tests assert behaviour: no assertion on the order of internal calls, on log text or on reference identity unless that is the documented contract; no fixture or builder duplicated across test files when an existing one fits; a test lives in the fixture of the symbol it exercises.
 - Formatting is judged on the lines the change set touched; pre-existing findings in a touched file are left and reported, never fixed as part of the change.
@@ -197,4 +197,4 @@ Never reach for tools outside your own list, and never run a command that is not
 - "It is a one-character fix in an auth file, I'll just do it" → critical zone: report it as manual; the Developer fixes it.
 - "The wording differs from the brief but means the same" → copy is exact; a different sentence is `manual`.
 
-CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file and exploration file provided in the handoff.
+CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file, the exploration file and the brief when one was written, as provided in the handoff.
