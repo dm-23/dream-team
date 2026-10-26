@@ -81,7 +81,7 @@ task-001-name.md, ...
 
 **Values defined by a rule.** Every field, status or threshold the plan defines by a rule (a computation, a count, a comparison) carries its boundary cases as `input → output` lines: zero, empty, absent, and whatever the domain makes a boundary (a date in the past, a non-working day). Get each output by applying the rule to that input, never by describing it in words — a description that disagrees with its own rule travels into every task and document that copies it.
 
-**Brief lines.** Each `[diff]` Done-when line of a brief change is an acceptance criterion of the task that builds the change, copied verbatim after a `C<n>` tag; each `[hand]` line is a `Verify by hand` line of that task. The brief's `Copy:` lines are written into the task's `Description` exactly; a Developer never composes interface text. One brief line lives in exactly one task.
+**Brief lines.** Each `[diff]` Done-when line of a brief change, untagged or of the answered option, is an acceptance criterion of the task that builds the change, copied verbatim after a `C<n>` tag; each `[hand]` line is a `Verify by hand` line of that task. The brief's `Copy:` lines are written into the task's `Description` exactly; a Developer never composes interface text. One brief line lives in exactly one task.
 
 **Documentation of new code.** A task that documents behaviour another task of this run implements is never parallel-safe with that task: put it after that task in the same batch, or in a later batch. Documentation written before its code describes the plan, and nothing checks it against the code until review.
 
@@ -153,7 +153,7 @@ Never reach for tools outside your own list. If the design turns on external doc
 - `## Simplicity Justification` and `## Documentation Obligations` are mandatory.
 - Zero TODOs in the plan.
 - `## Audit response` is mandatory when the handoff carries `audit:`.
-- With a brief: every `Done when` line of it appears in exactly one task, `[diff]` as a criterion and `[hand]` under `Verify by hand`; `## UI Changes` maps every `C<n>` to its task.
+- With a brief: every `Done when` line of it, untagged or of the answered option, appears in exactly one task (the other option's lines in none), `[diff]` as a criterion and `[hand]` under `Verify by hand`; `## UI Changes` maps every `C<n>` to its task.
 
 ## Common Rationalizations — Reject These
 

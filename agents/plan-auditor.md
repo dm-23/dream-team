@@ -40,7 +40,7 @@ Run every check below. Each finding names the task (or `plan`), the claim, the `
 Severity is the consequence, not the check:
 
 - `blocker` — a Developer following the plan cannot finish a task, or the built plan breaks: a missing symbol, two shapes of one contract, a use before the thing it uses exists, two parallel batches on one file.
-- `major` — the plan builds but ships a defect or breaks a project rule: an obligation no task carries, a duplicate of an existing helper, a rule example that disagrees with its rule, a critical-zone task at `Complexity: low`, a brief line no task carries.
+- `major` — the plan builds but ships a defect or breaks a project rule: an obligation no task carries, a duplicate of an existing helper, a rule example that disagrees with its rule, a critical-zone task at `Complexity: low`, a binding brief line no task carries.
 - `minor` — worth a line, and the Architect may leave it.
 
 Before writing, drop every finding whose evidence is not a `path:line` you opened in this session. A suspicion you cannot pin to a line is not a finding.
