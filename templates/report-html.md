@@ -27,11 +27,14 @@ CSP restrictions that don't apply here.
 |-------------|--------|----------|
 | Analysis report | HTML | `.dream-team-tracking/{context_id}/reports/{topic}.html` |
 | Detailed plan presentation | HTML | `.dream-team-tracking/{context_id}/reports/plan-{slug}.html` |
+| UX audit (Analyze) | HTML | `.dream-team-tracking/{context_id}/reports/ux-audit.html` |
 | Architecture explanation | HTML | `.dream-team-tracking/{context_id}/reports/{topic}.html` |
 | Simple status / yes-no question | Chat text | — |
 | Internal agent coordination | Markdown | `.dream-team-tracking/{context_id}/` |
 
 **Plan page (Full Feature).** `reports/plan-{slug}.html` is a rendering of `plans/detailed-plan.md` and `tasks/*.md`, never a second source of truth; regenerate it whenever those files change before approval. Order of sections: overview and the decisions needed from the user; Public API Surface; batches, each task a collapsible card (description, files, contract, criteria, test cases, verify by hand); documentation obligations; simplicity justification; the audit's findings and the `## Audit response`; the plan path and the task paths. Dark theme, collapsibles, no frameworks, as every report.
+
+**UX audit page (Analyze).** `reports/ux-audit.html` is a rendering of `reports/ux-audit.md`, never a second source of truth. Order of sections: the surface and the user tasks walked; the findings as one table, blocking first, with the evidence column kept; the state matrix; the order of work, each batch a collapsible card listing its findings and pages; out of scope; the audit path. Dark theme, collapsibles, no frameworks, as every report.
 
 ## JS Libraries (CDN — no install)
 

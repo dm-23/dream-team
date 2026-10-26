@@ -16,7 +16,7 @@
 - [ ] 0 Preflight (knowledge present, LEARNINGS checked: {matched entry titles or "none"})
 - [ ] 1 Clarification ({N} questions asked / not needed)
 - [ ] 2 Research ({targeted | wide})
-- [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a})
+- [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a}; design: {brief — N decisions | ux-audit — B/S/C | not user-facing | n/a})
 - [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected})
 - [ ] 5 Implementation
 - [ ] 6 Tests (Tester: {run — before fix: fail | compile error | pass | n/a} | skipped — reason)

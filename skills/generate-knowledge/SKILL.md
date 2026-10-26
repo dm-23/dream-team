@@ -28,6 +28,7 @@ Output language: the language of the user's request; file contents in English (a
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
 5. `.claude/knowledge/LEARNINGS.md` and every entry file in `learnings/` → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; with `all`, every entry (see "Triage the learnings inbox"). From all of `.claude/knowledge/`, searched recursively with topic directories included, the items ending `— source: learnings …` (see "Items promoted from learnings").
 6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
+7. The interface card, `.claude/templates/interface/_generic.md`, read when FRONTEND-ARCHITECTURE.md will describe an interface: its `## Vocabulary` is what the design language maps, its `## Review checks` what REVIEW-CHECKLIST.md gains.
 
 ## Stack detection
 
@@ -125,6 +126,8 @@ contradict its class. The cuts that work:
 
 Same depth: root layout, stack table, state management, API call layer (the exact wrapper functions to use), component/page structure, navigation, styling, forms, module loading rules, key dependencies. If there is no user interface, say so in one paragraph and stop.
 
+When there is an interface, also a `## Design language` section, built from the interface card's `## Vocabulary` applied to the real pages: one line per vocabulary term → the project's element and its `path:line` (`no equivalent` when the project has none); how the project renders each state of the card's `## States` (empty, loading, error, partial, success, no permission), one example path each or `not rendered`; the interface language, and the copy conventions observed (button verbs, the shape of error text, confirmation wording); the feedback and confirmation patterns with their paths; and `### Inconsistencies observed` — the same element done two ways, both paths, or `none found`. As a `subset` file this section becomes the topic `frontend-architecture/design-language.md`, named in the index with the condition `Read for every task the Designer runs on, and when adding a state, a message or an action a person sees`.
+
 ### DI-AND-STARTUP.md
 
 Startup sequence, wiring/registration pattern and location, configuration sources and access pattern, request pipeline/middleware, background processing.
@@ -213,6 +216,7 @@ Procedure: take candidates from CI/pipeline files first, then task runners/READM
 M. ... (from PROJECT-RULES.md obligations, one item each)
 K. ... (from BACKEND/FRONTEND-ARCHITECTURE.md conventions that a reviewer can verify mechanically)
 L. ... (from "Duplicated code paths that must change together")
+I. ... (from `.claude/templates/interface/_generic.md → ## Review checks`, only when FRONTEND-ARCHITECTURE.md has `## Design language`, each rewritten with this repo's element and path from that section)
 N. If any changed file is under a path of PROJECT-RULES.md → Critical zones, review in critical-zone mode (the Reviewer's Step 0).
 ```
 
@@ -352,6 +356,7 @@ alongside the budget:
 3. Trace architecture through real files.
 4. Draft TOOLCHAIN.md and verify commands.
 5. Write architecture/testing/playbook files.
+5b. Design language → FRONTEND-ARCHITECTURE.md, from the interface card, when there is an interface.
 6. Annotate cards → CODING-STANDARDS.md.
 7. Derive PROJECT-RULES.md from human documentation, and its Critical zones from the code and the documentation, keeping every `— source: user` line (one whose path is gone is kept and reported).
 8. Compose REVIEW-CHECKLIST.md last (it depends on all others).
