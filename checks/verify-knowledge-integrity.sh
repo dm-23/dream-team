@@ -22,8 +22,10 @@
 #     nothing in the topic directory is absent from the backup original
 #     (nothing fabricated), and nothing in the backup original is absent from
 #     the union of the topic directory and its index file (nothing lost). The
-#     index may legitimately carry descriptive lines the original never had;
-#     only the topic-directory side is held to the no-new-content rule.
+#     original is the backup's index file plus its own topic directory when
+#     it has one, since a base split by an earlier run keeps its topics there.
+#     The index may legitimately carry descriptive lines the original never
+#     had; only the topic-directory side is held to the no-new-content rule.
 #   - "subset" with no topic directory present -> it was never split, so it
 #     must still be byte-identical to its backup copy. A subset file that
 #     fits its budget and stays one file is not thereby exempt: either it was
@@ -341,7 +343,12 @@ check_split_dir() {
     normalize "$f" >> "$tmp/topic-lines"
   done
   grep -v '^$' "$tmp/topic-lines" | sort -u > "$tmp/topic-sorted"
-  normalize "$origin" | grep -v '^$' | sort -u > "$tmp/origin-sorted"
+  # The original is the backup's index plus whatever its own topic directory
+  # already held: a base split by an earlier run keeps its topics there, and
+  # a run that applied anything else to it must not be told it fabricated them.
+  { normalize "$origin"
+    for f in "$backup/$name"/*.md; do [ -e "$f" ] && normalize "$f"; done
+  } | grep -v '^$' | sort -u > "$tmp/origin-sorted"
 
   # Nothing fabricated: every topic line must trace back to the original.
   if comm -23 "$tmp/topic-sorted" "$tmp/origin-sorted" | grep -q .; then

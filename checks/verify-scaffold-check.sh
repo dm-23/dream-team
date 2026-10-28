@@ -63,5 +63,30 @@ run bom-banner "$p"; expect bom-banner 3 "project: empty" "knowledge: scaffold 2
 run missing-project "$TMP/does-not-exist"
 [ "$RC" = 2 ] || fail missing-project "exit $RC, expected 2: $OUT"
 
+# A scaffold knowledge base, built by hand to the shape /generate-knowledge
+# writes on an empty project, passes verify-knowledge-integrity.sh against a
+# copy of itself, as a /generate-knowledge fix run would check it.
+root="$TMP/integrity"; k="$root/.claude/knowledge"; mkdir -p "$k/learnings"
+cp "$ROOT/team-manifest.json" "$root/.claude/team-manifest.json"
+for f in PROJECT-OVERVIEW TESTING-CONVENTIONS SEARCH-PLAYBOOK TOOLCHAIN REVIEW-CHECKLIST PROJECT-RULES; do
+  printf '%s\n# %s\n\nnot yet known — empty project\n' "$BANNER" "$f" > "$k/$f.md"
+done
+for f in BACKEND-ARCHITECTURE FRONTEND-ARCHITECTURE DI-AND-STARTUP CODING-STANDARDS; do
+  printf '%s\n# %s\n\n- Layout — not yet known\n' "$BANNER" "$f" > "$k/$f.md"
+  mkdir -p "$k/$(printf '%s' "$f" | tr 'A-Z' 'a-z')"
+done
+printf '# Generic card\n\n- Follow the repository structure [declared]\n' > "$k/coding-standards/generic.md"
+cp "$ROOT/templates/learnings.md" "$k/LEARNINGS.md"
+cp -r "$k" "$root/backup"
+OUT="$(cd "$root" && bash "$ROOT/checks/verify-knowledge-integrity.sh" backup .claude/knowledge 2>&1)"; RC=$?
+[ "$RC" = 0 ] || fail integrity "integrity check exit $RC on a scaffold base: $OUT"
+
+# The widened origin still catches a fabricated line: one the backup holds in
+# neither its index nor its topic directory.
+printf -- '- Invented after the backup\n' >> "$k/coding-standards/generic.md"
+OUT="$(cd "$root" && bash "$ROOT/checks/verify-knowledge-integrity.sh" backup .claude/knowledge 2>&1)"; RC=$?
+[ "$RC" = 1 ] || fail integrity-fabricated "expected exit 1 for a fabricated topic line, got $RC: $OUT"
+case "$OUT" in *"Invented after the backup"*) ;; *) fail integrity-fabricated "the fabricated line is not named: $OUT" ;; esac
+
 if [ "$fails" -eq 0 ]; then echo "verify-scaffold-check: all cases passed"; exit 0; fi
 echo "verify-scaffold-check: $fails failure(s)" >&2; exit 1
