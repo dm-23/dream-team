@@ -77,8 +77,7 @@ team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.s
 team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	
 team-manifest.json	    "teamReferences": "bash checks/verify-team-references.sh",\n	
 team-manifest.json	    "frontmatter": "bash checks/verify-frontmatter.sh",\n	
-team-manifest.json	    "scaffoldCheck": "bash checks/verify-scaffold-check.sh",
-	
+team-manifest.json	    "scaffoldCheck": "bash checks/verify-scaffold-check.sh",\n	
 #
 # everywhere
 *	AskUserQuestion	the question tool

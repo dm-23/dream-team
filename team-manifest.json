@@ -330,6 +330,7 @@
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",
     "frontmatter": "bash checks/verify-frontmatter.sh",
+    "scaffoldCheck": "bash checks/verify-scaffold-check.sh",
     "routingSummaryReport": "bash .claude/checks/summarize-routing.sh — run from the project root; prints the decision-routing shadow numbers from every run's routing.log",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
@@ -339,7 +340,6 @@
     "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge",
     "knowledgeScaffold": "bash checks/verify-knowledge-scaffold.sh",
     "knowledgeScaffoldArgs": "<project-dir> <knowledge-dir>, in that order; exit 0 = nothing to say, 1 = scaffold knowledge and the project has content (regeneration due), 2 = a path could not be read, 3 = scaffold knowledge and the project is still empty",
-    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . .claude/knowledge",
-    "scaffoldCheck": "bash checks/verify-scaffold-check.sh"
+    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . .claude/knowledge"
   }
 }
