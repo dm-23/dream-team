@@ -69,6 +69,21 @@ run root-docs-and-code "$p"; expect root-docs-and-code 1 "project: has content" 
 p="$(project readme-dir)"; scaffold "$p"; mkdir "$p/README.md"
 run readme-dir "$p"; expect readme-dir 1 "project: has content" "knowledge: scaffold 2026-10-28"
 
+# The date is reported only when it is one; a copied template or a hand-edited
+# banner reports "unknown" and the byte after the prefix never leaks half-cut.
+p="$(project literal-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on YYYY-MM-DD; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
+run literal-date "$p"; expect literal-date 3 "project: empty" "knowledge: scaffold unknown"
+p="$(project odd-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on 28 октября 2026; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
+run odd-date "$p"; expect odd-date 3 "project: empty" "knowledge: scaffold unknown"
+
+# Mixed state: one file regenerated from code, the others still scaffolds. Any
+# bannered knowledge file makes the base a scaffold; the date comes from the
+# first bannered file in name order when PROJECT-OVERVIEW.md has none.
+p="$(project mixed)"; generated "$p"; printf '%s\n# Toolchain\n' "$BANNER" > "$p/.claude/knowledge/TOOLCHAIN.md"; mkdir "$p/src"
+run mixed "$p"; expect mixed 1 "project: has content" "knowledge: scaffold 2026-10-28"
+p="$(project mixed-topic-ignored)"; generated "$p"; mkdir -p "$p/.claude/knowledge/learnings"; printf '%s\n' "$BANNER" > "$p/.claude/knowledge/learnings/2026-10-01-x.md"
+run mixed-topic-ignored "$p"; expect mixed-topic-ignored 0 "project: empty" "knowledge: generated"
+
 run missing-project "$TMP/does-not-exist"
 [ "$RC" = 2 ] || fail missing-project "exit $RC, expected 2: $OUT"
 

@@ -16,12 +16,19 @@
 #     documentation either way. Any other entry, a file or a directory even
 #     when that directory is empty, is content; so is a directory that
 #     happens to carry one of those names.
-#   - The knowledge is a SCAFFOLD when <knowledge-dir>/PROJECT-OVERVIEW.md
-#     exists and its first line is the banner /generate-knowledge writes on
-#     an empty project. The banner is the whole marker: a separate marker
-#     file would be an unclassified file to checks/verify-knowledge-integrity.sh
-#     and would need a manifest key for no gain. A trailing CR and a leading
-#     byte-order mark are tolerated, because an editor on Windows adds both.
+#   - The knowledge is a SCAFFOLD when any knowledge file — a *.md directly
+#     in <knowledge-dir>, never a topic or a learnings entry — opens with the
+#     banner /generate-knowledge writes on an empty project. One bannered
+#     file is enough: a run that regenerated a single file from code leaves
+#     the other nine as scaffolds, and the reminder must not go quiet. The
+#     banner is the whole marker: a separate marker file would be an
+#     unclassified file to checks/verify-knowledge-integrity.sh and would need
+#     a manifest key for no gain. A trailing CR and a leading byte-order mark
+#     are tolerated, because an editor on Windows adds both. The date is
+#     taken from PROJECT-OVERVIEW.md when it carries the banner, otherwise
+#     from the first bannered file in name order, and is reported only when
+#     it has the form YYYY-MM-DD; anything else reads "unknown", so a copied
+#     template or a hand-edited banner never leaks a cut byte to a caller.
 #
 # Prints two lines, "project: empty | has content" and
 # "knowledge: absent | generated | scaffold YYYY-MM-DD", then exits:
@@ -53,18 +60,40 @@ for entry in "$project"/*; do          # the glob skips dot-prefixed names
 done
 echo "project: $state"
 
+# banner_rest FILE -> prints what follows the prefix on FILE's first line, or
+# nothing when the file does not open with the banner.
+banner_rest() {
+  local first
+  first="$(head -1 "$1" 2>/dev/null | tr -d '\r')" || return 0
+  first="${first#$'\xEF\xBB\xBF'}"
+  case "$first" in
+    "$PREFIX"*) printf '%s' "${first#"$PREFIX"}" ;;
+  esac
+}
+
 overview="$knowledge/PROJECT-OVERVIEW.md"
 if [ ! -f "$overview" ]; then
   echo "knowledge: absent"; exit 0
 fi
-first="$(head -1 "$overview" 2>/dev/null | tr -d '\r')" || { echo "FAIL: cannot read $overview" >&2; exit 2; }
-first="${first#$'\xEF\xBB\xBF'}"
-case "$first" in
-  "$PREFIX"*)
-    rest="${first#"$PREFIX"}"
-    echo "knowledge: scaffold ${rest:0:10}"
-    [ "$state" = "empty" ] && exit 3
-    exit 1 ;;
-  *)
-    echo "knowledge: generated"; exit 0 ;;
+[ -r "$overview" ] || { echo "FAIL: cannot read $overview" >&2; exit 2; }
+
+rest="$(banner_rest "$overview")"
+if [ -z "$rest" ]; then
+  for f in "$knowledge"/*.md; do
+    [ -f "$f" ] || continue
+    rest="$(banner_rest "$f")"
+    [ -n "$rest" ] && break
+  done
+fi
+if [ -z "$rest" ]; then
+  echo "knowledge: generated"; exit 0
+fi
+
+date="${rest:0:10}"
+case "$date" in
+  [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+  *) date="unknown" ;;
 esac
+echo "knowledge: scaffold $date"
+[ "$state" = "empty" ] && exit 3
+exit 1
