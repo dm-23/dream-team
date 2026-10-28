@@ -15,6 +15,9 @@
 #                        slash command, which is an explicit instruction.
 #   <TEAM-INBOX-DUE>     the learnings inbox is due; emitted only on the prompt
 #                        that starts a run.
+#   <TEAM-KNOWLEDGE-SCAFFOLD>  the knowledge files were written on an empty
+#                        project and the project now has content; emitted only
+#                        on the prompt that starts a run.
 #
 # This survives a model switch, a long pause, a compaction and a restart,
 # because the harness runs this hook on every submitted prompt. Exit 0 with no
@@ -64,9 +67,16 @@ fi
 # status or resume, and never a plain message. The check prints the reasons
 # and exits 1 when due; 0 and 2 (clean, or limits unreadable) stay silent.
 # Skipped while the legacy directory exists: no run can start then.
+#
+# The same prompt is where scaffold knowledge is reported: the files were
+# written on an empty project (checks/verify-knowledge-scaffold.sh reads the
+# banner) and the project now has content, so a run would build on files
+# nothing verified. Exit 1 only: a scaffold on a still-empty project (exit 3)
+# is the preflight's to mention, and the hook speaks only for the state change
+# the orchestrator would otherwise not see.
+TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
 if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
    && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]+(stop|status|resume)'; then
-  TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then
     inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
@@ -75,6 +85,16 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
       context="${context}<TEAM-INBOX-DUE>\n"
       context="${context}The learnings inbox is due: ${summary}. Tell the user once, in one line, that /generate-knowledge all turns the pending marks into rules and empties the inbox, then record \\\"Inbox due: told YYYY-MM-DD\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-INBOX-DUE>\n"
+    fi
+  fi
+  if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" ]; then
+    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
+    if [ "$rc" -eq 1 ]; then
+      written="$(printf '%s\n' "$scaffold" | sed -n 's/^knowledge: scaffold //p' | head -1)"
+      written="$(escape_for_json "$written")"
+      context="${context}<TEAM-KNOWLEDGE-SCAFFOLD>\n"
+      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. Tell the user once, in one line, that /generate-knowledge should be run before building on them, then record \\\"Scaffold knowledge: told YYYY-MM-DD\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}</TEAM-KNOWLEDGE-SCAFFOLD>\n"
     fi
   fi
 fi

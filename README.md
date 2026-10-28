@@ -34,7 +34,7 @@ Open Claude Code in the project and run three commands in order.
 | Step | Command | What it does |
 |------|---------|--------------|
 | 1 | `/team-setup fix` | Checks the install, hides generated files from version control, wires the sticky-mode hook and the guard, asks about each optional capability separately before installing anything, and asks whether to check for new team versions |
-| 2 | `/generate-knowledge` | Explores your repository and writes the ten knowledge files the team reads |
+| 2 | `/generate-knowledge` | Explores your repository and writes the ten knowledge files the team reads. In an empty folder it asks whether the stack is decided and writes the ten files as scaffolds, each marked on its first line, to be regenerated once there is code |
 | 3 | `/team <task>` | Runs the workflow |
 
 Step 2 takes a few minutes and is the only step that reads your whole codebase. Repeat it after major architecture changes.
@@ -171,6 +171,8 @@ If research shows a Small Change is bigger than three files, or touches a schema
 
 `/generate-knowledge check` writes nothing: it compares what the existing files claim against the repository and reports what has gone stale. Naming files regenerates only those, for example `/generate-knowledge TOOLCHAIN.md`.
 
+**An empty project.** When the folder holds nothing but the team and, at most, the documents a new repository starts with (a README, a licence, a `CLAUDE.md` or `AGENTS.md`), `/generate-knowledge` asks one question, whether the intended stack is decided, and writes the same ten files as scaffolds. Each starts with a banner line naming the date and saying nothing in it was verified against code. A decided stack makes its cards active as declared, so the coding standards, the review checklist and the toolchain rows come from the cards with nothing marked verified; an undecided one uses the generic card and leaves `none yet` where a command would be. The reminder outlives the moment: `/team-setup` reports scaffold knowledge, a run says so once when it starts, and once the folder has content the prompt that starts a run says the knowledge should be regenerated first. Regenerating rewrites every file, and the banner goes with it.
+
 Two more files sit in the same directory and are written by someone else.
 
 `LEARNINGS.md` persists across regenerations. It is an inbox of traps that have not yet earned a rule, not a log of runs. The deployed file is the index and a short header; the entry format lives in `templates/learnings-entry.md`, so the file every run reads stays inside its budget. After a run the reviewer classifies what it taught: a trap becomes an entry — its own file under `learnings/` plus one row in the index — and a rule or a fact the knowledge files lack becomes a mark on an entry; a run that taught nothing leaves nothing, and a defect of the team itself goes to the run's report instead. `/generate-knowledge all` empties the inbox: with your consent and after a backup, it writes marked rules and facts into the knowledge files, keeps promoted rules across later regenerations, and removes entries that are covered, obsolete, or never belonged there. A run says once that the inbox is due and records that it did; the reminder is not repeated on every resume.
@@ -284,7 +286,7 @@ cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dre
 
 A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
 
-Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. A `PROJECT-RULES.md` written before 4.3.0 has no critical zones section: runs still work, the Reviewer notes the missing section in its report, and `/generate-knowledge PROJECT-RULES.md` adds it. A `FRONTEND-ARCHITECTURE.md` written before 4.4.0 has no design-language topic: the Designer works from the layout and says so, and `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` adds it together with its review checks. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code.
+Existing knowledge files stay valid unless the manifest gained a required file, in which case the check tells you to regenerate. A `PROJECT-RULES.md` written before 4.3.0 has no critical zones section: runs still work, the Reviewer notes the missing section in its report, and `/generate-knowledge PROJECT-RULES.md` adds it. A `FRONTEND-ARCHITECTURE.md` written before 4.4.0 has no design-language topic: the Designer works from the layout and says so, and `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` adds it together with its review checks. When an update changes the shape the knowledge files are written in, `/generate-knowledge fix` brings an existing knowledge base over to it without re-reading your code. A file without the scaffold banner on its first line is never a scaffold, so knowledge written before 4.4.1 is unaffected by the empty-project behaviour.
 
 ### Moving run state from the legacy directory
 
@@ -403,5 +405,6 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | `/team` starts but behaves like an older version, or says a workflow file is missing | `skills/team/references/` was not copied, or the session still holds the old prompts | Re-copy the team into `.claude/` and reopen the session |
 | The Reviewer reports "Critical zones: section missing" | `PROJECT-RULES.md` predates 4.3.0 | `/generate-knowledge PROJECT-RULES.md` |
 | The Designer reports `Design language: topic missing` | `FRONTEND-ARCHITECTURE.md` predates 4.4.0 | `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` |
+| `/team-setup` or a run reports scaffold knowledge | The knowledge was written on an empty project and the project now has content | `/generate-knowledge` |
 | A command the Reviewer needs is denied by the guard | It is destructive and not listed in `TOOLCHAIN.md` | Add the exact command as a `TOOLCHAIN.md` row, or run it yourself |
 | A destructive command is not denied during a run | The guard is not wired (a team updated from before 4.3.0), or no bash | `/team-setup check` reports `Guard: NOT wired` or `bash: absent`; `/team-setup fix`, then open `/hooks` once |

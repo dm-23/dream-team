@@ -34,6 +34,42 @@ Output language: the language of the user's request; file contents in English (a
 
 For each stack card, evaluate its `## Detect` section against the repository (search for the listed files). Every card that matches is "active". If none matches, use `_generic.md`. A repository may have several active cards (for example a back end in one language, a user interface in another, scripts in a third) — include all, each labelled with the directories where it applies. Record the result in `PROJECT-OVERVIEW.md → Stack`.
 
+## Empty project
+
+A developer who starts a project from nothing deploys the team into an empty folder, and the knowledge has to exist before the first `/team` run can write the first code. Step 1b of "Process" runs `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out; when its first line is `project: empty`, this section replaces steps 2–10. It applies to `all`, to no argument, and to a run naming files; `check` and `fix` have their own paragraphs below. The script's definition is the only one: a folder whose top-level entries are all dot-prefixed, or root documents a developer has before any code (a file named `README*`, `LICENSE*`, `CLAUDE.md` or `AGENTS.md`), is empty; any other entry, a file or a directory even when that directory is empty, is content, whatever the stack cards detect. Those root documents are Inputs 3 and are read as "Human documentation in an empty project" says.
+
+**Say what will happen.** One short message before anything else: the folder holds no project content, so this run writes scaffolds, every file marked on its first line, to be regenerated once the code exists.
+
+**Ask once.** One AskUserQuestion call. The options are the file names of the stack cards in `.claude/templates/standards/` except `_generic.md`, read from the directory at run time and never written out here, multi-select, at most four options per question and as many questions in the one call as the cards need; the last question also carries the option "Not decided yet". A developer may pick several cards, as a real project may have several active ones. When human documentation under a dot path names a stack (see below), quote it in the question's text; the answer still decides. A stack typed as free text that matches no card is recorded as the declared stack text in `PROJECT-OVERVIEW.md` and counts as "not decided" for the cards. Nothing selected is "not decided". There is no second question: an empty project has no learnings inbox to triage, so with `all` the triage step reports that and does nothing.
+
+**Active cards.** The named cards are active as *declared*: their rules apply because the developer said so, and nothing in the code confirms or contradicts them yet. "Not decided" makes `_generic.md` the one active card.
+
+**Human documentation in an empty project.** Inputs 3 are read wherever they exist: the root documents the definition admits, and dot paths such as `.claude/PROJECT.md`, `.claude/docs/*.md` and their equivalents in another edition. What they say lands where it would for a real project — the Documentation map of `PROJECT-OVERVIEW.md` lists them, and the obligations, prohibitions and documents to keep in sync of `PROJECT-RULES.md` are extracted from them with their sources cited, exactly as steps 7 and 10 extract them. This is the one place a scaffold holds sourced content, and only when such a document exists.
+
+**The banner.** The first line of every scaffold file, byte for byte except the date:
+
+```
+> SCAFFOLD — written on an empty project on YYYY-MM-DD; nothing here is verified against code. Run /generate-knowledge when the code exists.
+```
+
+The banner is the whole marker: `checks.knowledgeScaffold` reads it from `PROJECT-OVERVIEW.md`, and so do `/team`, `/team-setup` and the prompt hook. A file regenerated from code loses it because the file is rewritten; a scaffold file a run naming other files leaves alone keeps it, which is right, since that file is still a scaffold.
+
+**What each file holds.** The same section skeleton "Files to generate" gives, the banner first; a section that needs code to fill it holds the one line `not yet known — empty project`, never an invented path, command or entity.
+
+- `PROJECT-OVERVIEW.md`: the Stack table with one row per declared card, Directories `none yet`, plus the declared stack text when it matched no card; or one row `not decided`. Core Domains, Tenancy and Key Technical Facts are one line each. The Documentation map lists the human documents found under dot paths, or says none exist.
+- The `subset` files — `BACKEND-ARCHITECTURE.md`, `FRONTEND-ARCHITECTURE.md`, `DI-AND-STARTUP.md`, `CODING-STANDARDS.md`: the index file carries the banner, the orienting line, and one line per section the real file would have, each `not yet known`. The sibling topic directory is created empty, so `fix` finds the shape it expects. `FRONTEND-ARCHITECTURE.md` names no `design-language` topic; the Designer reports `Design language: topic missing` and continues, which is the right behaviour here.
+- `CODING-STANDARDS.md` is the one `subset` scaffold whose topic directory is not empty: the active cards' rules are copied as the real file copies them, one topic per card, every bullet annotated `[declared]` — a fourth annotation beside `[observed]`, `[not followed]` and `[n/a]`, meaning "follow the card as written; nothing in the code confirms or contradicts it yet". The index names every topic.
+- `TOOLCHAIN.md`: with declared cards, one row per row of each card's `## Toolchain`, `Verified: no`, `Source: card (declared stack)`, `Cost: unknown`; with no card, the Purpose column with `none yet` in every Command cell. No `## Operations`. `## Verification log` says nothing was run; `## Missing on this machine` says `not checked — empty project`. The header, which already instructs agents, gains one sentence: `A row whose Command is \`none yet\` is not a command; the Reviewer reports the toolchain n/a for it and never counts it as failed.`
+- `TESTING-CONVENTIONS.md`: the declared cards' `## Testing` bullets, each marked `[declared]`, or the one line.
+- `SEARCH-PLAYBOOK.md`: topology `none yet`, no recipes, and the anti-assumptions that do not depend on code.
+- `REVIEW-CHECKLIST.md`: the active cards' `## Review checks`, rewritten only as far as a scaffold allows (no repository paths exist yet), plus item N. The Reviewer applies them to the first code as it applies any checklist.
+- `PROJECT-RULES.md`: `Sources: none — empty project` unless a dot-path document was read; every section one line; `## Critical zones` holds `- none found — source: empty project`.
+- `LEARNINGS.md` and `learnings/` exactly as for a real project: created from the persistent template when missing, never a scaffold, never bannered.
+
+**Report.** Files written, the declared cards or "not decided", one sentence that `/generate-knowledge` is due once the code exists, and the size table.
+
+**Regenerating with code present.** The normal path, nothing special: every file is rewritten from the repository and the banner disappears with it. A `[declared]` item carries over only when the code confirms it, and then as `[observed]`; items ending `— source: learnings …` follow their own rule. There is no "merge the scaffold" step.
+
 ## File shape and budgets
 
 `team-manifest.json → knowledge.classification` gives each file a class, and
@@ -299,7 +335,7 @@ Report: entries per class before, what was applied, entries left, the backup pat
 
 ## Check mode (`check`)
 
-For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. In `PROJECT-RULES.md` also verify that every path under `Critical zones` still exists (`STALE: critical zone path missing: <path>`), `— source: user` lines included, and that the section itself exists (`STALE: Critical zones section missing — run /generate-knowledge PROJECT-RULES.md`); a section holding only the `- none found` line is present. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
+For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. In `PROJECT-RULES.md` also verify that every path under `Critical zones` still exists (`STALE: critical zone path missing: <path>`), `— source: user` lines included, and that the section itself exists (`STALE: Critical zones section missing — run /generate-knowledge PROJECT-RULES.md`); a section holding only the `- none found` line is present. A file whose first line is the banner of "Empty project" is a scaffold: it names no path and no command, so those checks are skipped for it, and its line reads `SCAFFOLD (empty project, YYYY-MM-DD)` while `checks.knowledgeScaffold` exits 3, or `STALE: scaffold — the project now has content, run /generate-knowledge` when it exits 1. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Write nothing.
 
 ## Fix mode (`fix`)
 
@@ -352,6 +388,7 @@ alongside the budget:
 ## Process
 
 1. Read inputs 1–7, including the items promoted from learnings in the existing files.
+1b. Run `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out. `project: empty` → "Empty project" replaces steps 2–10.
 2. Detect stack.
 3. Trace architecture through real files.
 4. Draft TOOLCHAIN.md and verify commands.
@@ -379,6 +416,7 @@ this run, not a note for later — say so plainly rather than burying it.
 - Every path verified to exist; every pattern has 2–3 real examples; every command traced to a source and, where possible, executed.
 - No generic boilerplate: a line that could be true of any project is deleted.
 - Unsure → `[VERIFY]` with what to check.
+- A scaffold never names a path, command or entity the code does not yet have; `not yet known — empty project` is its only filler, and its banner is its only marker.
 - A count that ordinary commits change — tests collected, routes registered, operations in a specification, migration heads, files of a kind — is written as `N (measured at <short-sha> with <command>)`, never bare: the Reviewer treats a bare count that drifted as a missing fact and a measured one as expected movement. Prefer stating the command alone where the number adds nothing.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
 - `.claude/knowledge/` is the only directory you write to, with exactly one exception: in `fix` mode and in the inbox triage of `all` you also write the backup directory under `.dream-team-tracking/`, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.

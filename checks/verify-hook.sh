@@ -151,6 +151,28 @@ printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — 
 run_deployed inbox-old "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
 
+# 12b. scaffold knowledge on a project that has content: only on a /team <task> prompt, only on exit 1
+scaffold_project() { # name -> deployed project with a clean inbox and a scaffold PROJECT-OVERVIEW.md
+  local p; p="$(inbox_project "$1" "$due_body")"
+  cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p/.claude/checks/"
+  printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-10-28; nothing here is verified against code. Run /generate-knowledge when the code exists.' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
+  printf '%s' "$p"
+}
+p="$(scaffold_project scaffold-due)"; echo hi > "$p/app.txt"
+run_deployed scaffold-due "$p" '"/team fix the crash"'
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*2026-10-28*/generate-knowledge*) ;; *) fail scaffold-due "expected the scaffold block: $OUT" ;; esac
+run_deployed scaffold-status "$p" '"/team status"'
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*) fail scaffold-status "scaffold block on /team status: $OUT" ;; esac
+run_deployed scaffold-plain "$p" '"hello"'
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*) fail scaffold-plain "scaffold block on a plain prompt: $OUT" ;; esac
+p="$(scaffold_project scaffold-empty)"
+run_deployed scaffold-empty "$p" '"/team fix the crash"'
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*) fail scaffold-empty "scaffold block while the project is still empty: $OUT" ;; esac
+p="$(scaffold_project scaffold-no-knowledge)"; rm -rf "$p/.claude/knowledge"; echo hi > "$p/app.txt"
+run_deployed scaffold-no-knowledge "$p" '"/team fix it"'
+[ "$RC" = 0 ] || fail scaffold-no-knowledge "exit $RC without a knowledge dir: $OUT"
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*) fail scaffold-no-knowledge "scaffold block without a knowledge dir: $OUT" ;; esac
+
 # 13. the guard: PreToolUse on Bash, silent outside a run
 json_string() { # raw text -> a JSON string literal
   local s="$1"
