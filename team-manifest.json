@@ -336,6 +336,10 @@
     "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp> .claude/knowledge",
     "learningsInbox": "bash checks/verify-learnings-inbox.sh",
     "learningsInboxArgs": "<knowledge-dir>; exit 0 = inbox clean, 1 = /generate-knowledge all is due, 2 = could not read what it needs",
-    "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge"
+    "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge",
+    "knowledgeScaffold": "bash checks/verify-knowledge-scaffold.sh",
+    "knowledgeScaffoldArgs": "<project-dir> <knowledge-dir>, in that order; exit 0 = nothing to say, 1 = scaffold knowledge and the project has content (regeneration due), 2 = a path could not be read, 3 = scaffold knowledge and the project is still empty",
+    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . .claude/knowledge",
+    "scaffoldCheck": "bash checks/verify-scaffold-check.sh"
   }
 }
