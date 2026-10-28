@@ -118,6 +118,8 @@ A `pre-existing` defect that is reusable may still become a `trap` entry.
 
 `<knowledge file>` is a file in `team-manifest.json → knowledge.required`; for a rule, the one read by the role that must obey it.
 
+A knowledge file whose first line begins `> SCAFFOLD` gets no `[STALE-CHECK]` mark. It was written on an empty project and nothing in it was verified, so the whole file is known to be unverified; the fix is `/generate-knowledge`, which the orchestrator has already reminded the user of, and a mark would only fill the inbox with what one run of the generator removes. For such a fact write `Learning: none — scaffold knowledge`; `advisory: checklist gap` is reported as usual.
+
 A knowledge file that got in your own way is `fact`, not `team`. That covers a command TOOLCHAIN.md lacks and a recipe that is wrong for this machine or breaks a rule of your environment. The knowledge files belong to this project, and `Team issues` is not kept past the run, so a gap reported only there is hit again by the next run.
 
 **Before writing a `fact`**, check it in three steps:

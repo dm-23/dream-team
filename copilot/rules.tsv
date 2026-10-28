@@ -33,6 +33,7 @@ skills/team/*	; model from the cell `{workflow}.designer`
 skills/team/*	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
 skills/team/*	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
 skills/team/*	 The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one.	
+skills/team/*	 The hook injects the same reminder as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same message, not a second one.	
 skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
 #
 # setup
