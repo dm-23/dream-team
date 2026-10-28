@@ -45,13 +45,13 @@ run empty-scaffold "$p"; expect empty-scaffold 3 "project: empty" "knowledge: sc
 p="$(project dots-only)"; scaffold "$p"; mkdir -p "$p/.git" "$p/.github/workflows" "$p/.vscode"; : > "$p/.gitignore"
 run dots-only "$p"; expect dots-only 3 "project: empty" "knowledge: scaffold 2026-10-28"
 
-p="$(project content-scaffold)"; scaffold "$p"; echo hi > "$p/README.md"
+p="$(project content-scaffold)"; scaffold "$p"; echo hi > "$p/app.txt"
 run content-scaffold "$p"; expect content-scaffold 1 "project: has content" "knowledge: scaffold 2026-10-28"
 
 p="$(project empty-dir-content)"; scaffold "$p"; mkdir "$p/src"
 run empty-dir-content "$p"; expect empty-dir-content 1 "project: has content" "knowledge: scaffold 2026-10-28"
 
-p="$(project content-generated)"; generated "$p"; echo hi > "$p/README.md"
+p="$(project content-generated)"; generated "$p"; echo hi > "$p/app.txt"
 run content-generated "$p"; expect content-generated 0 "project: has content" "knowledge: generated"
 
 p="$(project crlf-banner)"; scaffold "$p"; printf '%s\r\n# more\r\n' "$BANNER" > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
@@ -59,6 +59,15 @@ run crlf-banner "$p"; expect crlf-banner 3 "project: empty" "knowledge: scaffold
 
 p="$(project bom-banner)"; scaffold "$p"; printf '\xEF\xBB\xBF%s\n' "$BANNER" > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
 run bom-banner "$p"; expect bom-banner 3 "project: empty" "knowledge: scaffold 2026-10-28"
+
+# Root documents a developer has before any code — a repository initialised on a
+# hosting service, or /init — do not make the project non-empty.
+p="$(project root-docs)"; scaffold "$p"; echo hi > "$p/README.md"; : > "$p/LICENSE"; echo x > "$p/CLAUDE.md"; echo y > "$p/AGENTS.md"
+run root-docs "$p"; expect root-docs 3 "project: empty" "knowledge: scaffold 2026-10-28"
+p="$(project root-docs-and-code)"; scaffold "$p"; echo hi > "$p/README.md"; mkdir "$p/src"
+run root-docs-and-code "$p"; expect root-docs-and-code 1 "project: has content" "knowledge: scaffold 2026-10-28"
+p="$(project readme-dir)"; scaffold "$p"; mkdir "$p/README.md"
+run readme-dir "$p"; expect readme-dir 1 "project: has content" "knowledge: scaffold 2026-10-28"
 
 run missing-project "$TMP/does-not-exist"
 [ "$RC" = 2 ] || fail missing-project "exit $RC, expected 2: $OUT"

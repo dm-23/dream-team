@@ -8,9 +8,14 @@
 # them.
 #
 #   - The project is EMPTY when every top-level entry of <project-dir> is a
-#     dot-prefixed name: the team's own directory, the run state, the
-#     repository metadata, editor settings. Any other entry, a file or a
-#     directory even when that directory is empty, is content.
+#     dot-prefixed name — the team's own directory, the run state, the
+#     repository metadata, editor settings — or one of the root documents a
+#     developer has before any code: a file named README*, LICENSE*, CLAUDE.md
+#     or AGENTS.md, which a repository initialised on a hosting service or by
+#     /init carries, and which /generate-knowledge reads as human
+#     documentation either way. Any other entry, a file or a directory even
+#     when that directory is empty, is content; so is a directory that
+#     happens to carry one of those names.
 #   - The knowledge is a SCAFFOLD when <knowledge-dir>/PROJECT-OVERVIEW.md
 #     exists and its first line is the banner /generate-knowledge writes on
 #     an empty project. The banner is the whole marker: a separate marker
@@ -35,11 +40,17 @@ knowledge="${2:?usage: verify-knowledge-scaffold.sh <project-dir> <knowledge-dir
 
 PREFIX='> SCAFFOLD — written on an empty project on '
 
-if [ -n "$(find "$project" -mindepth 1 -maxdepth 1 ! -name '.*' -print -quit 2>/dev/null)" ]; then
-  state="has content"
-else
-  state="empty"
-fi
+[ -r "$project" ] && [ -x "$project" ] || { echo "FAIL: project dir not readable: $project" >&2; exit 2; }
+
+state="empty"
+for entry in "$project"/*; do          # the glob skips dot-prefixed names
+  [ -e "$entry" ] || continue          # no match at all: the literal pattern
+  name="${entry##*/}"
+  if [ -f "$entry" ]; then
+    case "$name" in README*|LICENSE*|CLAUDE.md|AGENTS.md) continue ;; esac
+  fi
+  state="has content"; break
+done
 echo "project: $state"
 
 overview="$knowledge/PROJECT-OVERVIEW.md"

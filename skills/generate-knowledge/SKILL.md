@@ -36,7 +36,7 @@ For each stack card, evaluate its `## Detect` section against the repository (se
 
 ## Empty project
 
-A developer who starts a project from nothing deploys the team into an empty folder, and the knowledge has to exist before the first `/team` run can write the first code. Step 1b of "Process" runs `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out; when its first line is `project: empty`, this section replaces steps 2–10. It applies to `all`, to no argument, and to a run naming files; `check` and `fix` have their own paragraphs below. The script's definition is the only one: a folder whose top-level entries are all dot-prefixed is empty, and any other entry, a file or a directory even when that directory is empty, is content, whatever the stack cards detect.
+A developer who starts a project from nothing deploys the team into an empty folder, and the knowledge has to exist before the first `/team` run can write the first code. Step 1b of "Process" runs `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out; when its first line is `project: empty`, this section replaces steps 2–10. It applies to `all`, to no argument, and to a run naming files; `check` and `fix` have their own paragraphs below. The script's definition is the only one: a folder whose top-level entries are all dot-prefixed, or root documents a developer has before any code (a file named `README*`, `LICENSE*`, `CLAUDE.md` or `AGENTS.md`), is empty; any other entry, a file or a directory even when that directory is empty, is content, whatever the stack cards detect. Those root documents are Inputs 3 and are read as "Human documentation in an empty project" says.
 
 **Say what will happen.** One short message before anything else: the folder holds no project content, so this run writes scaffolds, every file marked on its first line, to be regenerated once the code exists.
 
@@ -44,7 +44,7 @@ A developer who starts a project from nothing deploys the team into an empty fol
 
 **Active cards.** The named cards are active as *declared*: their rules apply because the developer said so, and nothing in the code confirms or contradicts them yet. "Not decided" makes `_generic.md` the one active card.
 
-**Human documentation in an empty project.** Inputs 3 are read wherever they exist, dot paths included: `.claude/PROJECT.md`, `.claude/docs/*.md` and their equivalents in another edition. What they say lands where it would for a real project — the Documentation map of `PROJECT-OVERVIEW.md` lists them, and the obligations, prohibitions and documents to keep in sync of `PROJECT-RULES.md` are extracted from them with their sources cited, exactly as steps 7 and 10 extract them. This is the one place a scaffold holds sourced content, and only when such a document exists.
+**Human documentation in an empty project.** Inputs 3 are read wherever they exist: the root documents the definition admits, and dot paths such as `.claude/PROJECT.md`, `.claude/docs/*.md` and their equivalents in another edition. What they say lands where it would for a real project — the Documentation map of `PROJECT-OVERVIEW.md` lists them, and the obligations, prohibitions and documents to keep in sync of `PROJECT-RULES.md` are extracted from them with their sources cited, exactly as steps 7 and 10 extract them. This is the one place a scaffold holds sourced content, and only when such a document exists.
 
 **The banner.** The first line of every scaffold file, byte for byte except the date:
 
