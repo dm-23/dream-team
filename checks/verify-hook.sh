@@ -228,6 +228,13 @@ toolchain() { # dir command-cell: a TOOLCHAIN.md whose one row has the given Com
 
 p="$(project guard-no-marker)"
 expect_silence guard-no-marker "$p" 'git push --force origin x'
+# a closed run keeps its marker in state=closed: the guard sleeps
+closed_marker "$p" bug_fix_warm_2026-10-30 BUILT 2026-10-30 0
+expect_silence guard-closed-marker "$p" 'git push --force origin x'
+expect_silence guard-closed-marker-rm "$p" 'rm -rf ./out/*'
+printf 'context_id=bug_fix_g_2026-10-30\nworkflow=Bug Fix\nphase=5 Implement\nstate=open\n' > "$p/.dream-team-tracking/.team-mode"
+expect_deny guard-open-state "$p" 'git push --force origin x' 'force push'
+# a marker without a state line (4.4.x) is an open run
 
 p="$(project guard)"; marker "$p" bug_fix_g_2026-10-20 "5 Implement"; status "$p" bug_fix_g_2026-10-20 "# Status: g"
 expect_deny guard-force-push "$p" 'git push --force origin x' 'force push'
