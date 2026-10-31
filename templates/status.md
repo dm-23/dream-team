@@ -2,6 +2,7 @@
 
 **Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
 **Context:** `.dream-team-tracking/{context_id}/`
+**Parent:** {context_id of the run this one follows | —}
 **Started:** {YYYY-MM-DD}
 **Closed:** —
 **Baseline:** commit `{git rev-parse --short HEAD}`; pre-existing uncommitted files: {none | list from `git status --porcelain`}
@@ -57,5 +58,6 @@ Commands from `TOOLCHAIN.md → Operations` run during this run, one line each: 
 
 <!--
 Closing rule: when the run completes, replace the FIRST line of this file with
-`[DONE] YYYY-MM-DD — {one-line result}` and fill the `Closed:` field.
+`[DONE] YYYY-MM-DD — {one-line result}`, fill the `Closed:` field, and close the
+marker (state=closed) as the team skill's "Sticky team mode" says.
 -->
