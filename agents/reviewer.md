@@ -151,7 +151,7 @@ The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote
    text: all of that belongs in the entry file.
 3. Marks are the last lines of the entry file, one per line.
 
-Never edit the knowledge files themselves. A rule changed mid-run changes the contract the other agents are working by; `/generate-knowledge all` writes it, with the user's consent.
+Never edit the knowledge files themselves. A rule changed mid-run changes the contract the other agents are working by; `/generate-knowledge` writes it, with the user's consent.
 
 Report every outcome on the `Learning:` line.
 
