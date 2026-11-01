@@ -1,6 +1,6 @@
 # Status: {title}
 
-**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
+**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature} (provisional: the class announced at Step 0, or — when it is the same)
 **Context:** `.dream-team-tracking/{context_id}/`
 **Parent:** {context_id of the run this one follows | —}
 **Started:** {YYYY-MM-DD}
@@ -34,6 +34,7 @@
 
 - {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}
 - {date} — {decision, who/what decided it}
+- {date} — Workflow fixed: {workflow} (provisional {class}) — Scope Count {N}; Wiring/surface {…}   (only when the research pass changed the class)
 
 ## Verify by hand
 
