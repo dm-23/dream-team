@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reports whether a project's learnings inbox needs /generate-knowledge all.
+# Reports whether a project's learnings inbox needs /generate-knowledge.
 #
 #   verify-learnings-inbox.sh <knowledge-dir>
 #
@@ -190,7 +190,7 @@ if [ "$marks" -gt 0 ]; then
   due=1
 fi
 if [ "$due" -eq 1 ]; then
-  echo "learnings inbox: due -- run /generate-knowledge all"
+  echo "learnings inbox: due -- run /generate-knowledge"
   exit 1
 fi
 echo "learnings inbox: ok"

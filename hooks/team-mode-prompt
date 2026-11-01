@@ -63,7 +63,7 @@ context=""
 
 if [ -d "$LEGACY" ]; then
   context="${context}<TEAM-LEGACY-STATE>\n"
-  context="${context}This project's run state is still in the legacy directory .claude-tracking/, which teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup, which shows a dry run of tools/migrate-tracking.sh and moves the state with the user's consent. /team stop and /team status still work. If a TEAM-MODE-ACTIVE block follows, do not continue that run: ask for /team stop, then /team-setup. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
+  context="${context}This project's run state is still in the legacy directory .claude-tracking/, which teams before 4.0.0 used. /team starts no run and resumes none until it is moved: run /team-setup, which shows a dry run of tools/migrate-tracking.sh and moves the state when its dry run is clean. /team stop and /team status still work. If a TEAM-MODE-ACTIVE block follows, do not continue that run: ask for /team stop, then /team-setup. Say this in one line when the user asks for a run; do not improvise a workaround.\n"
   context="${context}</TEAM-LEGACY-STATE>\n"
 fi
 
@@ -88,7 +88,7 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
       summary="$(printf '%s\n' "$inbox" | head -1 | sed 's/^learnings inbox: //')"
       summary="$(escape_for_json "$summary")"
       context="${context}<TEAM-INBOX-DUE>\n"
-      context="${context}The learnings inbox is due: ${summary}. Tell the user once, in one line, that /generate-knowledge all turns the pending marks into rules and empties the inbox, then record \\\"Inbox due: told YYYY-MM-DD\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}The learnings inbox is due: ${summary}. In Step 0, before any research, offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Inbox due: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-INBOX-DUE>\n"
     fi
   fi
@@ -98,7 +98,7 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
       written="$(printf '%s\n' "$scaffold" | sed -n 's/^knowledge: scaffold //p' | head -1)"
       written="$(escape_for_json "$written")"
       context="${context}<TEAM-KNOWLEDGE-SCAFFOLD>\n"
-      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. Tell the user once, in one line, that /generate-knowledge should be run before building on them, then record \\\"Scaffold knowledge: told YYYY-MM-DD\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Scaffold knowledge: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-KNOWLEDGE-SCAFFOLD>\n"
     fi
   fi

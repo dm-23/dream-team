@@ -50,7 +50,7 @@ Execute batches according to the Batching Strategy. For each batch:
 
 Phase 5 — Final review: Reviewer reviews ALL changes against baseline (its `inputs` carries the brief path when one was written), runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) where its prompt allows; in critical-zone mode the failure is a `manual` finding and goes to the Developer; still failing → escalate to the user.
 
-Phase 6 — Close: summarize, update status.md, mark `[DONE]`, close the marker (state=closed, see the team skill). Offer (do not perform) a commit via AskUserQuestion: "Commit now with message '...' / I'll commit myself". The question names every item from the Reviewer's `After commit:` line, or says there are none. If `TOOLCHAIN.md → Operations` has a deploy row, offer it next, under "Operations"; never before the commit.
+Phase 6 — Close: summarize, update status.md, mark `[DONE]`, close the marker (state=closed, see the team skill). The closing question (SKILL.md, section Closing) offers the commit — "Commit now with message '...' / I'll commit myself", naming every item from the Reviewer's `After commit:` line or saying there are none — the knowledge refresh when one is due, and the deploy row of `TOOLCHAIN.md → Operations` when there is one, under "Operations"; a deploy is never offered before the commit.
 
 ### Pause Instruction Template
 

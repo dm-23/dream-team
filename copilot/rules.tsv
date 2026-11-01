@@ -8,8 +8,9 @@ skills/generate-knowledge/SKILL.md	.claude/PROJECT.md	@KEEP-CLAUDE@PROJECT.md
 skills/generate-knowledge/SKILL.md	.claude/docs	@KEEP-CLAUDE@docs
 skills/generate-knowledge/SKILL.md	`.claude/agents/*.md`	`.github/agents/*.agent.md`
 skills/generate-knowledge/SKILL.md	Do not touch `.claude/agents/`, `.claude/skills/`,	Do not touch `.github/agents/`, `.github/skills/`,
-skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS`	Arguments: the text the user typed after the command
-skills/generate-knowledge/SKILL.md	one AskUserQuestion call	one question-tool call
+skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS` — file names only	Arguments: the text the user typed after the command — file names only
+skills/generate-knowledge/SKILL.md	One AskUserQuestion call	One question-tool call
+skills/generate-knowledge/SKILL.md	One AskUserQuestion, in the language	One question-tool call, in the language
 #
 # orchestrator
 skills/team/*	`.claude/agents/`	`.github/agents/`
@@ -32,9 +33,11 @@ skills/team/*	, model from the cell `change_set.designer`
 skills/team/*	; model from the cell `{workflow}.designer`	
 skills/team/*	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
 skills/team/*	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
-skills/team/*	 The hook injects the same reminder as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same message, not a second one.	
-skills/team/*	 The hook injects the same reminder as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same message, not a second one.	
+skills/team/*	 The hook injects the same notice as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same offer, not a second one.	
+skills/team/*	 The hook injects the same notice as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same offer, not a second one.	
 skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
+skills/team/*	.claude/skills/generate-knowledge/SKILL.md	.github/skills/generate-knowledge/SKILL.md
+skills/team/*	one AskUserQuestion	one question-tool call
 #
 # setup
 skills/team-setup/SKILL.md	Team files: ok | missing: [...] → {update.pull | update.copy}	Team files: ok | missing: [...] → run copilot/install.sh again from a fresh copy of the team's repository

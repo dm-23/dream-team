@@ -13,4 +13,4 @@ Read first: `learnings-check.md` (step 2) · `design.md` (step 2b) · `quorum.md
 7. Tester: one call for the whole change set; it triages per its own table.
 8. Reviewer: one combined review of all batches; it judges the whole diff, and its model comes from the cell `change_set.reviewer`. Its `inputs` carries the brief path when one was written. The rework loop in `.claude/skills/team/references/rework.md`.
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
-10. Report; close status.md. Reviewer has classified what the run taught.
+10. Report; close status.md and the marker; then the closing question (SKILL.md, section Closing). Reviewer has classified what the run taught.

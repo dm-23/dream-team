@@ -18,7 +18,7 @@ Answer in the language the task is written in. Record that language in status.md
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
-- A request for a report means the HTML file described in "Report requests" below — never chat text, never Markdown, never a published Artifact.
+- A request for a report means the HTML file described in `.claude/skills/team/references/report-requests.md`, read when such a request arrives — never chat text, never Markdown, never a published Artifact.
 - Change tracking files (`status.md`, plans, tasks, the marker) only with Edit and Write — never through a shell command, whose silent failure leaves the file unchanged while you carry on as if it were. The one exception is deleting the marker, which no other tool can do: `rm -f .dream-team-tracking/.team-mode`, followed by `ls -a .dream-team-tracking` to see it gone.
 - When a review finding or a user decision changes what `detailed-plan.md`, `change-set.md` or a task file says, correct that file in the same step and log it in "Decisions log". Later batches and resumed sessions work from those files, not from the review.
 - Update `.dream-team-tracking/{context_id}/status.md` after every phase; at completion replace its first line with `[DONE] YYYY-MM-DD — one-line result`, fill `Closed`, and close the marker as "Sticky team mode" says.
@@ -30,14 +30,6 @@ Answer in the language the task is written in. Record that language in status.md
 - Status words in `status.md → Result`, the final report and the Operations log are exactly: `BUILT` (the change set is in the working tree and the Reviewer's verdict is approved or fixed), `COMMITTED <sha>` (the user committed), `DEPLOYED <environment>` (an Operations row ran with exit 0), `VERIFIED` (the user confirmed every Verify by hand line). Never a stronger word than the evidence allows: a deployed change with open Verify by hand lines is `DEPLOYED dev, not VERIFIED`.
 - A Reviewer report's `pre-existing` line is named in the final report to the user as candidates for a separate run; it never blocks and is never sent to rework.
 - The final report also names the Bug Fix `Fail-before:` result and, when the Reviewer reported any, the critical-zone paths from its `Critical zone:` line.
-
-## Report requests
-
-A message asking for a report — "generate a report", "make a report", "I need a report on X", "write up the findings", in any language and any phrasing — means exactly one thing: a self-contained HTML file built from `.claude/templates/report-html.md`, written to `.dream-team-tracking/{context_id}/reports/{topic}.html`, handed to the user as that file path in chat. Read the template before writing; never reconstruct its structure or styles from memory.
-
-This is the default. It does not depend on how long the findings are, on which workflow is running, or on the user saying "shareable". It changes only when the same message names a different form explicitly — "a short report in chat", "just answer in chat", "in Markdown", "put it in {path}". Such a request overrides the format and the location; it never cancels the report itself, and one given for an earlier report does not carry over to the next one.
-
-Two prohibitions, both absolute. Never publish a report through the Artifact tool: the user rejected cloud publishing for this project, because reports can carry material covered by a non-disclosure agreement. And never hand back chat text, a Markdown file or a canvas in place of a report that was asked for.
 
 ## Sticky team mode
 
@@ -62,8 +54,8 @@ verify_open={number of Verify by hand lines not yet confirmed}
 
 - **Write** it in Step 0 with `state=open`, immediately after creating `status.md`; `parent=` when `follow-up.md` or the user named the run this one follows.
 - **Update** the `phase` line at every phase change, in the same edit as `status.md`.
-- **Close** it when the run closes (`[DONE]`): rewrite it whole with Write — `state=closed`, `closed=`, `result=` (the status word of `## Result`; `ANSWERED` for Analyze), `verify_open=` (the count of lines under `## Verify by hand` that are not `none` and carry no `— confirmed` suffix). The marker stays: the hook then reports every later message as `<TEAM-MODE-CLOSED>` and `follow-up.md` decides what it is. The final report ends with one line in the task's language: "Your next message here is taken as feedback on this run until a new run starts or you say it is verified."
-- **Delete** it with `rm -f .dream-team-tracking/.team-mode` (confirm with `ls -a`) only when the user asks to stop team mode, when `follow-up.md` records that every Verify by hand line is confirmed (`VERIFIED`), and before writing a different run's marker.
+- **Close** it when the run closes (`[DONE]`): rewrite it whole with Write — `state=closed`, `closed=`, `result=` (the status word of `## Result`; `ANSWERED` for Analyze), `verify_open=` (the count of bullet lines, `- `, under `## Verify by hand` that are not `none` and carry no `— confirmed` suffix). The marker stays: the hook then reports every later message as `<TEAM-MODE-CLOSED>` and `follow-up.md` decides what it is. The final report ends with one line in the task's language: "Your next message here is taken as feedback on this run until a new run starts or you say it is verified."
+- **Delete** it with `rm -f .dream-team-tracking/.team-mode` (confirm with `ls -a`) only when the user asks to stop team mode, or when `follow-up.md` records that every Verify by hand line is confirmed (`VERIFIED`). A new run's marker simply replaces a closed one (Write overwrites it).
 - If the marker names a run whose `status.md` is missing, delete the marker and say so in one line; the hook reports that case as `<TEAM-MODE-STALE>`, and the message that carried it is a standalone request.
 
 Arguments that manage the mode, handled without any workflow ceremony:
@@ -74,7 +66,7 @@ Arguments that manage the mode, handled without any workflow ceremony:
 | `status` | Read the marker and its `status.md`; report the run, its state, workflow, phase or result, its parent chain (follow the `**Parent:**` lines) and what happens next. Change nothing. |
 | `resume [context_id]` | Resume as described in Step -1, item 4. |
 
-When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat it as input to the named run: read that run's `status.md` first, then continue from its first unchecked phase. When it carries `<TEAM-MODE-CLOSED>`, read that run's `status.md` and `.claude/skills/team/references/follow-up.md`, then do what that file says. Never start a second run while a marker says `state=open` — finish, stop, or explicitly replace the current one.
+When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat it as input to the named run: read that run's `status.md` first, then continue from its first unchecked phase; if the marker says `state=closed` while that first line is open, rewrite it `state=open` before continuing. When it carries `<TEAM-MODE-CLOSED>`, read that run's `status.md` and `.claude/skills/team/references/follow-up.md`, then do what that file says. Never start a second run while a marker says `state=open` — finish, stop, or explicitly replace the current one.
 
 ## Step -1: Preflight (every invocation)
 
@@ -85,8 +77,8 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
    - In all three cases, stop here.
 
    Without a legacy directory: if the argument is `stop` or `status`, act per the "Sticky team mode" table and stop here.
-1. Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check it exists under `knowledge.dir`. If any is missing: stop and tell the user to run `/generate-knowledge` (list the missing files). Do not attempt to generate knowledge yourself.
-1b. Run `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out. Exit 3: tell the user once, in one line, that the knowledge files are scaffolds written on an empty project on the date it prints, and that `/generate-knowledge` is due once the code exists. Exit 1: say in one line that the project now has content and `/generate-knowledge` should be run before building on the scaffolds; the user may continue. Either way, once the run's `status.md` exists (Step 0), write `Scaffold knowledge: told YYYY-MM-DD` to its Process notes. With `resume`, or when item 4 resumes an open run, say nothing here: that run's Process notes already carry the line, or item 4's resumed status.md gets it then. Never block the run on it. The hook injects the same reminder as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same message, not a second one.
+1. Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check it exists under `knowledge.dir`. If any is missing: offer to generate them now as `.claude/skills/team/references/knowledge-refresh.md` says (one question, naming the missing files); on no, stop and name the files. Never write a knowledge file yourself.
+1b. Run `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out. Exit 3: tell the user once, in one line, that the knowledge files are scaffolds written on an empty project on the date it prints, and that `/generate-knowledge` is due once the code exists. Exit 1: the project now has content — offer the refresh as `knowledge-refresh.md` says; the user may continue without it. Either way, once the run's `status.md` exists (Step 0), write `Scaffold knowledge: told YYYY-MM-DD` (exit 3) or `Scaffold knowledge: offered YYYY-MM-DD — <answer>` (exit 1) to its Process notes. With `resume`, or when item 4 resumes an open run, say nothing here: that run's Process notes already carry the line, or item 4's resumed status.md gets it then. Never block the run on it. The hook injects the same notice as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same offer, not a second one.
 2. If `LEARNINGS.md` is missing, create it from `knowledge.persistentTemplates`.
 3. Read `TOOLCHAIN.md → Missing on this machine`. If it lists tools, warn the user once (they may continue).
 3b. Read `CAPABILITIES.md` if it exists; when it does, read `.claude/skills/team/references/capabilities.md` and follow it. Note which are available; if the file is absent, run with none. Never install anything and never suggest a run is blocked by a missing capability.
@@ -105,9 +97,10 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 
 Detect from the task (any language): analysis verbs, or the interface's usability or design as the subject → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "broken/error/exception/not working" → Bug Fix; single small add/change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Announce the choice; the user may override ("switch to X").
 
-Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
+Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described in `.claude/skills/team/references/report-requests.md`, written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`, `**Parent:**` filled when this run follows another. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker and the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker (`state=open`). Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
+Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`, `**Parent:**` filled when this run follows another. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker and the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` are the only shell commands you run — none of them a build, a test or a lint. A knowledge refresh accepted at Step -1 or here runs now, before the marker is written (`knowledge-refresh.md`). Then write the sticky-mode marker (`state=open`). Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
+
 ## Workflow references
 
 Each workflow's steps live in one file. Read it in full before the workflow's first step, and again after a resume, before continuing; nothing else in `references/` is read until a step names it.
@@ -121,7 +114,11 @@ Each workflow's steps live in one file. Read it in full before the workflow's fi
 | Change Set | `.claude/skills/team/references/change_set.md` |
 | Full Feature | `.claude/skills/team/references/full_feature.md` |
 
-Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, all under the same directory.
+Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `knowledge-refresh.md`, `report-requests.md`, all under the same directory.
+
+## Closing
+
+When a run closes — after `status.md` is `[DONE]` and the marker is `state=closed`, never before — one AskUserQuestion carries everything the developer may want next, each option present only when it applies: **commit now** with the message you propose / **I'll commit myself** (a run that changed files; the question names every item from the Reviewer's `After commit:` line, or says there are none); **refresh knowledge now — N files, M marks** (`.claude/skills/team/references/knowledge-refresh.md` says when); **run `<deploy row>`** (`operations.md`; never before the commit). The commit is offered, never performed by you. Then the final report ends with the warm-state line from "Sticky team mode".
 
 ## Model routing
 

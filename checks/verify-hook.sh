@@ -161,7 +161,7 @@ due_body='# Inbox
 p="$(inbox_project inbox-due "$due_body")"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'/generate-knowledge all'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
 run_deployed inbox-due-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-plain "inbox block on a plain prompt: $OUT" ;; esac
 run_deployed inbox-due-status "$p" '"/team status"'
@@ -188,7 +188,7 @@ scaffold_project() { # name -> deployed project with a clean inbox and a scaffol
 }
 p="$(scaffold_project scaffold-due)"; echo hi > "$p/app.txt"
 run_deployed scaffold-due "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*2026-10-28*/generate-knowledge*) ;; *) fail scaffold-due "expected the scaffold block: $OUT" ;; esac
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*2026-10-28*'references/knowledge-refresh.md'*) ;; *) fail scaffold-due "expected the scaffold block: $OUT" ;; esac
 run_deployed scaffold-status "$p" '"/team status"'
 case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*) fail scaffold-status "scaffold block on /team status: $OUT" ;; esac
 run_deployed scaffold-plain "$p" '"hello"'

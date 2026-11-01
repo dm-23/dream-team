@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verifies that a /generate-knowledge fix run moved text without losing or
+# Verifies that a /generate-knowledge shape-work run moved text without losing or
 # altering it.
 #
 #   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>
