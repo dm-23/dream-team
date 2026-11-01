@@ -35,6 +35,7 @@ skills/team/*	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	Th
 skills/team/*	 The hook injects the same notice as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same offer, not a second one.	
 skills/team/*	 The hook injects the same notice as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same offer, not a second one.	
 skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
+skills/team/*	.claude/skills/generate-knowledge/SKILL.md	.github/skills/generate-knowledge/SKILL.md
 #
 # setup
 skills/team-setup/SKILL.md	Team files: ok | missing: [...] → {update.pull | update.copy}	Team files: ok | missing: [...] → run copilot/install.sh again from a fresh copy of the team's repository

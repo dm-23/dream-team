@@ -10,7 +10,7 @@ Two moments.
 
 On yes: one Agent call, with no handoff envelope (the generator is a command, not a role) and `model` omitted. Prompt:
 
-> You are the Knowledge Generator. Read `.claude/skills/generate-knowledge/SKILL.md` and follow it. Arguments: `{file names, or nothing}` `Consent: Go`. Answer in {language}. Ask no question; report the work list as done, the backup path and the size table.
+> You are the Knowledge Generator. Read `.claude/skills/generate-knowledge/SKILL.md` and follow it. Arguments: `{file names, or nothing}` `Consent: given`. Answer in {language}. Ask no question; report the work list as done, the backup path and the size table.
 
 Scope: at Step 0 no file names — the generator decides from its own checks; at close the files the run's marks name, or none when only the inbox is due. The marker stays as it is. At Step 0 the call is made **before** the marker is written, because a marker in `state=open` is the one case the generator refuses; at close the marker is already `state=closed`, which it accepts. Never run the generator while a marker says `state=open`, and never delete a marker to make room for it.
 

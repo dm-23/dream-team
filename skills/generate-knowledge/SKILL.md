@@ -10,7 +10,7 @@ You are the Knowledge Generator. The Dream Team agents (`.claude/agents/*.md`) c
 
 ## What this run does
 
-Arguments: `$ARGUMENTS` — file names only, as an override: those files are regenerated and nothing else is decided for you. An Agent-run instance may also carry `Consent: Go` (see "Consent"). Otherwise this run decides. In this order, each test adds work to one list:
+Arguments: `$ARGUMENTS` — file names only, as an override: those files are regenerated and nothing else is decided for you. An Agent-run instance may also carry `Consent: given` (see "Consent"). Otherwise this run decides. In this order, each test adds work to one list:
 
 1. **Generation.** No `knowledge.dir`, a `knowledge.required` file missing, or `checks.knowledgeScaffold` exits 1 (scaffold knowledge on a project that has content) → regenerate every required file. Exit 3 (scaffold, project still empty) → "Empty project" replaces everything below, stack question included. Otherwise run the staleness check ("Staleness") on every existing file: a file with a `STALE` line, or named by an unresolved `[STALE-CHECK]` mark, is regenerated.
 2. **Shape.** For every file not already in the generation list, the shape gate ("Shape work"): a `subset` file with no topic directory, `LEARNINGS.md` with entry bodies inline, a file over its budget, an index header the template no longer has → the moves and rewrites that bring it to shape.
@@ -20,7 +20,7 @@ An empty list is reported as `nothing to do` and the run ends without a question
 
 ## Consent
 
-Every branch backs up first, so one question covers all of it. One AskUserQuestion, in the language of the request, whose text is the work list with counts: `N files to regenerate: …`, `S files to restructure: …`, `M rules to promote into …`, `F facts to fold into …`, `R entries to remove (…)`, `T traps to shorten`, `backup to .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/`. Options, exactly three: **Go** (everything listed), **Only the regenerations** (the generation and shape lists; the inbox is left as it is), **Nothing** (the list was the report). A run started with `Consent: Go` in its arguments skips the question and does everything listed. The empty-project stack question is a different question and the only one that run asks.
+Every branch backs up first, so one question covers all of it. One AskUserQuestion, in the language of the request, whose text is the work list with counts: `N files to regenerate: …`, `S files to restructure: …`, `M rules to promote into …`, `F facts to fold into …`, `R entries to remove (…)`, `T traps to shorten`, `backup to .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/`. Options, exactly three: **Do it** (everything listed), **Only the regenerations** (the generation and shape lists; the inbox is left as it is), **Nothing** (the list was the report). A run started with `Consent: given` in its arguments skips the question and does everything listed. The empty-project stack question is a different question and the only one that run asks.
 
 Output language: the language of the user's request; file contents in English (agents read them).
 
@@ -323,7 +323,7 @@ A step of every run whose work list includes the inbox ("What this run does", it
    - `covered` — every mark it carries is resolved, in this run (step 9 of "Process" resolves `[STALE-CHECK]` lines before triage) or earlier, and it is not a trap worth keeping on its own: the knowledge files now hold what it said.
 
    This mode reads the repository, so `fact` and `obsolete` are verified, not guessed.
-3. **Consent.** The classes and their counts go into the one question of "Consent" — `M rules to promote into <files>`, `F facts to fold into <files>`, `R entries to remove (N run summaries, N team defects listed in the report, N obsolete, N covered)`, `T traps to shorten over learningsEntryLines` — only classes that have members. `Go` accepts every class; `Only the regenerations` and `Nothing` accept none, and the entries stay exactly as they are.
+3. **Consent.** The classes and their counts are listed in the one question of "Consent" — `M rules to promote into <files>`, `F facts to fold into <files>`, `R entries to remove (N run summaries, N team defects listed in the report, N obsolete, N covered)`, `T traps to shorten over learningsEntryLines` — only classes that have members. `Do it` accepts every class; `Only the regenerations` and `Nothing` accept none, and the entries stay exactly as they are.
 4. **Back up** `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` before the first write and name the path in the report. Entries have no version-controlled copy anywhere.
 5. **Apply what was accepted.**
    - A rule becomes one item in its target file, worded as an imperative and ending `— source: learnings <date> <title>`; its `[PROMOTE]` lines become `[PROMOTE RESOLVED YYYY-MM-DD]`. A rule placed in `PROJECT-RULES.md` also gets its `REVIEW-CHECKLIST.md` item, as every obligation does.
