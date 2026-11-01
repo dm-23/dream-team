@@ -63,7 +63,8 @@ The two task lines above are not decoration. The team answers in whichever langu
 - A task about the interface itself — audit it, review it, say what is wrong with a page — is an `Analyze` run with a designer in it: findings ranked by what they cost a person, with the pages to change in order. A user-facing feature gets a design brief before anyone designs the code, and a change to one of your interface conventions is asked, never assumed.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.
 - The team reports the build and test results it actually ran, not a promise.
-- Every message from the team while a run is open ends with `Waiting on you: …`, and the result is named with one of four words: built, committed, deployed to a named environment, or verified by you.
+- A message from the team that ends with something it needs from you — a commit, a confirmation, access — ends with `Waiting on you: …`; a message that needs nothing ends without it. The result is named with one of four words: built, committed, deployed to a named environment, or verified by you.
+- When a run closes, the team stays listening. Commit, deploy, check, then write what you found in the same session: a confirmation updates the run's result, a defect opens a linked fix that starts from the delivered change, a new task starts a new run, and a question about something else is just answered. `/team stop` ends the listening.
 - Deploys, rollbacks and readings from a running system are not a workflow step. When your repository documents such commands, `/generate-knowledge` lists them in an Operations section of `TOOLCHAIN.md`, and the orchestrator runs only the ones marked for it, one approval per command, logging each in the run's status file. Everything else there is yours to run.
 
 ## Requirements
@@ -237,14 +238,15 @@ A card is one file per language in `templates/standards/`, with a fixed set of t
 
 ## Sticky team mode
 
-A run outlives the conversation that started it. While it is open, a marker file at `.dream-team-tracking/.team-mode` records the run, its workflow and its phase. A hook on every submitted prompt reads that marker and reminds the model that the run is active and which phase it is in.
+A run outlives the conversation that started it. While it is open, a marker file at `.dream-team-tracking/.team-mode` records the run, its workflow and its phase. A hook on every submitted prompt reads that marker and reminds the model that the run is active and which phase it is in. After the run closes, the same marker records that it closed, with what result and how many checks are still yours, so your feedback lands in the team and not in a plain chat.
 
 This is deliberately not a memory or an instruction that lives in context. The harness runs the hook itself, so the behaviour survives a model switch, a long pause, a compaction and a full restart.
 
-- The marker is written when a run starts, updated at every phase change, and deleted when the run closes.
+- The marker is written when a run starts, updated at every phase change, and rewritten with `state=closed` and the result when the run closes; it is deleted by `/team stop`, when you confirm every check, or when a new run replaces it.
+- After a close, the hook reports the run as closed and the orchestrator triages your message — a verification result, a defect in the delivered change, new scope, operations, or something unrelated — following `skills/team/references/follow-up.md`. A defect opens a linked run whose first step is a diagnosis against the delivered change, not a new research pass. The guard sleeps while a run is only closed, so your own commit and deploy commands are not touched.
 - A message starting with a slash is never captured, so every command still works normally. Leading whitespace does not change that.
-- `/team stop` deletes the marker and leaves the run parked; `/team resume` picks it up.
-- A marker whose run is already closed, or whose `status.md` is gone, is reported as stale instead of hijacking the message; the orchestrator deletes it.
+- `/team stop` deletes the marker and leaves an open run parked; `/team resume` picks it up.
+- A marker whose `status.md` is gone is reported as stale instead of hijacking the message; the orchestrator deletes it.
 - While the pre-4.0.0 run-state directory still exists, every prompt carries a one-line notice that `/team` starts nothing until `/team-setup fix` has moved it. The notice comes from the hook, not from the skill, so it cannot be skipped.
 - On the prompt that starts a run, the hook also says when the learnings inbox is due, so the reminder does not depend on the model counting marks in a directory its search tools skip.
 - If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions, and the guard below denies nothing.
@@ -385,6 +387,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | Gates appear as questions with options | not yet checked | not yet checked |
 | Three Brainstorm calls run in parallel | not yet checked | not yet checked |
 | With an open run, a new session receives the `TEAM-MODE-ACTIVE` text | not yet checked | not yet checked |
+| With a closed run (`state=closed` marker), a new session receives the `TEAM-MODE-CLOSED` text | not yet checked | not yet checked |
 | With an open run, `git push --force` is denied with the guard's reason | not yet checked | not yet checked |
 | Side by side with a Claude install: one `/team` and the Copilot roles only | not yet checked | not yet checked |
 
@@ -395,13 +398,13 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | An update to the team changed nothing, a role or command behaves like the previous version | The session still holds the prompts it loaded at startup | Reopen the session |
 | `/team` refuses to start | A required knowledge file is missing | `/generate-knowledge` |
 | Sticky mode does nothing | Hook not wired, or no bash | `/team-setup check` reports which; open `/hooks` once after wiring |
-| An unrelated request is pulled into a run | A stale marker from a run that never closed | The hook now reports it as stale; `/team stop`, or `/team-setup fix` |
+| An unrelated request is pulled into a run | A marker of an open run that never closed, or a closed run's marker you want gone | `/team stop`; a closed run's marker answers unrelated questions normally and only triages messages about the run |
 | A command is not offered | The team's contents are not in `.claude/` itself, but one level down in a subdirectory | Move them up so `.claude/skills/team/SKILL.md` is a real path, then reopen the session |
 | The reviewer reports a missing tool | A command in `TOOLCHAIN.md` is not installed here | Install it, or accept the gap; it is reported, never faked |
 | Generated files appear in version control | The exclude lines were not added | `/team-setup fix` |
 | `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup fix` |
 | Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |
-| An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line | Nothing: 4.1.0 reads `[DONE]` anywhere in that line as closed |
+| An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line, `**[DONE — date]**` or `Complete —` | Nothing: 4.5.0 reads `[DONE` or `Complete —` anywhere in that line as closed |
 | `/team` starts but behaves like an older version, or says a workflow file is missing | `skills/team/references/` was not copied, or the session still holds the old prompts | Re-copy the team into `.claude/` and reopen the session |
 | The Reviewer reports "Critical zones: section missing" | `PROJECT-RULES.md` predates 4.3.0 | `/generate-knowledge PROJECT-RULES.md` |
 | The Designer reports `Design language: topic missing` | `FRONTEND-ARCHITECTURE.md` predates 4.4.0 | `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` |
