@@ -62,6 +62,8 @@ First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, wit
 
 Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file. Without a task file (Bug Fix, Small Change), return the same block as your final message.
 
+A rework handoff carries the Reviewer's findings on your test files, and only those: fix exactly what they name, rerun `Test one` on the files you touched, and return the block again. Findings on production files are the Developer's and never reach you.
+
 ## Optional capabilities
 
 Your handoff may carry an `external context` block: material the orchestrator gathered through an optional capability. Two kinds matter to you. Documentation for a third-party test library tells you the current assertion or fixture API. Evidence from a rendered page tells you what the change actually produced.
