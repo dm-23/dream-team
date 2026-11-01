@@ -7,3 +7,6 @@
 .github/dream-team/team-manifest.json	".claude-tracking"
 # The session hook names the legacy run-state directory on purpose, as the migration script does.
 .github/dream-team/hooks/session-start	.claude-tracking
+# The team ignore file hides the project settings files a clone-in-place install keeps beside the team; in the Copilot edition the lines are inert.
+.github/dream-team/.gitignore	settings.json
+.github/dream-team/.gitignore	settings.local.json

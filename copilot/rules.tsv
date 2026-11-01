@@ -37,17 +37,20 @@ skills/team/*	 The hook injects the same reminder as `<TEAM-KNOWLEDGE-SCAFFOLD>`
 skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
 #
 # setup
-skills/team-setup/SKILL.md	required plugins, and knowledge presence	optional capabilities, and knowledge presence
-skills/team-setup/SKILL.md	Mode from `$ARGUMENTS`:	Mode from the text the user typed after the command:
-skills/team-setup/SKILL.md	after AskUserQuestion confirmation	after confirmation through the question tool
-skills/team-setup/SKILL.md	unavailable ones with their install commands	unavailable ones with their `installVscode` and `installCli` lines
-skills/team-setup/SKILL.md	→ re-copy the team into .claude/	→ run copilot/install.sh again from a fresh copy of the team's repository
-skills/team-setup/SKILL.md	Capabilities: available: [...] | none detected | installed this run: [...] | declined: [...]	Capabilities: available: [...] | none detected | missing, set up by the user: [...]
-skills/team-setup/SKILL.md	v{R} available → README "Updating the team"	v{R} available → updateCheck.instructions in the manifest
-skills/team-setup/SKILL.md	Sticky mode: wired via project settings | wiring stale (run fix) | NOT wired (run fix) — bash: found|absent — Guard: wired | NOT wired (run fix) | wiring stale (run fix)	Sticky mode: session hook installed | missing (run copilot/install.sh again) — bash: found|absent — VS Code: needs chat.useHooks — Guard: installed | missing (run copilot/install.sh again)
-skills/team-setup/SKILL.md	- Never install, enable or disable a plugin the user did not explicitly agree to in this run.	- Never install, enable or disable a capability. The user sets them up; this skill reports how.
-skills/team-setup/SKILL.md	the manifest lint, `claude plugin list/install`, a bash availability check	the manifest lint, a bash availability check
-skills/team-setup/SKILL.md	the version-control exclude file, the run-state lines of the project's .gitignore, the run state the migration moves (and the knowledge it rewrites), the project settings hooks entry, the persistent knowledge files, a stale marker, `.dream-team-tracking/.service-consent`, and plugins the user picked may also change	the version-control exclude file, the run-state lines of the project's .gitignore, the run state the migration moves (and the knowledge it rewrites), the persistent knowledge files, a stale marker and `.dream-team-tracking/.service-consent` may also change
+skills/team-setup/SKILL.md	Team files: ok | missing: [...] → {update.pull | update.copy}	Team files: ok | missing: [...] → run copilot/install.sh again from a fresh copy of the team's repository
+skills/team-setup/SKILL.md	Capabilities: available: [...] | none — installed now: [...] | nothing missing | declined	Capabilities: available: [...] | none — missing, set up by the user: [...]
+skills/team-setup/SKILL.md	Hooks: sticky mode wired | rewired | already wired — guard wired | rewired | already wired — bash: found | absent (sticky mode and guard disabled)	Hooks: session hook installed | missing (run copilot/install.sh again) — guard installed | missing (run copilot/install.sh again) — bash: found | absent (session reminder and guard disabled) — VS Code: needs chat.useHooks
+skills/team-setup/SKILL.md	Update: up to date | pulled {from} → {to}: reopen the session and run /team-setup again | behind by {N}, working tree dirty: [...] → {update.pull} | behind by {N}, pull refused: {git's message} → {update.pull} | not on a branch with an upstream → {update.pull} by hand | could not reach the remote | copy install → {update.copy}	Update: up to date (v{team.version}) | v{installed} installed, v{team.version} shipped → run copilot/install.sh again from a fresh copy of the team's repository
+skills/team-setup/SKILL.md	- Never install, enable or disable a plugin the user did not pick in this run's one question.	- Never install, enable or disable a capability. The user sets them up; this skill reports how.
+skills/team-setup/SKILL.md	the manifest lint, `claude plugin list` and the `install` command of a picked plugin, a bash availability check	the manifest lint, a bash availability check
+skills/team-setup/SKILL.md	`.claude/settings.json` (the two hook entries only), 	
+skills/team-setup/SKILL.md	, the team's own clone when it is pulled, and the plugins the user picked	
+skills/team-setup/SKILL.md	install={clone | copy}	install=copilot
+skills/team-setup/SKILL.md	Dream Team setup — v{team.version} ({clone | copy}; 	Dream Team setup — v{team.version} (copilot; 
+skills/team-setup/SKILL.md	covers `knowledge/`, `settings.json` and `settings.local.json` from inside	covers `knowledge/` from inside
+skills/team-setup/SKILL.md	`git -C .claude remote update`, `git -C .claude status --porcelain`, `git -C .claude rev-list --count HEAD..@{u}`, `{update.pull}`, 	
+skills/team-setup/SKILL.md	asks one question at most (which missing plugins to install), pulls a clone-in-place team when it is behind, and reports what it did.	asks no question, shows how to set up a missing capability and how to update when the installed version is behind, and reports what it did.
+skills/team-setup/SKILL.md	the one thing that is not (installing a plugin) is asked once, and the report says	nothing is installed or asked, and the report says
 #
 # templates
 templates/status.md	- {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}\n	
@@ -58,21 +61,15 @@ templates/capabilities.md	4. Never install, enable or disable anything. Only `/t
 templates/capabilities.md	`agents/{role}.md`	`.github/agents/{role}.agent.md`
 #
 # clients: Copilot runs commands from the repository root and sets no project-dir variable
-tools/*.sh	${CLAUDE_PROJECT_DIR:-$PWD}	$PWD
 #
 # manifest
 team-manifest.json	Stack-agnostic multi-agent development team for Claude Code.	Stack-agnostic multi-agent development team for GitHub Copilot (VS Code and the Copilot CLI).
-team-manifest.json	Put the key in the env block of your user settings, ~/.claude/settings.json: \"env\": { \"{credential}\": \"<key>\" }. Claude Code passes it to every shell it starts, on every OS. A variable exported from your shell profile, or set with setx on Windows, works too. Never put it in the project's .claude/settings.json, which is committed, and never paste it into the chat. Restart Claude Code, then run /team-setup again.	Set {credential} in the environment VS Code or the Copilot CLI starts from: export it from your shell profile, or on Windows run setx {credential} \"<key>\" and open a new terminal. Never put it in a file inside the project, which may be committed, and never paste it into the chat. Restart VS Code or the CLI, then run /team-setup again.
-team-manifest.json	git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team — then reopen the session,	rm -rf /tmp/dream-team && git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && bash /tmp/dream-team/copilot/install.sh . && rm -rf /tmp/dream-team — then reopen VS Code or restart the Copilot CLI,
 team-manifest.json	"runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into"	"runFrom": "the team root, which is .github/dream-team/ in the project"
 team-manifest.json	 agents/*.md skills/*/SKILL.md skills/team/references/*.md README.md"	 ../agents/brainstorm.agent.md ../agents/researcher-explorer.agent.md ../agents/architect.agent.md ../agents/designer.agent.md ../agents/plan-auditor.agent.md ../agents/developer.agent.md ../agents/doc-writer.agent.md ../agents/tester.agent.md ../agents/reviewer.agent.md ../agents/verifier.agent.md ../skills/team/SKILL.md ../skills/team/references/*.md ../skills/generate-knowledge/SKILL.md ../skills/team-setup/SKILL.md"
 team-manifest.json	    ".claude/.github/",\n	
 team-manifest.json	    "manifestBudgets": "bash checks/verify-manifest-budgets.sh",\n	
 team-manifest.json	    "roleConsistency": "bash checks/verify-role-consistency.sh",\n	
 team-manifest.json	    "textEncoding": "bash checks/verify-text-encoding.sh",\n	
-team-manifest.json	    "jevClient": "bash checks/verify-jev-decide.sh",\n	
-team-manifest.json	    "updateCheckClient": "bash checks/verify-update-check.sh",\n	
-team-manifest.json	    "routingSummary": "bash checks/verify-routing-summary.sh",\n	
 team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
 team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
 team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	

@@ -110,7 +110,7 @@ EOF
 EOF
   echo "template" > "$s/templates/t.md"
   echo "#!/usr/bin/env bash" > "$s/tools/a.sh"
-  for c in summarize-routing.sh verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-role-consistency.sh; do
+  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-role-consistency.sh; do
     echo "#!/usr/bin/env bash" > "$s/checks/$c"
   done
   echo "knowledge/" > "$s/.gitignore"
@@ -137,7 +137,7 @@ run_build "$TMP/fx-out" "$FIX"
 [ "$RC" = 0 ] || fail "build exited $RC: $(cat "$TMP/build.err")"
 want="$TMP/want-files"
 printf '%s\n' .github/agents/alpha.agent.md .github/dream-team/.gitignore \
-  .github/dream-team/checks/summarize-routing.sh .github/dream-team/checks/verify-knowledge-integrity.sh \
+  .github/dream-team/checks/verify-knowledge-integrity.sh \
   .github/dream-team/checks/verify-learnings-inbox.sh .github/dream-team/checks/verify-knowledge-scaffold.sh .github/dream-team/hooks/h \
   .github/dream-team/team-manifest.json .github/dream-team/templates/t.md \
   .github/dream-team/tools/a.sh .github/skills/demo/SKILL.md | sort > "$want"
@@ -296,7 +296,7 @@ run_build "$REAL" "$ROOT"
   find skills -type f | sed 's|^|.github/|'
   find templates -type f | sed 's|^|.github/dream-team/|'
   for f in tools/*.sh; do echo ".github/dream-team/$f"; done
-  for c in summarize-routing.sh verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh; do
+  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh; do
     echo ".github/dream-team/checks/$c"
   done
   echo .github/dream-team/team-manifest.json
@@ -349,8 +349,8 @@ checks = {
     "plugins have both setups": all(p.get("installVscode") and p.get("installCli") for p in m["plugins"]),
     "lint regex kept": m["checks"]["stackNeutralityLint"].startswith(
         s["checks"]["stackNeutralityLint"].split('" agents/')[0]),
-    "only runtime checks": not {"manifestBudgets", "roleConsistency", "textEncoding", "jevClient",
-                                "updateCheckClient", "routingSummary", "copilotPort", "migrateTracking"} & set(m["checks"]),
+    "only runtime checks": not {"manifestBudgets", "roleConsistency", "textEncoding",
+                                "copilotPort", "migrateTracking"} & set(m["checks"]),
 }
 bad += [k for k, ok in checks.items() if not ok]
 hooks = json.load(open(os.path.join(out, ".github/hooks/dream-team.json"), encoding="utf-8"))

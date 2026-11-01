@@ -79,9 +79,9 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 ## Step -1: Preflight (every invocation)
 
 0. **Legacy run state.** Read `tracking` from `.claude/team-manifest.json`. If the directory `tracking.legacyDir` exists at the project root, this project's run state has not been moved to `tracking.dir` yet, and nothing below may run against it: The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`; when you see that block, this item applies whether or not you have read the manifest yet.
-   - `status`: report the run named by `{tracking.legacyDir}/.team-mode` if present, and the run named by `hooks.marker` if present; say that `/team stop` and then `/team-setup fix` are needed before resuming. Do not call a run "parked" while its marker exists. Change nothing.
-   - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and the marker at `hooks.marker` if present; say the run(s) are parked and will continue with `/team resume` after `/team-setup fix`.
-   - anything else, `resume` included: start nothing. Say the state is still in the legacy directory; if its marker exists, ask the user to run `/team stop` first; then `/team-setup fix`, which moves it. Stop here.
+   - `status`: report the run named by `{tracking.legacyDir}/.team-mode` if present, and the run named by `hooks.marker` if present; say that `/team stop` and then `/team-setup` are needed before resuming. Do not call a run "parked" while its marker exists. Change nothing.
+   - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and the marker at `hooks.marker` if present; say the run(s) are parked and will continue with `/team resume` after `/team-setup`.
+   - anything else, `resume` included: start nothing. Say the state is still in the legacy directory; if its marker exists, ask the user to run `/team stop` first; then `/team-setup`, which moves it. Stop here.
    - In all three cases, stop here.
 
    Without a legacy directory: if the argument is `stop` or `status`, act per the "Sticky team mode" table and stop here.
@@ -107,8 +107,7 @@ Detect from the task (any language): analysis verbs, or the interface's usabilit
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described under "Report requests", written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`, `**Parent:**` filled when this run follows another. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker, the service script in `.claude/skills/team/references/decision-routing.md`, the client in `.claude/skills/team/references/update-check.md` and the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker (`state=open`). Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line. Then, if `CAPABILITIES.md` lists `decision-routing` as available, read `.claude/skills/team/references/decision-routing.md` and follow it, now and again before the run closes as `[DONE]`. Then read `.claude/skills/team/references/update-check.md` and follow it.
-
+Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`, `**Parent:**` filled when this run follows another. Fill `Baseline` with `git rev-parse --short HEAD` and the list from `git status --porcelain`. Those two, `git diff` (for the Docs workflow's own verification step and for the file count in a routing outcome), `ls` and `head -1` over the tracking directory, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker and the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` are the only shell commands you run — none of them a build, a test or a lint. Then write the sticky-mode marker (`state=open`). Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
 ## Workflow references
 
 Each workflow's steps live in one file. Read it in full before the workflow's first step, and again after a resume, before continuing; nothing else in `references/` is read until a step names it.
@@ -122,7 +121,7 @@ Each workflow's steps live in one file. Read it in full before the workflow's fi
 | Change Set | `.claude/skills/team/references/change_set.md` |
 | Full Feature | `.claude/skills/team/references/full_feature.md` |
 
-Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `decision-routing.md`, `update-check.md`, all under the same directory.
+Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, all under the same directory.
 
 ## Model routing
 
