@@ -181,9 +181,6 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 - "The run is closed, so this message is a plain request" → a closed marker means the hook says `<TEAM-MODE-CLOSED>`; `follow-up.md` decides, not you.
 - "Grep found nothing under the tracking directory, so nothing is open" → that directory is git-ignored and the search tools skip it; `ls` in Bash is the only listing that counts.
 - "The first line says `[DONE —` or `Complete —`, not `[DONE]`, so it is open" → either closes a run, anywhere in the first line; older versions wrote them.
-- "The findings are short, chat text is enough" → length decides how big the report is, never what form it takes; the file is written anyway.
-- "An Artifact is nicer to share than a local file" → Artifact publishing is rejected for this project; the deliverable is a local HTML file and its path.
-- "They said chat last time, so chat again" → an override applies to the message that carried it; every later report request starts from the default.
 - "The user asked me to deploy, so the role rules are suspended" → they are not; `references/operations.md` says which commands you may run and how each is approved and logged.
 - "It works on dev, so it is done" → DEPLOYED is not VERIFIED; say which word the evidence supports.
 - "The brief is advice, the lenses decide" → its changes are the user's requirements; the lenses decide how they are built, and only the user changes a recorded convention.
@@ -195,7 +192,7 @@ To keep subagent token usage minimal and context lean:
 - **Full Paths:** Every path in a handoff is written from the repository root — `.dream-team-tracking/{context_id}/plans/draft-plan.md`, never `plans/draft-plan.md`. The shorthand in this skill is for you; the subagent starts at the repository root and does not know the tracking directory.
 - **File Reference Over Text:** Pass file paths instead of file contents (e.g., tell Developer "Read `.dream-team-tracking/{context_id}/tasks/task-001.md`" rather than embedding the entire task text into the prompt).
 - **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
-- **No batch-wide asks:** never ask a Developer or a Tester for a check outside its own self-check list — no lint, no full test run, no "make sure the batch is green". Its report covers its own files at the moment it ran; two parallel Developers each reporting green can still leave a batch red. The batch is judged once, by the Reviewer's toolchain run, after the last Developer and Tester of the batch have returned.
+- **No batch-wide asks:** never ask a Developer or a Tester for a check outside its own self-check list — no whole-tree lint, no full test run, no "make sure the batch is green"; a lint scoped to the role's own files is its self-check, not a batch ask. Its report covers its own files at the moment it ran; two parallel Developers each reporting green can still leave a batch red. The batch is judged once, by the Reviewer's toolchain run, after the last Developer and Tester of the batch have returned.
 - **For Developers:** Include ONLY:
   1. The path to the assigned `task-{N}-*.md`.
   2. The path to the exploration report for that task, when one was written. When the research pass was skipped, put `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` here instead — that one section, named as a section, is the substitute the task file's `Insertion Points` lean on.

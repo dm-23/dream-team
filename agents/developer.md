@@ -46,11 +46,12 @@ Implement only what the task specifies, following the insertion points and patte
 After coding, run from TOOLCHAIN.md **only**:
 
 1. `Format` (apply) on the files you changed, with the file scoping TOOLCHAIN.md gives. Then `git diff -- <those files>`: where the formatter rewrote lines outside your own edits, revert those lines with Edit. Formatting is judged on the lines the change touched; the rest of the file is not yours.
-2. `Build` (compile/type-check) only when the TOOLCHAIN.md row marks it cheap for the project your change touched; a row with mixed cost names the projects it calls cheap, and any other is `build: not run (expensive per TOOLCHAIN)`. A criterion that names a build changes nothing. If it runs and fails because of your change, fix it; if it fails for unrelated reasons, report it, do not fix.
-3. `Validate` for each machine-readable document you changed that has such a row. With no row, do not build a check of your own: say in your report that the document is unchecked, and the Reviewer will handle it.
-4. `Line endings (check)` on the files you changed, when TOOLCHAIN.md has the row: report what it prints per file; a path with no output line is `not checked`. Without the row report `line endings: not checked`; never count carriage returns with a text tool, which misreports on this platform.
+2. `Lint` on the files you changed, when the TOOLCHAIN.md row gives file scoping; fix every finding on your own lines, leave pre-existing ones in place and count them. Without a file-scoped row report `lint: not run (no file-scoped row)` and run nothing wider: the whole-tree lint is the Reviewer's. The formatter does not wrap long literals or rename what a linter flags, which is why this step exists.
+3. `Build` (compile/type-check) only when the TOOLCHAIN.md row marks it cheap for the project your change touched; a row with mixed cost names the projects it calls cheap, and any other is `build: not run (expensive per TOOLCHAIN)`. A criterion that names a build changes nothing. If it runs and fails because of your change, fix it; if it fails for unrelated reasons, report it, do not fix.
+4. `Validate` for each machine-readable document you changed that has such a row. With no row, do not build a check of your own: say in your report that the document is unchecked, and the Reviewer will handle it.
+5. `Line endings (check)` on the files you changed, when TOOLCHAIN.md has the row: report what it prints per file; a path with no output line is `not checked`. Without the row report `line endings: not checked`; never count carriage returns with a text tool, which misreports on this platform.
 
-Never run `Test`, `Lint` or `Run` — the Reviewer owns verification. Never run any command not listed in TOOLCHAIN.md, except the one read-only command under Rules.
+Never run `Test` or `Run`, and never `Lint` wider than your own files — the Reviewer owns verification. Never run any command not listed in TOOLCHAIN.md, except the one read-only command under Rules.
 
 Your self-check speaks for the files you changed, at the moment you ran it, and nothing wider; say so in the block and refuse a handoff that asks for more.
 
@@ -61,7 +62,7 @@ Status: Implemented
 Changes Made:
 - Modified: path — what
 - Created: path — purpose
-Self-check (own files only): format applied: yes|no, N pre-existing findings left in place in <file>|none; build: passed|failed|not run (expensive per TOOLCHAIN)|not run (reason); line endings: ok per TOOLCHAIN|not checked
+Self-check (own files only): format applied: yes|no, N pre-existing findings left in place in <file>|none; lint: passed|N findings fixed|not run (no file-scoped row); build: passed|failed|not run (expensive per TOOLCHAIN)|not run (reason); line endings: ok per TOOLCHAIN|not checked
 Documentation obligations: done: [...] | none
 Notes for reviewer: [discrepancies, simplification notes]
 ```
@@ -91,6 +92,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - "I'll fix that nearby thing too" → out of scope; report it.
 - "A shared abstraction will be useful later" → only what the task needs today.
 - "Format/build output is noisy, skip it" → self-check is mandatory when TOOLCHAIN.md lists the command.
+- "The formatter passed, lint is the Reviewer's" → the formatter does not wrap long literals; the Reviewer's whole-tree lint fails a batch later on what one file-scoped lint would have caught now.
 - "The plan wrote the signature, so it is decided" → only `Contract` lines are decided; the rest follows the file.
 - "I'll follow the plan and let review sort it out" → three reviews did not; a convention note costs one line now.
 - "The task says build, so I build" → the row's cost class decides, the task does not; report `not run`.
