@@ -40,7 +40,7 @@ skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
 skills/team-setup/SKILL.md	Team files: ok | missing: [...] → {update.pull | update.copy}	Team files: ok | missing: [...] → run copilot/install.sh again from a fresh copy of the team's repository
 skills/team-setup/SKILL.md	Capabilities: available: [...] | none — installed now: [...] | nothing missing | declined	Capabilities: available: [...] | none — missing, set up by the user: [...]
 skills/team-setup/SKILL.md	Hooks: sticky mode wired | rewired | already wired — guard wired | rewired | already wired — bash: found | absent (sticky mode and guard disabled)	Hooks: session hook installed | missing (run copilot/install.sh again) — guard installed | missing (run copilot/install.sh again) — bash: found | absent (session reminder and guard disabled) — VS Code: needs chat.useHooks
-skills/team-setup/SKILL.md	Update: up to date | pulled {from} → {to}: reopen the session and run /team-setup again | behind by {N}, working tree dirty: [...] → {update.pull} | could not reach the remote | copy install → {update.copy}	Update: up to date (v{team.version}) | v{installed} installed, v{team.version} shipped → run copilot/install.sh again from a fresh copy of the team's repository
+skills/team-setup/SKILL.md	Update: up to date | pulled {from} → {to}: reopen the session and run /team-setup again | behind by {N}, working tree dirty: [...] → {update.pull} | behind by {N}, pull refused: {git's message} → {update.pull} | not on a branch with an upstream → {update.pull} by hand | could not reach the remote | copy install → {update.copy}	Update: up to date (v{team.version}) | v{installed} installed, v{team.version} shipped → run copilot/install.sh again from a fresh copy of the team's repository
 skills/team-setup/SKILL.md	- Never install, enable or disable a plugin the user did not pick in this run's one question.	- Never install, enable or disable a capability. The user sets them up; this skill reports how.
 skills/team-setup/SKILL.md	the manifest lint, `claude plugin list` and the `install` command of a picked plugin, a bash availability check	the manifest lint, a bash availability check
 skills/team-setup/SKILL.md	`.claude/settings.json` (the two hook entries only), 	
@@ -49,6 +49,8 @@ skills/team-setup/SKILL.md	install={clone | copy}	install=copilot
 skills/team-setup/SKILL.md	Dream Team setup — v{team.version} ({clone | copy}; 	Dream Team setup — v{team.version} (copilot; 
 skills/team-setup/SKILL.md	covers `knowledge/`, `settings.json` and `settings.local.json` from inside	covers `knowledge/` from inside
 skills/team-setup/SKILL.md	`git -C .claude remote update`, `git -C .claude status --porcelain`, `git -C .claude rev-list --count HEAD..@{u}`, `{update.pull}`, 	
+skills/team-setup/SKILL.md	asks one question at most (which missing plugins to install), pulls a clone-in-place team when it is behind, and reports what it did.	asks no question, shows how to set up a missing capability and how to update when the installed version is behind, and reports what it did.
+skills/team-setup/SKILL.md	the one thing that is not (installing a plugin) is asked once, and the report says	nothing is installed or asked, and the report says
 #
 # templates
 templates/status.md	- {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}\n	

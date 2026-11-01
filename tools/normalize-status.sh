@@ -9,7 +9,7 @@
 # and the preflight read those as closed since 4.5.0, but every tool that
 # parses the first line is simpler when it reads `[DONE] YYYY-MM-DD — result`.
 # For every <tracking-dir>/*/status.md whose first line does not start with
-# `[DONE] ` and contains `[DONE` or `Complete —`, the first line becomes
+# `[DONE] ` and contains `[DONE]`, `[DONE —` or `Complete —`, the first line becomes
 #
 #   [DONE] <date> — <rest>
 #
@@ -49,9 +49,10 @@ for f in "$dir"/*/status.md; do
   cr=""
   case "$raw" in *$'\r') cr=$'\r' ;; esac
   line="${raw%$'\r'}"
+  # The closing tokens, whole: a bare "[DONE" inside a word (a link, a list name) is not one.
   case "$line" in
     '[DONE] '*) continue ;;
-    *'[DONE'*|*'Complete —'*) ;;
+    *'[DONE]'*|*'[DONE —'*|*'Complete —'*) ;;
     *) continue ;;
   esac
 

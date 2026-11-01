@@ -62,6 +62,18 @@ printf '# Status: Complete the import flow\n\n**Closed:** —\n' > "$t/z/status.
 run_tool "$t"
 cmp -s "$t/z/status.md" "$TMP/open.orig" || fail open-run "file changed"
 
+# open-done-list: a bare "[DONE" inside a word is not a closing; byte-identical
+t="$(tracking open-done-list)"; mkdir -p "$t/w"
+printf '# Status: in progress; see [DONE-list]\n\n**Closed:** —\n' > "$t/w/status.md"; cp "$t/w/status.md" "$TMP/donelist.orig"
+run_tool "$t"
+cmp -s "$t/w/status.md" "$TMP/donelist.orig" || fail open-done-list "an open run with [DONE-list] in its heading was rewritten: $(first "$t/w/status.md")"
+
+# done-later-in-heading: [DONE] after the title, date from the Closed field
+t="$(tracking done-later)"; mkdir -p "$t/v"
+printf '# Feature X [DONE] shipped\n\n**Closed:** 2026-09-20\n' > "$t/v/status.md"
+run_tool "$t"
+[ "$(first "$t/v/status.md")" = "[DONE] 2026-09-20 — Feature X shipped" ] || fail done-later-in-heading "first line: $(first "$t/v/status.md")"
+
 # crlf: the first line keeps its CR, the rest is byte-identical
 t="$(tracking crlf)"; mkdir -p "$t/c"
 printf '**[DONE — 2026-08-14]** shipped\r\n**Closed:** 2026-08-14\r\nbody\r\n' > "$t/c/status.md"

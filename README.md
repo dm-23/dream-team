@@ -19,7 +19,7 @@ cd <your project>
 git clone https://github.com/dm-23/dream-team.git .claude
 ```
 
-Your project's own repository sees `.claude/` as a nested repository and does not commit its contents; every developer clones it the same way. When `.claude/` must not be a repository of its own (it already exists, or your tooling objects), copy the contents over it instead:
+Your project's own repository sees `.claude/` as a nested repository and does not commit its contents; every developer clones it the same way. A `git add .` in the project would still record the clone as a bare gitlink (an empty `.claude/` for whoever clones the project next), so `/team-setup` adds `.claude/` to your `.git/info/exclude` on this machine; add it to the project's `.gitignore` if you prefer one line for everyone. When `.claude/` must not be a repository of its own (it already exists, or your tooling objects), copy the contents over it instead:
 
 ```bash
 git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
@@ -86,7 +86,7 @@ Claude Code, a version-controlled project, and a bash shell (Git Bash or WSL on 
 
 Layer one is a single flat copy of this repository — no wrapper directory, no second copy to keep in sync. Every path the team names is one of the paths above, so the deployment does not depend on where you cloned from or what you called the clone.
 
-Layer two is hidden by the `.gitignore` that ships with the team: it lands at `.claude/.gitignore`, where `knowledge/` is read relative to `.claude/`. Layer three sits at the project root and is shared by every edition of the team. `/team-setup` hides it through `.git/info/exclude`, which is machine-local and needs no commit. It writes to your project's own `.gitignore` in one case only: when that file already carries a line for the legacy run-state directory, the line is replaced by the current one, so a project that chose to commit its ignore keeps that choice current.
+Layer two is hidden by the `.gitignore` that ships with the team: it lands at `.claude/.gitignore`, where `knowledge/` is read relative to `.claude/`. Layer three sits at the project root and is shared by every edition of the team. `/team-setup` hides it through `.git/info/exclude`, which is machine-local and needs no commit. It writes to your project's own `.gitignore` in one case only: when that file already carries a line for the legacy run-state directory, the line is replaced by the current one, so a project that chose to commit its ignore keeps that choice current. The hook wiring in `.claude/settings.json` is machine-local in both installs: the team's own `.gitignore` hides it, and `/team-setup` writes it on every machine without asking.
 
 This split is the whole design. Layer one carries process and roles. Layer two carries every fact about your stack, your commands and your rules. An agent never hardcodes a language, a framework, a build command or a lint rule; it reads them.
 
