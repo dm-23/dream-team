@@ -1,6 +1,6 @@
 # Rework loop
 
-If the Reviewer's verdict is `needs rework` (it is whenever `manual` is not `none`): a `needs rework` verdict with at least one `manual` finding first runs the Verifier vote below; then handoff → Developer with the findings, then Reviewer again (max 2 cycles, then escalate to the user). A rework-pass Reviewer handoff carries in its `inputs` every waived or edited criterion line verbatim, so the Reviewer does not report a waived criterion red again.
+If the Reviewer's verdict is `needs rework` (it is whenever `manual` is not `none`): a `needs rework` verdict with at least one `manual` finding first runs the Verifier vote below; then handoff → Developer with the findings — split by owner: a finding whose path is a test file (the task's `Test files` list, or a path TESTING-CONVENTIONS.md names as a test location) goes to the Tester, every other finding to the Developer; when both kinds exist, both handoffs run in the same rework pass, each with only its own findings, and the Reviewer's second pass waits for both — then Reviewer again (max 2 cycles, then escalate to the user). A rework-pass Reviewer handoff carries in its `inputs` every waived or edited criterion line verbatim, so the Reviewer does not report a waived criterion red again.
 
 Any change made after the batch review — a finding, a user decision — goes back through the Reviewer before the gate; the final review never stands in for it.
 

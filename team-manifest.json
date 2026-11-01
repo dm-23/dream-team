@@ -105,7 +105,7 @@
       "PROJECT-RULES.md"
     ],
     "budgets": {
-      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. LEARNINGS.md is an index whose rows are capped separately, so its override is the deployed template plus learningsIndexMaxRows rows of learningsIndexRowTokens; checks/verify-manifest-budgets.sh enforces that sum.",
+      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. LEARNINGS.md is an index whose rows are capped separately, so its override is the deployed template plus learningsIndexMaxRows rows of learningsIndexRowTokens; checks/verify-manifest-budgets.sh enforces that sum. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more.",
       "indexTokens": 800,
       "topicTokens": 1500,
       "wholeFileTokens": 4000,
@@ -114,6 +114,7 @@
       "learningsIndexRowMaxTags": 6,
       "learningsIndexMaxRows": 30,
       "learningsEntryLines": 25,
+      "learningsTrapAgeDays": 90,
       "overrides": {
         "REVIEW-CHECKLIST.md": 14000,
         "LEARNINGS.md": 2000

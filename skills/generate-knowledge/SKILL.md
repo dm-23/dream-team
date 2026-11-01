@@ -20,7 +20,7 @@ An empty list is reported as `nothing to do` and the run ends without a question
 
 ## Consent
 
-Every branch backs up first, so one question covers all of it. One AskUserQuestion, in the language of the request, whose text is the work list with counts: `N files to regenerate: …`, `S files to restructure: …`, `M rules to promote into …`, `F facts to fold into …`, `R entries to remove (…)`, `T traps to shorten`, `backup to .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/`. Options, exactly three: **Do it** (everything listed), **Only the regenerations** (the generation and shape lists; the inbox is left as it is), **Nothing** (the list was the report). A run started with `Consent: given` in its arguments skips the question and does everything listed. The empty-project stack question is a different question and the only one that run asks.
+Every branch backs up first, so one question covers all of it. One AskUserQuestion, in the language of the request, whose text is the work list with counts: `N files to regenerate: …`, `S files to restructure: …`, `M rules to promote into …`, `F facts to fold into …`, `R entries to remove (…)`, `T traps to shorten`, `A aged traps to promote into … (kept unless Do it)`, `backup to .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/`. Options, exactly three: **Do it** (everything listed), **Only the regenerations** (the generation and shape lists; the inbox is left as it is), **Nothing** (the list was the report). A run started with `Consent: given` in its arguments skips the question and does everything listed. The empty-project stack question is a different question and the only one that run asks.
 
 Output language: the language of the user's request; file contents in English (agents read them).
 
@@ -317,13 +317,14 @@ A step of every run whose work list includes the inbox ("What this run does", it
    - `rule` — carries an unresolved `[PROMOTE]`, or states a constraint checkable from a diff or a `TOOLCHAIN.md` command, or describes the same trap as another entry (those entries become one rule);
    - `fact` — carries an unresolved `[STALE-CHECK]`, or states something about the project a knowledge file should say;
    - `trap` — non-obvious, reusable, not yet a rule: it stays;
+   - `aged` — a kept trap with no mark whose entry date is older than `knowledge.budgets.learningsTrapAgeDays`, when the index holds `learningsIndexMaxRows − 2` rows or more: offered for promotion into the file its tags name (as a `rule`, worded from the entry's fix pattern), or kept; a trap that stays a trap past the cap is what fills the index with nothing to triage;
    - `summary` — what a run did or what passed;
    - `team` — a defect of the team itself rather than of the project;
    - `obsolete` — the code, file or behaviour it describes is gone from the repository;
    - `covered` — every mark it carries is resolved, in this run (step 6 of "Process" resolves `[STALE-CHECK]` lines before triage) or earlier, and it is not a trap worth keeping on its own: the knowledge files now hold what it said.
 
    This step reads the repository, so `fact` and `obsolete` are verified, not guessed.
-3. **Consent.** The classes and their counts are listed in the one question of "Consent" — `M rules to promote into <files>`, `F facts to fold into <files>`, `R entries to remove (N run summaries, N team defects listed in the report, N obsolete, N covered)`, `T traps to shorten over learningsEntryLines` — only classes that have members. `Do it` accepts every class; `Only the regenerations` and `Nothing` accept none, and the entries stay exactly as they are.
+3. **Consent.** The classes and their counts are listed in the one question of "Consent" — `M rules to promote into <files>`, `F facts to fold into <files>`, `R entries to remove (N run summaries, N team defects listed in the report, N obsolete, N covered)`, `T traps to shorten over learningsEntryLines`, `A aged traps to promote into <files> (kept unless Do it)` — only classes that have members. `Do it` accepts every class; `Only the regenerations` and `Nothing` accept none, and the entries stay exactly as they are.
 4. **Back up** `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` before the first write and name the path in the report. Entries have no version-controlled copy anywhere.
 5. **Apply what was accepted.**
    - A rule becomes one item in its target file, worded as an imperative and ending `— source: learnings <date> <title>`; its `[PROMOTE]` lines become `[PROMOTE RESOLVED YYYY-MM-DD]`. A rule placed in `PROJECT-RULES.md` also gets its `REVIEW-CHECKLIST.md` item, as every obligation does.
