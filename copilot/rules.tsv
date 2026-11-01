@@ -10,6 +10,7 @@ skills/generate-knowledge/SKILL.md	`.claude/agents/*.md`	`.github/agents/*.agent
 skills/generate-knowledge/SKILL.md	Do not touch `.claude/agents/`, `.claude/skills/`,	Do not touch `.github/agents/`, `.github/skills/`,
 skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS` — file names only	Arguments: the text the user typed after the command — file names only
 skills/generate-knowledge/SKILL.md	One AskUserQuestion call	One question-tool call
+skills/generate-knowledge/SKILL.md	One AskUserQuestion, in the language	One question-tool call, in the language
 #
 # orchestrator
 skills/team/*	`.claude/agents/`	`.github/agents/`
@@ -36,6 +37,7 @@ skills/team/*	 The hook injects the same notice as `<TEAM-INBOX-DUE>` on the pro
 skills/team/*	 The hook injects the same notice as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same offer, not a second one.	
 skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
 skills/team/*	.claude/skills/generate-knowledge/SKILL.md	.github/skills/generate-knowledge/SKILL.md
+skills/team/*	one AskUserQuestion	one question-tool call
 #
 # setup
 skills/team-setup/SKILL.md	Team files: ok | missing: [...] → {update.pull | update.copy}	Team files: ok | missing: [...] → run copilot/install.sh again from a fresh copy of the team's repository

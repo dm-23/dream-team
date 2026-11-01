@@ -118,7 +118,7 @@ Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`
 
 ## Closing
 
-When a run closes, one AskUserQuestion carries everything the developer may want next, each option present only when it applies: **commit now** with the message you propose / **I'll commit myself** (a run that changed files; the question names every item from the Reviewer's `After commit:` line, or says there are none); **refresh knowledge now — N files, M marks** (`.claude/skills/team/references/knowledge-refresh.md` says when); **run `<deploy row>`** (`operations.md`; never before the commit). The commit is offered, never performed by you. Then the final report ends with the warm-state line from "Sticky team mode".
+When a run closes — after `status.md` is `[DONE]` and the marker is `state=closed`, never before — one AskUserQuestion carries everything the developer may want next, each option present only when it applies: **commit now** with the message you propose / **I'll commit myself** (a run that changed files; the question names every item from the Reviewer's `After commit:` line, or says there are none); **refresh knowledge now — N files, M marks** (`.claude/skills/team/references/knowledge-refresh.md` says when); **run `<deploy row>`** (`operations.md`; never before the commit). The commit is offered, never performed by you. Then the final report ends with the warm-state line from "Sticky team mode".
 
 ## Model routing
 

@@ -10,9 +10,9 @@ You are the Knowledge Generator. The Dream Team agents (`.claude/agents/*.md`) c
 
 ## What this run does
 
-Arguments: `$ARGUMENTS` — file names only, as an override: those files are regenerated and nothing else is decided for you. An Agent-run instance may also carry `Consent: given` (see "Consent"). Otherwise this run decides. In this order, each test adds work to one list:
+Arguments: `$ARGUMENTS` — file names only, as an override: those files are regenerated and nothing else is decided for you — no staleness check on other files, no shape gate, no triage; the question lists only `N files to regenerate: <names>`. An Agent-run instance may also carry `Consent: given` (see "Consent"). Otherwise this run decides. In this order, each test adds work to one list:
 
-1. **Generation.** No `knowledge.dir`, a `knowledge.required` file missing, or `checks.knowledgeScaffold` exits 1 (scaffold knowledge on a project that has content) → regenerate every required file. Exit 3 (scaffold, project still empty) → "Empty project" replaces everything below, stack question included. Otherwise run the staleness check ("Staleness") on every existing file: a file with a `STALE` line, or named by an unresolved `[STALE-CHECK]` mark, is regenerated.
+1. **Generation.** Run `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out. A first line `project: empty`, whatever the exit code → "Empty project" replaces everything below, stack question included. Otherwise: no `knowledge.dir`, a `knowledge.required` file missing, or exit 1 (scaffold knowledge on a project that has content) → regenerate every required file. Otherwise run the staleness check ("Staleness") on every existing file: a file with a `STALE` line, or named by an unresolved `[STALE-CHECK]` mark, is regenerated.
 2. **Shape.** For every file not already in the generation list, the shape gate ("Shape work"): a `subset` file with no topic directory, `LEARNINGS.md` with entry bodies inline, a file over its budget, an index header the template no longer has → the moves and rewrites that bring it to shape.
 3. **Inbox.** `checks.learningsInbox` exits 1, or any entry classifies as `rule`, `fact`, `summary`, `team`, `obsolete` or `covered` ("Triage the learnings inbox") → the triage.
 
@@ -43,7 +43,7 @@ For each stack card, evaluate its `## Detect` section against the repository (se
 
 ## Empty project
 
-A developer who starts a project from nothing deploys the team into an empty folder, and the knowledge has to exist before the first `/team` run can write the first code. Step 1b of "Process" runs `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out; when its first line is `project: empty`, this section replaces steps 2–10. It applies whatever the arguments. The script's definition is the only one: a folder whose top-level entries are all dot-prefixed, or root documents a developer has before any code (a file named `README*`, `LICENSE*`, `CLAUDE.md` or `AGENTS.md`), is empty; any other entry, a file or a directory even when that directory is empty, is content, whatever the stack cards detect. Those root documents are Inputs 3 and are read as "Human documentation in an empty project" says.
+A developer who starts a project from nothing deploys the team into an empty folder, and the knowledge has to exist before the first `/team` run can write the first code. Step 1 of "Process" runs `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out; when its first line is `project: empty`, this section replaces steps 2–8. It applies whatever the arguments. The script's definition is the only one: a folder whose top-level entries are all dot-prefixed, or root documents a developer has before any code (a file named `README*`, `LICENSE*`, `CLAUDE.md` or `AGENTS.md`), is empty; any other entry, a file or a directory even when that directory is empty, is content, whatever the stack cards detect. Those root documents are Inputs 3 and are read as "Human documentation in an empty project" says.
 
 **Say what will happen.** One short message before anything else: the folder holds no project content, so this run writes scaffolds, every file marked on its first line, to be regenerated once the code exists.
 
@@ -51,7 +51,7 @@ A developer who starts a project from nothing deploys the team into an empty fol
 
 **Active cards.** The named cards are active as *declared*: their rules apply because the developer said so, and nothing in the code confirms or contradicts them yet. "Not decided" makes `_generic.md` the one active card.
 
-**Human documentation in an empty project.** Inputs 3 are read wherever they exist: the root documents the definition admits, and dot paths such as `.claude/PROJECT.md`, `.claude/docs/*.md` and their equivalents in another edition. What they say lands where it would for a real project — the Documentation map of `PROJECT-OVERVIEW.md` lists them, and the obligations, prohibitions and documents to keep in sync of `PROJECT-RULES.md` are extracted from them with their sources cited, exactly as steps 7 and 10 extract them. This is the one place a scaffold holds sourced content, and only when such a document exists.
+**Human documentation in an empty project.** Inputs 3 are read wherever they exist: the root documents the definition admits, and dot paths such as `.claude/PROJECT.md`, `.claude/docs/*.md` and their equivalents in another edition. What they say lands where it would for a real project — the Documentation map of `PROJECT-OVERVIEW.md` lists them, and the obligations, prohibitions and documents to keep in sync of `PROJECT-RULES.md` are extracted from them with their sources cited, exactly as step 5 (PROJECT-RULES.md) and step 7 of "Process" extract them. This is the one place a scaffold holds sourced content, and only when such a document exists.
 
 **The banner.** The first line of every scaffold file, byte for byte except the date:
 
@@ -228,7 +228,7 @@ Procedure: take candidates from CI/pipeline files first, then task runners/READM
 
 **Operations.** Commands that deploy, roll back, restart or inspect a running system are never run by this generator and never marked verified. List them from the repository's own scripts and documents, each with who runs it: `user` for anything that writes to a remote or production system, `orchestrator with per-command approval` for a read-only inspection the team may perform during a run. The `Read-only` column is a promise the ResearcherExplorer relies on; when in doubt, `no`.
 
-**Validate rows.** Every document the team edits by hand that has a machine-readable format (a specification, a schema, a configuration file) gets a `Validate` row. `PROJECT-RULES.md → Documents to keep in sync` lists these documents. Without a listed command, an agent either skips the check or improvises one, and both break the rule that agents run only what this file lists. Take the command from the repository's own tooling or CI first. Otherwise build it from a parser already present on this machine (a runtime's standard library, or a library already in the dependency cache, never a new download), run it on the current file, and record it as `derived here`. If nothing here can parse the format, write the row as `none — the Reviewer checks it by reading`. That way the absence is a recorded decision, not a gap. PROJECT-RULES.md is written after this file, so step 10 of "Process" confirms that every such document has its row.
+**Validate rows.** Every document the team edits by hand that has a machine-readable format (a specification, a schema, a configuration file) gets a `Validate` row. `PROJECT-RULES.md → Documents to keep in sync` lists these documents. Without a listed command, an agent either skips the check or improvises one, and both break the rule that agents run only what this file lists. Take the command from the repository's own tooling or CI first. Otherwise build it from a parser already present on this machine (a runtime's standard library, or a library already in the dependency cache, never a new download), run it on the current file, and record it as `derived here`. If nothing here can parse the format, write the row as `none — the Reviewer checks it by reading`. That way the absence is a recorded decision, not a gap. PROJECT-RULES.md is written after this file, so step 7 of "Process" confirms that every such document has its row.
 
 ### CODING-STANDARDS.md
 
@@ -320,9 +320,9 @@ A step of every run whose work list includes the inbox ("What this run does", it
    - `summary` — what a run did or what passed;
    - `team` — a defect of the team itself rather than of the project;
    - `obsolete` — the code, file or behaviour it describes is gone from the repository;
-   - `covered` — every mark it carries is resolved, in this run (step 9 of "Process" resolves `[STALE-CHECK]` lines before triage) or earlier, and it is not a trap worth keeping on its own: the knowledge files now hold what it said.
+   - `covered` — every mark it carries is resolved, in this run (step 6 of "Process" resolves `[STALE-CHECK]` lines before triage) or earlier, and it is not a trap worth keeping on its own: the knowledge files now hold what it said.
 
-   This mode reads the repository, so `fact` and `obsolete` are verified, not guessed.
+   This step reads the repository, so `fact` and `obsolete` are verified, not guessed.
 3. **Consent.** The classes and their counts are listed in the one question of "Consent" — `M rules to promote into <files>`, `F facts to fold into <files>`, `R entries to remove (N run summaries, N team defects listed in the report, N obsolete, N covered)`, `T traps to shorten over learningsEntryLines` — only classes that have members. `Do it` accepts every class; `Only the regenerations` and `Nothing` accept none, and the entries stay exactly as they are.
 4. **Back up** `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` before the first write and name the path in the report. Entries have no version-controlled copy anywhere.
 5. **Apply what was accepted.**
@@ -352,7 +352,7 @@ alongside the budget:
   every entry a file in `learnings/`.
 - A `whole` file is one file with no sibling directory.
 
-**Refuse to run when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Report which run is open and stop. Refuse too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
+**Skip shape work when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Say which run is open; the rest of the run proceeds, as the triage does under the same condition. Skip it too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
 
 **Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only.
 
