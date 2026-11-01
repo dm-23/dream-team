@@ -45,7 +45,7 @@ Checks the team may not run — from the tasks' `Verify by hand` lines and the R
 
 ## Operations log
 
-Commands from `TOOLCHAIN.md → Operations` run during this run, one line each: who ran it, the command verbatim, the exit code, one line of output or the capture file under `run/`.
+Commands from `TOOLCHAIN.md → Operations` run during this run, and the ResearcherExplorer's `## Commands run` lines, one line each: who ran it, the command verbatim, the exit code, one line of output or the capture file under `run/`.
 
 - {none}
 

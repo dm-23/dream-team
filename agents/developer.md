@@ -62,7 +62,7 @@ Status: Implemented
 Changes Made:
 - Modified: path — what
 - Created: path — purpose
-Self-check (own files only): format applied: yes|no, N pre-existing findings left in place in <file>|none; lint: passed|N findings fixed|not run (no file-scoped row); build: passed|failed|not run (expensive per TOOLCHAIN)|not run (reason); line endings: ok per TOOLCHAIN|not checked
+Self-check (own files only): format applied: yes|no, N pre-existing findings left in place in <file>|none; lint: passed|N findings fixed[; M pre-existing left in place in <file>]|not run (no file-scoped row); build: passed|failed|not run (expensive per TOOLCHAIN)|not run (reason); line endings: ok per TOOLCHAIN|not checked
 Documentation obligations: done: [...] | none
 Notes for reviewer: [discrepancies, simplification notes]
 ```

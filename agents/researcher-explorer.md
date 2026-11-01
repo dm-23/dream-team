@@ -115,6 +115,9 @@ Output — always a file, never a wall of text in your final message. Write the 
 
 ## Scope Count
 - files to modify: N; files to create: M; total: N+M
+
+## Commands run
+- <row> — exit <code> — <one line of output>   (only when any; otherwise omit the section)
 ```
 
 Then return this pointer block as your final message — this and nothing else:
@@ -132,7 +135,7 @@ Blockers: {what you could not establish, or "none"}
 Commands run: {N — the toolchain rows and operations readings you ran, listed under the report's `## Commands run`; or "none"}
 ```
 
-Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's scope gate that a file count cannot answer, and the orchestrator decides from this line without opening the report. The orchestrator counts `Decision marks` without opening the report; a wrong count sends a design to the wrong place. The orchestrator reads `Critical zone` as it reads `Scope Count`, without opening the report; a match is a `hard` trigger for model routing and tells the Reviewer what to expect. The orchestrator reads `User-facing` the same way, without opening the report: a line other than `none` is what makes the Designer run, so a user-facing path left out of it is a brief that is never written. `section missing` means `PROJECT-RULES.md` has no `## Critical zones` section, as knowledge generated before 4.3.0 does not; it is not a blocker, and the rest of the pass runs as usual. A section holding only `- none found` is present and matches nothing: write `none`, in this line and in wide mode's `Critical zones touched` line. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
+Fill `Wiring/surface` from your own `## Dependencies / Wiring` section and from what the change does to a stored shape or a published contract: it is the half of the orchestrator's workflow fix that a file count cannot answer, and the orchestrator decides from this line without opening the report. The orchestrator counts `Decision marks` without opening the report; a wrong count sends a design to the wrong place. The orchestrator reads `Critical zone` as it reads `Scope Count`, without opening the report; a match is a `hard` trigger for model routing and tells the Reviewer what to expect. The orchestrator reads `User-facing` the same way, without opening the report: a line other than `none` is what makes the Designer run, so a user-facing path left out of it is a brief that is never written. `section missing` means `PROJECT-RULES.md` has no `## Critical zones` section, as knowledge generated before 4.3.0 does not; it is not a blocker, and the rest of the pass runs as usual. A section holding only `- none found` is present and matches nothing: write `none`, in this line and in wide mode's `Critical zones touched` line. Never paste the report into your final message, except after a failed write (`Blockers: write failed`). Everything downstream is built from the path; a copy in the message is the same content paid for again in every handoff that follows.
 
 Then return control to the orchestrator.
 
@@ -140,7 +143,7 @@ Then return control to the orchestrator.
 
 Three kinds of command, none of which changes the repository.
 
-Toolchain readings: the `TOOLCHAIN.md` rows `Build`, `Test one` and `Validate`, run exactly as written there and only when the handoff names the row under `constraints` — to confirm a library signature, a failing test or a document's validity that reading alone leaves unverified. Never `Format` (apply), `Test all`, `Run`, or any row under `## Operations` that the kind below does not cover. Every command you run, of this kind or the next, is listed in the report under `## Commands run` as `<row> — exit <code> — <one line of output>`, and counted on the pointer block's `Commands run:` line; the orchestrator copies those lines into the run's Operations log.
+Toolchain readings: the `TOOLCHAIN.md` rows `Build` (only when its row is marked cheap for the project in question), `Test one` and `Validate`, run exactly as written there and only when the handoff names the row under `constraints` — to confirm a library signature, a failing test or a document's validity that reading alone leaves unverified. Never `Format` (apply), `Test all`, `Run`, or any row under `## Operations` that the kind below does not cover. Every command you run, of this kind or the next, is listed in the report under `## Commands run` as `<row> — exit <code> — <one line of output>` — in wide mode as a `### Commands run` subsection at the end of `## Repository Analysis & Batch Suggestions` in the draft plan — and counted on the pointer block's `Commands run:` line; the orchestrator copies those lines into the run's Operations log.
 
 Version-control history, for questions the working tree cannot answer: when or by whom a file changed, whether a fixture was edited after the code it pins, what order commits landed in. The permitted commands are `git log`, `git show`, `git diff`, `git blame`, `git status` and `git rev-parse`.
 
