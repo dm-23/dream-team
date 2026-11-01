@@ -19,6 +19,7 @@ Read by the `/team` orchestrator at preflight (index first, full entries on matc
        whole row — learningsIndexRowTokens
        Title     — learningsIndexRowTitleChars, no parenthetical asides
        Tags      — learningsIndexRowMaxTags, each one word or one hyphenated term
-       the table — learningsIndexMaxRows rows; past it, the orchestrator asks for
-                   /generate-knowledge, which empties the inbox
+       the table — learningsIndexMaxRows rows; past it, the orchestrator offers a
+                   refresh; near it, the generator offers old traps (learningsTrapAgeDays)
+                   for promotion, so the index empties instead of filling with kept traps
      Workflow, symptom, cause and file paths belong in the entry file, never in this table. -->
