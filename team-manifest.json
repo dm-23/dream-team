@@ -162,6 +162,9 @@
     "copy": "git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team",
     "_comment": "The supported install is a clone in place: .claude/ is a checkout of this repository, and /team-setup fetches it and pulls when it is behind and clean. A copy still works; setup then shows the copy command instead. Nothing contacts the network except git against the remote the user cloned from."
   },
+  "setup": {
+    "normalizer": "tools/normalize-status.sh"
+  },
   "hooks": {
     "dir": ".claude/hooks",
     "settingsSnippet": "hooks/settings-snippet.json",
@@ -273,6 +276,7 @@
     "textEncoding": "bash checks/verify-text-encoding.sh",
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
+    "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",
     "frontmatter": "bash checks/verify-frontmatter.sh",
