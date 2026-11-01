@@ -10,6 +10,11 @@ knowledge/
 temp/
 docs/
 
+# The project's own hook wiring and permissions live beside the team in a
+# clone-in-place install and are never the team's.
+settings.json
+settings.local.json
+
 # OS noise
 Thumbs.db
 desktop.ini

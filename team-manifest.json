@@ -155,6 +155,13 @@
     "migration": "tools/migrate-tracking.sh",
     "_comment": "Run state shared by every edition of the team. Teams before 4.0.0 kept it in legacyDir; tools/migrate-tracking.sh moves it, run by /team-setup fix after the user agrees."
   },
+  "update": {
+    "repository": "https://github.com/dm-23/dream-team",
+    "clone": "git clone https://github.com/dm-23/dream-team.git .claude",
+    "pull": "git -C .claude pull --ff-only",
+    "copy": "git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team",
+    "_comment": "The supported install is a clone in place: .claude/ is a checkout of this repository, and /team-setup fetches it and pulls when it is behind and clean. A copy still works; setup then shows the copy command instead. Nothing contacts the network except git against the remote the user cloned from."
+  },
   "hooks": {
     "dir": ".claude/hooks",
     "settingsSnippet": "hooks/settings-snippet.json",
@@ -257,18 +264,6 @@
       "neverUseFor": "Same exclusions as the other browser-control entry."
     }
   ],
-  "updateCheck": {
-    "_comment": "Optional, off by default. /team-setup fix asks and records update-check=granted|declined {date} in .dream-team-tracking/.service-consent; the client sends nothing without a granted line. /team runs the client once at the start of a new run; it asks source at most once per intervalHours and caches the answer in .dream-team-tracking/.update-check. The team never updates itself: instructions is shown to the user verbatim.",
-    "script": "tools/update-check.sh",
-    "source": "https://raw.githubusercontent.com/dm-23/dream-team/main/team-manifest.json",
-    "repository": "https://github.com/dm-23/dream-team",
-    "intervalHours": 24,
-    "consentKey": "update-check",
-    "default": "off",
-    "dataSent": "One HTTPS GET of a public file. No task text, code or paths; GitHub sees the machine's IP address and the time of the request.",
-    "recipients": "GitHub",
-    "instructions": "From the project root, in bash: git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team && cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team — then reopen the session, run /team-setup fix (it moves run state left from versions before 4.0.0), and run /team resume to continue the parked run."
-  },
   "checks": {
     "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
@@ -276,7 +271,6 @@
     "manifestBudgets": "bash checks/verify-manifest-budgets.sh",
     "roleConsistency": "bash checks/verify-role-consistency.sh",
     "textEncoding": "bash checks/verify-text-encoding.sh",
-    "updateCheckClient": "bash checks/verify-update-check.sh",
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
     "hook": "bash checks/verify-hook.sh",

@@ -350,7 +350,7 @@ checks = {
     "lint regex kept": m["checks"]["stackNeutralityLint"].startswith(
         s["checks"]["stackNeutralityLint"].split('" agents/')[0]),
     "only runtime checks": not {"manifestBudgets", "roleConsistency", "textEncoding",
-                                "updateCheckClient", "copilotPort", "migrateTracking"} & set(m["checks"]),
+                                "copilotPort", "migrateTracking"} & set(m["checks"]),
 }
 bad += [k for k, ok in checks.items() if not ok]
 hooks = json.load(open(os.path.join(out, ".github/hooks/dream-team.json"), encoding="utf-8"))
