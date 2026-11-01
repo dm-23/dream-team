@@ -153,7 +153,7 @@
     "dir": ".dream-team-tracking",
     "legacyDir": ".claude-tracking",
     "migration": "tools/migrate-tracking.sh",
-    "_comment": "Run state shared by every edition of the team. Teams before 4.0.0 kept it in legacyDir; tools/migrate-tracking.sh moves it, run by /team-setup fix after the user agrees."
+    "_comment": "Run state shared by every edition of the team. Teams before 4.0.0 kept it in legacyDir; tools/migrate-tracking.sh moves it, run by /team-setup when its dry run is clean."
   },
   "update": {
     "repository": "https://github.com/dm-23/dream-team",

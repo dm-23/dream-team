@@ -102,7 +102,7 @@ case "$OUT" in *TEAM-MODE-ACTIVE*) ;; *) fail open-complete-word "'Complete' wit
 # 7. legacy directory present: notice on every prompt, slash included, even when empty
 p="$(project legacy)"; mkdir -p "$p/.claude-tracking"
 run legacy "$p" '"hello"'
-case "$OUT" in *TEAM-LEGACY-STATE*'.claude-tracking/'*'/team-setup fix'*) ;; *) fail legacy "no legacy block: $OUT" ;; esac
+case "$OUT" in *TEAM-LEGACY-STATE*'.claude-tracking/'*'/team-setup'*) ;; *) fail legacy "no legacy block: $OUT" ;; esac
 case "$OUT" in *'<TEAM-MODE-ACTIVE>'*) fail legacy "active block without a marker: $OUT" ;; esac
 run legacy-slash "$p" '"/team fix the thing"'
 case "$OUT" in *TEAM-LEGACY-STATE*) ;; *) fail legacy-slash "legacy block must survive a slash prompt: $OUT" ;; esac

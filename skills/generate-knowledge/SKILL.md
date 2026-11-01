@@ -305,7 +305,7 @@ A line of `PROJECT-RULES.md → ## Critical zones` ending `— source: user` is 
 
 A step of `all` (or no argument), after the knowledge files are written and before the cross-check. A run naming files skips it.
 
-1. **Skip when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest): a live run is reading the inbox; a closed run's marker reads nothing. Say which run is open and that triage was skipped; the rest of `all` proceeds. Skip it too, with "run state is still in the legacy directory — run `/team-setup fix` first", when the directory `tracking.legacyDir` exists at all, because this step would create `.dream-team-tracking/` before the migration.
+1. **Skip when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest): a live run is reading the inbox; a closed run's marker reads nothing. Say which run is open and that triage was skipped; the rest of `all` proceeds. Skip it too, with "run state is still in the legacy directory — run `/team-setup` first", when the directory `tracking.legacyDir` exists at all, because this step would create `.dream-team-tracking/` before the migration.
 2. **Classify every entry**, in `learnings/` and any still inline below the index:
    - `rule` — carries an unresolved `[PROMOTE]`, or states a constraint checkable from a diff or a `TOOLCHAIN.md` command, or describes the same trap as another entry (those entries become one rule);
    - `fact` — carries an unresolved `[STALE-CHECK]`, or states something about the project a knowledge file should say;
@@ -350,7 +350,7 @@ alongside the budget:
   every entry a file in `learnings/`.
 - A `whole` file is one file with no sibling directory.
 
-**Refuse to run when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Report which run is open and stop. Refuse too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup fix` first": the backup below would create `.dream-team-tracking/` before the migration.
+**Refuse to run when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Report which run is open and stop. Refuse too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
 
 **Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only, in this mode only.
 

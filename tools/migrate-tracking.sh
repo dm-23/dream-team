@@ -62,7 +62,7 @@ for d in "$OLD" "$NEW"; do
   [ "$(sed -n 's/^state=//p' "$d/.team-mode" | head -1 | tr -d '\r')" != "closed" ] || continue
   cid="$(sed -n 's/^context_id=//p' "$d/.team-mode" | head -1 | tr -d '\r')"
   echo "migrate: refused — a run is open: ${cid:-unknown} (marker $d/.team-mode)." >&2
-  echo "In the session that runs it: /team stop. Then /team-setup fix, then /team resume." >&2
+  echo "In the session that runs it: /team stop. Then /team-setup, then /team resume." >&2
   exit 1
 done
 

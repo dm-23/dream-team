@@ -34,7 +34,7 @@ Open Claude Code in the project and run three commands in order.
 
 | Step | Command | What it does |
 |------|---------|--------------|
-| 1 | `/team-setup fix` | Checks the install, hides generated files from version control, wires the sticky-mode hook and the guard, asks about each optional capability separately before installing anything, and asks whether to check for new team versions |
+| 1 | `/team-setup` | Checks the install, hides generated files from version control, wires the sticky-mode hook and the guard, and asks one question at most: which of the missing optional capabilities to install. Nothing to answer when nothing is missing |
 | 2 | `/generate-knowledge` | Explores your repository and writes the ten knowledge files the team reads. In an empty folder it asks whether the stack is decided and writes the ten files as scaffolds, each marked on its first line, to be regenerated once there is code |
 | 3 | `/team <task>` | Runs the workflow |
 
@@ -86,7 +86,7 @@ Claude Code, a version-controlled project, and a bash shell (Git Bash or WSL on 
 
 Layer one is a single flat copy of this repository — no wrapper directory, no second copy to keep in sync. Every path the team names is one of the paths above, so the deployment does not depend on where you cloned from or what you called the clone.
 
-Layer two is hidden by the `.gitignore` that ships with the team: it lands at `.claude/.gitignore`, where `knowledge/` is read relative to `.claude/`. Layer three sits at the project root and is shared by every edition of the team. `/team-setup fix` offers to add it to your project's `.gitignore`, which is committed and so hides it for everyone; if you decline, it goes into `.git/info/exclude`, which is machine-local. That line, and removing the legacy one after a migration, are the only edits the team ever makes to your ignore file, and only with your answer.
+Layer two is hidden by the `.gitignore` that ships with the team: it lands at `.claude/.gitignore`, where `knowledge/` is read relative to `.claude/`. Layer three sits at the project root and is shared by every edition of the team. `/team-setup` hides it through `.git/info/exclude`, which is machine-local and needs no commit. It writes to your project's own `.gitignore` in one case only: when that file already carries a line for the legacy run-state directory, the line is replaced by the current one, so a project that chose to commit its ignore keeps that choice current.
 
 This split is the whole design. Layer one carries process and roles. Layer two carries every fact about your stack, your commands and your rules. An agent never hardcodes a language, a framework, a build command or a lint rule; it reads them.
 
@@ -203,7 +203,7 @@ Four are declared in the manifest, each backed by the plugins that can provide i
 
 Two rules hold for all of them. Whatever a capability returns is evidence to check, never truth: where it disagrees with your repository or the generated knowledge, the repository wins and the disagreement is reported. And a capability never moves work between roles — research stays with research, verification stays with review.
 
-**Consent.** `/team-setup` reports which are present and which are missing, then asks about each missing one separately, saying what it is for. Nothing is installed without that answer. `/team` and the subagents never install, enable or disable anything.
+**Consent.** `/team-setup` reports which are present and which are missing, then asks once — one multi-select naming each missing capability and what it is for, with the two browser drivers as one choice. Only what you pick is installed; when nothing is missing, nothing is asked. `/team` and the subagents never install, enable or disable anything.
 
 **Where the wiring lives.** The concrete plugin names, marketplaces and install commands are in `team-manifest.json` under `plugins`, together with the `useWhen` and `neverUseFor` rules for each. `/team-setup` writes what it actually found into `.claude/knowledge/CAPABILITIES.md`, which the team reads. That file describes the machine rather than the repository, so it is rewritten on every setup run and never hand-edited.
 
@@ -232,13 +232,13 @@ This is deliberately not a memory or an instruction that lives in context. The h
 - A message starting with a slash is never captured, so every command still works normally. Leading whitespace does not change that.
 - `/team stop` deletes the marker and leaves an open run parked; `/team resume` picks it up.
 - A marker whose `status.md` is gone is reported as stale instead of hijacking the message; the orchestrator deletes it.
-- While the pre-4.0.0 run-state directory still exists, every prompt carries a one-line notice that `/team` starts nothing until `/team-setup fix` has moved it. The notice comes from the hook, not from the skill, so it cannot be skipped.
+- While the pre-4.0.0 run-state directory still exists, every prompt carries a one-line notice that `/team` starts nothing until `/team-setup` has moved it. The notice comes from the hook, not from the skill, so it cannot be skipped.
 - On the prompt that starts a run, the hook also says when the learnings inbox is due, so the reminder does not depend on the model counting marks in a directory its search tools skip.
 - If bash is missing, the hook exits quietly. Runs still work; they just do not follow you across sessions, and the guard below denies nothing.
 
-Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup fix` offers to do for you. A newly added hook is picked up after opening `/hooks` once or restarting the session. The command in the snippet is a plain project-relative path with no bash syntax, because VS Code Copilot reads hooks from the same file and runs them in PowerShell on Windows; `/team-setup` reports an entry with an older spelling as stale wiring, and `fix` offers to replace it.
+Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `.claude/settings.json`, which `/team-setup` does without asking. A newly added hook is picked up after opening `/hooks` once or restarting the session. The command in the snippet is a plain project-relative path with no bash syntax, because VS Code Copilot reads hooks from the same file and runs them in PowerShell on Windows; `/team-setup` replaces an entry with an older spelling and reports it as rewired.
 
-**The guard.** A second hook, `hooks/guard-command`, runs before every command the model issues through the Bash tool and denies the ones no role should run: killing processes by name or pattern (`pkill`, `killall`, `kill $(pgrep …)`, `xargs kill`, `kill -1`, `kill 0`, with any signal option or `--` before them); a recursive `rm` whose target is a glob, `/`, `~`, `$HOME`, `.`, `..`, a path above the project, or a path one level under `/` or the home directory; a force push; `git clean -f`; and `git reset --hard`, `git checkout -- <path>`, `git checkout .` (or `..`, `./<path>`) and `git restore <path>`, which discard uncommitted work. Each denial carries a one-line reason that says what to do instead. The guard acts only while a run is open, that is while the marker exists, so a developer's own session in the same project is never affected. A command written verbatim in a Command cell of `.claude/knowledge/TOOLCHAIN.md`, such as a clean-build row, is exempt; the match is the whole command, never a prefix. Its limits are known and accepted: the scan is text only, so a harmless `echo pkill` is refused too; a literal home or drive path is not recognised as the home directory, so `rm -rf /c/Users/<name>` passes; and `git checkout <file>` without `--` cannot be told from a branch switch, so it passes. `/team-setup fix` wires the guard from the same snippet, into the `PreToolUse` array.
+**The guard.** A second hook, `hooks/guard-command`, runs before every command the model issues through the Bash tool and denies the ones no role should run: killing processes by name or pattern (`pkill`, `killall`, `kill $(pgrep …)`, `xargs kill`, `kill -1`, `kill 0`, with any signal option or `--` before them); a recursive `rm` whose target is a glob, `/`, `~`, `$HOME`, `.`, `..`, a path above the project, or a path one level under `/` or the home directory; a force push; `git clean -f`; and `git reset --hard`, `git checkout -- <path>`, `git checkout .` (or `..`, `./<path>`) and `git restore <path>`, which discard uncommitted work. Each denial carries a one-line reason that says what to do instead. The guard acts only while a run is open, that is while the marker says `state=open`, so a developer's own session in the same project, and their commands after a run closes, are never affected. A command written verbatim in a Command cell of `.claude/knowledge/TOOLCHAIN.md`, such as a clean-build row, is exempt; the match is the whole command, never a prefix. Its limits are known and accepted: the scan is text only, so a harmless `echo pkill` is refused too; a literal home or drive path is not recognised as the home directory, so `rm -rf /c/Users/<name>` passes; and `git checkout <file>` without `--` cannot be told from a branch switch, so it passes. `/team-setup` wires the guard from the same snippet, into the `PreToolUse` array.
 
 ## The manifest
 
@@ -273,7 +273,7 @@ git clone --depth 1 https://github.com/dm-23/dream-team.git /tmp/dream-team
 cp -r /tmp/dream-team/. .claude/ && rm -rf .claude/.git .claude/.github /tmp/dream-team
 ```
 
-`knowledge/` and any `settings.json` you have are untouched — nothing in this repository is named either, and the team's own `.gitignore` hides both settings files from the clone. Then reopen the session, so the new role and command prompts are loaded, and run `/team-setup`.
+`knowledge/` and any `settings.json` you have are untouched — nothing in this repository is named either, and the team's own `.gitignore` hides both settings files from the clone. Then reopen the session, so the new role and command prompts are loaded, and run `/team-setup`. It records the version it ran as in `.dream-team-tracking/.setup`, performs the steps an update needs itself (`setup.postUpdate` in the manifest), and names in one line any knowledge regeneration the new version wants.
 
 A copy adds and overwrites; it never deletes. If you are coming from a layout that kept the team in a subdirectory such as `.claude/team/`, delete that directory after copying — nothing reads it any more.
 
@@ -284,10 +284,10 @@ Existing knowledge files stay valid unless the manifest gained a required file, 
 Before 4.0.0 the Claude Code edition kept its run state in the legacy `.claude-tracking/`; the Copilot edition already used `.dream-team-tracking/`. Now it is `.dream-team-tracking/`, shared by the Claude Code and Copilot editions, so a run started in one agent can be resumed in the other — never work on one open run from both at once. After updating, `/team` starts nothing until the legacy state is moved:
 
 1. If a run is open, `/team stop` in the session that runs it.
-2. `/team-setup fix`: it shows a dry run of `tools/migrate-tracking.sh` and moves the state when you agree. Paths inside the moved files and in your knowledge files are rewritten (the knowledge is backed up first); files of your project that still name the legacy directory are listed for you to edit, never changed.
-3. Commit the `.gitignore` change, if `/team-setup fix` made one, before `/team resume`: the resumed run's baseline predates it, so an uncommitted change would show up in the run's review diff. Then `/team resume` continues a parked run.
+2. `/team-setup`: it runs a dry run of `tools/migrate-tracking.sh` and, when the dry run is clean, moves the state; a dry run that refuses is reported with its reason. Paths inside the moved files and in your knowledge files are rewritten (the knowledge is backed up first); files of your project that still name the legacy directory are listed for you to edit, never changed.
+3. Commit the `.gitignore` change, if `/team-setup` made one, before `/team resume`: the resumed run's baseline predates it, so an uncommitted change would show up in the run's review diff. Then `/team resume` continues a parked run.
 
-If both directories hold the same name (typically `.service-consent` or `.update-check` in a project that used both editions), the migration refuses and lists them: keep one of each, then run `/team-setup fix` again.
+If both directories hold the same name (typically `.service-consent` or `.update-check` in a project that used both editions), the migration refuses and lists them: keep one of each, then run `/team-setup` again.
 
 ## GitHub Copilot
 
@@ -306,7 +306,7 @@ Updating is the same command. `--dry-run` prints what would change and writes no
 Then:
 1. Reopen VS Code, or restart the CLI.
 2. In VS Code, turn on the `chat.useHooks` setting.
-3. Run `/team-setup fix`.
+3. Run `/team-setup`.
 4. Run `/generate-knowledge` if the project has no knowledge yet.
 
 ### What it writes, and what it never touches
@@ -337,7 +337,7 @@ The Copilot edition keeps its own knowledge and shares run state with a Claude C
 2. **Open runs.** An open run is announced when a session starts, not on every message: Copilot lets no hook add context per prompt. After a compaction, use `/team resume`.
 3. **Capabilities.** `/team-setup` installs nothing. Optional capabilities are MCP servers; it reports which are missing and gives the VS Code and CLI steps to add each. The session-memory and instruction-file capabilities exist only as Claude Code plugins and are not offered.
 4. **Hooks in VS Code.** They run only while `chat.useHooks` is on, a preview feature.
-5. **The guard.** It is installed with the team in `.github/hooks/dream-team.json`; `/team-setup fix` has nothing to wire. It reads bash command lines, so a PowerShell command, which is what the CLI runs on Windows, such as `Remove-Item -Recurse`, is not recognised.
+5. **The guard.** It is installed with the team in `.github/hooks/dream-team.json`; `/team-setup` has nothing to wire. It reads bash command lines, so a PowerShell command, which is what the CLI runs on Windows, such as `Remove-Item -Recurse`, is not recognised.
 
 ### Maintaining the port
 
@@ -374,17 +374,17 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 |---------|-------|-----|
 | An update to the team changed nothing, a role or command behaves like the previous version | The session still holds the prompts it loaded at startup | Reopen the session |
 | `/team` refuses to start | A required knowledge file is missing | `/generate-knowledge` |
-| Sticky mode does nothing | Hook not wired, or no bash | `/team-setup check` reports which; open `/hooks` once after wiring |
+| Sticky mode does nothing | Hook not wired, or no bash | `/team-setup` wires it and says whether bash was found; open `/hooks` once after wiring |
 | An unrelated request is pulled into a run | A marker of an open run that never closed, or a closed run's marker you want gone | `/team stop`; a closed run's marker answers unrelated questions normally and only triages messages about the run |
 | A command is not offered | The team's contents are not in `.claude/` itself, but one level down in a subdirectory | Move them up so `.claude/skills/team/SKILL.md` is a real path, then reopen the session |
 | The reviewer reports a missing tool | A command in `TOOLCHAIN.md` is not installed here | Install it, or accept the gap; it is reported, never faked |
-| Generated files appear in version control | The exclude lines were not added | `/team-setup fix` |
-| `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup fix` |
-| Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup fix`, `/team resume` |
+| Generated files appear in version control | The exclude lines were not added | `/team-setup` |
+| `/team` says the run state is still in the legacy directory | Updated to 4.0.0, state not moved yet | `/team stop` if a run is open, then `/team-setup` |
+| Sticky mode stopped after updating to 4.0.0 | The open run's marker is in the legacy directory, which the hook no longer reads | `/team stop`, `/team-setup`, `/team resume` |
 | An old run is listed as open on every preflight | Its `status.md` was closed by an earlier version with `[DONE]` later in the first line, `**[DONE — date]**` or `Complete —` | Nothing: 4.5.0 reads `[DONE` or `Complete —` anywhere in that line as closed |
-| `/team` starts but behaves like an older version, or says a workflow file is missing | `skills/team/references/` was not copied, or the session still holds the old prompts | Re-copy the team into `.claude/` and reopen the session |
+| `/team` starts but behaves like an older version, or says a workflow file is missing | `skills/team/references/` was not copied, or the session still holds the old prompts | `/team-setup` pulls a clone in place or shows the copy command; then reopen the session |
 | The Reviewer reports "Critical zones: section missing" | `PROJECT-RULES.md` predates 4.3.0 | `/generate-knowledge PROJECT-RULES.md` |
 | The Designer reports `Design language: topic missing` | `FRONTEND-ARCHITECTURE.md` predates 4.4.0 | `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` |
 | `/team-setup` or a run reports scaffold knowledge | The knowledge was written on an empty project and the project now has content | `/generate-knowledge` |
 | A command the Reviewer needs is denied by the guard | It is destructive and not listed in `TOOLCHAIN.md` | Add the exact command as a `TOOLCHAIN.md` row, or run it yourself |
-| A destructive command is not denied during a run | The guard is not wired (a team updated from before 4.3.0), or no bash | `/team-setup check` reports `Guard: NOT wired` or `bash: absent`; `/team-setup fix`, then open `/hooks` once |
+| A destructive command is not denied during a run | The guard is not wired (a team updated from before 4.3.0), or no bash | `/team-setup` wires the guard and reports `bash: absent` when there is no bash; open `/hooks` once after wiring |

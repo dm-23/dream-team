@@ -79,9 +79,9 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 ## Step -1: Preflight (every invocation)
 
 0. **Legacy run state.** Read `tracking` from `.claude/team-manifest.json`. If the directory `tracking.legacyDir` exists at the project root, this project's run state has not been moved to `tracking.dir` yet, and nothing below may run against it: The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`; when you see that block, this item applies whether or not you have read the manifest yet.
-   - `status`: report the run named by `{tracking.legacyDir}/.team-mode` if present, and the run named by `hooks.marker` if present; say that `/team stop` and then `/team-setup fix` are needed before resuming. Do not call a run "parked" while its marker exists. Change nothing.
-   - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and the marker at `hooks.marker` if present; say the run(s) are parked and will continue with `/team resume` after `/team-setup fix`.
-   - anything else, `resume` included: start nothing. Say the state is still in the legacy directory; if its marker exists, ask the user to run `/team stop` first; then `/team-setup fix`, which moves it. Stop here.
+   - `status`: report the run named by `{tracking.legacyDir}/.team-mode` if present, and the run named by `hooks.marker` if present; say that `/team stop` and then `/team-setup` are needed before resuming. Do not call a run "parked" while its marker exists. Change nothing.
+   - `stop`: delete `{tracking.legacyDir}/.team-mode` if present and the marker at `hooks.marker` if present; say the run(s) are parked and will continue with `/team resume` after `/team-setup`.
+   - anything else, `resume` included: start nothing. Say the state is still in the legacy directory; if its marker exists, ask the user to run `/team stop` first; then `/team-setup`, which moves it. Stop here.
    - In all three cases, stop here.
 
    Without a legacy directory: if the argument is `stop` or `status`, act per the "Sticky team mode" table and stop here.
