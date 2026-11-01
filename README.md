@@ -151,7 +151,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Change Set | a list of independent small items | One research pass, a design brief when the items are user-facing, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
 | Full Feature | a new capability across modules | Questions, wide research, a design brief when the feature is user-facing (its open decisions asked before anything is designed), design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
 
-If research shows a Small Change is bigger than three files, or touches a schema, a public interface or wiring, you are asked whether to upgrade it rather than being quietly let through.
+`/team` announces a provisional class from your words and fixes the workflow after the research pass, from the files and wiring it found: up to three files and no wiring is a Small Change or a Bug Fix, more is a Change Set or a Full Feature. It asks only when your own words named a workflow and the evidence disagrees; the run keeps its directory either way.
 
 ## Knowledge files
 
