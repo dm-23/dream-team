@@ -69,7 +69,7 @@ Services: {name} ({capability}): available via {provider} ({mode}) | no key for 
 Update check: on — up to date (v{team.version}) | v{R} available → README "Updating the team" | unreachable | off | not asked (run fix)
 Knowledge: ok | scaffold (written YYYY-MM-DD on an empty project) → run /generate-knowledge once the code exists | scaffold, project now has content → run /generate-knowledge | missing: [...] → run /generate-knowledge
 Sticky mode: wired via project settings | wiring stale (run fix) | NOT wired (run fix) — bash: found|absent — Guard: wired | NOT wired (run fix) | wiring stale (run fix)
-Active run: none | {context_id} (phase {N}) | stale marker → {context_id} already closed
+Active run: none | {context_id} (phase {N}) | warm: {context_id} ({result}) | stale marker → {context_id} (status.md missing, or closed without state=closed)
 Toolchain: ok | missing tools: [...]
 ```
 
