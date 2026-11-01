@@ -187,7 +187,7 @@ else
   # extend it when a workflow gains a call.
   required_cells="analyze:researcher-explorer designer
 docs:doc-writer
-bug_fix:researcher-explorer brainstorm developer tester reviewer verifier
+bug_fix:researcher-explorer brainstorm developer tester reviewer reviewer:diagnose verifier
 small_change:researcher-explorer brainstorm developer tester reviewer verifier
 change_set:researcher-explorer brainstorm plan-auditor designer developer doc-writer tester reviewer verifier
 full_feature:brainstorm researcher-explorer:wide designer researcher-explorer architect plan-auditor developer doc-writer tester reviewer reviewer:final verifier"
@@ -209,8 +209,8 @@ full_feature:brainstorm researcher-explorer:wide designer researcher-explorer ar
     echo "$dir_roles" | grep -qx "$role" \
       || { echo "FAIL: modelRouting.workflows.$wf.$call names no role in agents/" >&2; status=1; }
     case "$call" in
-      *:*) case "$call" in researcher-explorer:wide|reviewer:final) ;;
-             *) echo "FAIL: modelRouting.workflows.$wf.$call: the only suffixes are researcher-explorer:wide and reviewer:final" >&2; status=1 ;;
+      *:*) case "$call" in researcher-explorer:wide|reviewer:final|reviewer:diagnose) ;;
+             *) echo "FAIL: modelRouting.workflows.$wf.$call: the only suffixes are researcher-explorer:wide, reviewer:final and reviewer:diagnose" >&2; status=1 ;;
            esac ;;
     esac
     case "$val" in

@@ -57,6 +57,9 @@ done
 
 for d in "$OLD" "$NEW"; do
   [ -f "$d/.team-mode" ] || continue
+  # A closed run keeps its marker (state=closed) to collect feedback; only an
+  # open run is reading the state this script moves.
+  [ "$(sed -n 's/^state=//p' "$d/.team-mode" | head -1 | tr -d '\r')" != "closed" ] || continue
   cid="$(sed -n 's/^context_id=//p' "$d/.team-mode" | head -1 | tr -d '\r')"
   echo "migrate: refused — a run is open: ${cid:-unknown} (marker $d/.team-mode)." >&2
   echo "In the session that runs it: /team stop. Then /team-setup fix, then /team resume." >&2

@@ -49,7 +49,7 @@ Read `tracking` from the manifest. If the directory `tracking.legacyDir` exists 
    - Wiring: the project's `.claude/settings.json` must contain a `UserPromptSubmit` entry whose command names `run-hook.cmd`, and a `PreToolUse` entry whose command names `run-hook.cmd guard-command` (the guard). Report whether each was found. When one was, compare its `command` with the matching one in `hooks.settingsSnippet`: a different string is stale wiring, left by an older team. Report it as `wiring stale`; the entry still works in Claude Code but fails in other harnesses that read the same file.
    - Shell: a bash interpreter must be reachable, otherwise the hooks exit quietly: sticky mode is unavailable and the guard denies nothing. Report `bash: found|absent (sticky mode and guard disabled)`.
    - In `fix` mode, for each entry that does not exist, show it from `hooks.settingsSnippet` and ask via AskUserQuestion before merging it into `.claude/settings.json`, one question per entry. Merge the sticky-mode entry into the existing `UserPromptSubmit` array and the guard entry, with its `matcher`, into the existing `PreToolUse` array, creating an array that is absent; never replace an existing hooks block. When an entry exists but its command is stale, show both strings and ask the same way before replacing that entry's `command` with the snippet's; change nothing else in the entry. Warn the user that a newly added or changed hook is picked up after they open `/hooks` once or restart the session.
-   - Marker: if `hooks.marker` exists, read it and report the run it names; if that run's `status.md` is missing or its first line contains `[DONE]` anywhere, report it as stale and (fix mode) delete the marker after confirmation.
+   - Marker: if `hooks.marker` exists, read it and report the run it names. Its `status.md` missing → stale: report it and (fix mode) delete the marker after confirmation. Its first line closed (`[DONE` or `Complete —` anywhere) and the marker carrying `state=closed` → report `warm: {context_id}` and leave it: the run is collecting feedback. First line closed without `state=closed` → stale, same handling as missing. Otherwise report the open run.
 8. **Toolchain.** If `TOOLCHAIN.md` exists, read `## Missing on this machine` and report it verbatim.
 
 ## Report format
@@ -69,7 +69,7 @@ Services: {name} ({capability}): available via {provider} ({mode}) | no key for 
 Update check: on — up to date (v{team.version}) | v{R} available → README "Updating the team" | unreachable | off | not asked (run fix)
 Knowledge: ok | scaffold (written YYYY-MM-DD on an empty project) → run /generate-knowledge once the code exists | scaffold, project now has content → run /generate-knowledge | missing: [...] → run /generate-knowledge
 Sticky mode: wired via project settings | wiring stale (run fix) | NOT wired (run fix) — bash: found|absent — Guard: wired | NOT wired (run fix) | wiring stale (run fix)
-Active run: none | {context_id} (phase {N}) | stale marker → {context_id} already closed
+Active run: none | {context_id} (phase {N}) | warm: {context_id} ({result}) | stale marker → {context_id} (status.md missing, or closed without state=closed)
 Toolchain: ok | missing tools: [...]
 ```
 

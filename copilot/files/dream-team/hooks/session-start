@@ -2,11 +2,14 @@
 # Dream Team — sessionStart hook for GitHub Copilot (VS Code and the CLI).
 #
 # While the marker file .dream-team-tracking/.team-mode exists, a new session
-# is told that a run is open and how to continue it. Copilot lets no hook add
-# context on every prompt, so this runs once per session: inside a session the
-# orchestrator keeps the run itself, and /team resume picks it up after a
-# compaction. While the pre-4.0.0 run-state directory .claude-tracking/ exists,
-# the session is told so as well, marker or no marker.
+# is told that a run is open and how to continue it, or — when the marker's
+# state line reads closed — that a run just closed and the session's messages
+# are feedback on it (TEAM-MODE-CLOSED, triaged by references/follow-up.md).
+# Copilot lets no hook add context on every prompt, so this runs once per
+# session: inside a session the orchestrator keeps the run itself, and /team
+# resume picks it up after a compaction. While the pre-4.0.0 run-state
+# directory .claude-tracking/ exists, the session is told so as well, marker
+# or no marker.
 #
 # Output: one JSON object carrying the same text twice -- additionalContext
 # for the Copilot CLI, hookSpecificOutput.additionalContext for VS Code. Exit
@@ -49,7 +52,26 @@ if [ -f "$MARKER" ]; then
   phase="$(read_field phase)"
   [ -n "$workflow" ] || workflow="unknown"
   [ -n "$phase" ] || phase="unknown"
-  if [ -n "$context_id" ]; then
+  state="$(read_field state)"
+  if [ -n "$context_id" ] && [ "$state" = "closed" ]; then
+    # A closed run keeps its marker so the next session hears feedback on it.
+    # The hook reads no status.md here (today's design); the orchestrator checks
+    # the first line itself, as the skill's Sticky team mode section says.
+    closed_on="$(read_field closed)";        [ -n "$closed_on" ]   || closed_on="unknown"
+    result="$(read_field result)";           [ -n "$result" ]      || result="unknown"
+    verify_open="$(read_field verify_open)"; [ -n "$verify_open" ] || verify_open="0"
+    parent="$(read_field parent)"
+    cid="$(escape_for_json "$context_id")"
+    closed_on="$(escape_for_json "$closed_on")"; result="$(escape_for_json "$result")"
+    verify_open="$(escape_for_json "$verify_open")"
+    parent_clause=""
+    [ -z "$parent" ] || parent_clause="; parent $(escape_for_json "$parent")"
+    context="${context}<TEAM-MODE-CLOSED>\n"
+    context="${context}Run ${cid} closed ${closed_on} with result ${result}; ${verify_open} Verify by hand lines open${parent_clause}. The run is not open, but this session's messages arrive in its project right after it: treat them as feedback on that run, not as standalone requests.\n"
+    context="${context}1. Read .github/skills/team/SKILL.md and act as the orchestrator it describes. 2. Read .dream-team-tracking/${cid}/status.md and .github/skills/team/references/follow-up.md, and follow follow-up.md: it says which messages update the closed run, which open a linked run, which start a new task, and which are not about the run at all. 3. Stay in the orchestrator role.\n"
+    context="${context}Handle directly, without the workflow: a slash command, a request to stop team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
+    context="${context}</TEAM-MODE-CLOSED>"
+  elif [ -n "$context_id" ]; then
     context_id="$(escape_for_json "$context_id")"
     workflow="$(escape_for_json "$workflow")"
     phase="$(escape_for_json "$phase")"

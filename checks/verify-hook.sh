@@ -58,18 +58,46 @@ run slash-space "$p" '"  /team status"'
 run slash-newline "$p" '"\n/team status"'
 [ -z "$OUT" ] || fail slash-newline "expected silence: $OUT"
 
-# 5. marker of a closed run: [DONE] anywhere in the first line
+# 5. marker of a closed run (4.4.x marker, no state line): warm, never stale
 p="$(project done)"; marker "$p" bug_fix_y_2026-10-08 "9 Close"; status "$p" bug_fix_y_2026-10-08 "# [DONE] 2026-10-08 — shipped"
 run done "$p" '"hello"'
-case "$OUT" in *TEAM-MODE-ACTIVE*) fail done "closed run still active: $OUT" ;; esac
-case "$OUT" in *TEAM-MODE-STALE*bug_fix_y_2026-10-08*closed*) ;; *) fail done "no stale block: $OUT" ;; esac
-case "$OUT" in *'rm -f .dream-team-tracking/.team-mode'*) ;; *) fail done "stale block lacks the delete command: $OUT" ;; esac
+case "$OUT" in *TEAM-MODE-ACTIVE*|*TEAM-MODE-STALE*) fail done "closed run reported active or stale: $OUT" ;; esac
+case "$OUT" in *TEAM-MODE-CLOSED*bug_fix_y_2026-10-08*'result unknown'*'0 Verify by hand'*'references/follow-up.md'*) ;; *) fail done "no closed block: $OUT" ;; esac
+case "$OUT" in *'rm -f .dream-team-tracking/.team-mode'*) fail done "closed block tells to delete the marker: $OUT" ;; esac
+run closed-slash "$p" '"/team status"'
+[ -z "$OUT" ] || fail closed-slash "expected silence: $OUT"
 
 # 6. marker of a run with no status.md
 p="$(project nostatus)"; marker "$p" bug_fix_z_2026-10-08 "1 Clarify"
 run nostatus "$p" '"hello"'
 case "$OUT" in *TEAM-MODE-ACTIVE*) fail nostatus "run without status.md still active: $OUT" ;; esac
 case "$OUT" in *TEAM-MODE-STALE*bug_fix_z_2026-10-08*missing*) ;; *) fail nostatus "no stale block: $OUT" ;; esac
+
+# 6b. closed marker with every field
+closed_marker() { # dir context_id result closed verify_open [parent]
+  mkdir -p "$1/.dream-team-tracking"
+  { printf 'context_id=%s\nworkflow=Bug Fix\nphase=9 Close\nstate=closed\nlanguage=Russian\nstarted=2026-10-20\nclosed=%s\nresult=%s\nverify_open=%s\n' "$2" "$4" "$3" "$5"
+    [ -z "${6:-}" ] || printf 'parent=%s\n' "$6"; } > "$1/.dream-team-tracking/.team-mode"
+}
+p="$(project closed-fields)"; closed_marker "$p" bug_fix_c_2026-10-30 "COMMITTED abc1234" 2026-10-30 3 bug_fix_p_2026-10-20
+status "$p" bug_fix_c_2026-10-30 "[DONE] 2026-10-30 — COMMITTED abc1234: fixed"
+run closed-fields "$p" '"still broken on prod"'
+case "$OUT" in *'Run bug_fix_c_2026-10-30 closed 2026-10-30 with result COMMITTED abc1234; 3 Verify by hand lines open; parent bug_fix_p_2026-10-20.'*) ;; *) fail closed-fields "closed sentence wrong: $OUT" ;; esac
+p="$(project closed-noparent)"; closed_marker "$p" bug_fix_n_2026-10-30 BUILT 2026-10-30 0
+status "$p" bug_fix_n_2026-10-30 "[DONE] 2026-10-30 — BUILT: done"
+run closed-noparent "$p" '"hello"'
+case "$OUT" in *'0 Verify by hand lines open.'*) ;; *) fail closed-noparent "expected no parent clause: $OUT" ;; esac
+case "$OUT" in *'parent'*) fail closed-noparent "parent clause without a parent: $OUT" ;; esac
+# 6c. first lines closed by older teams in prose
+p="$(project closed-prose-done)"; marker "$p" bugfix_a_2026-08-14 "9 Close"; status "$p" bugfix_a_2026-08-14 "**[DONE — 2026-08-14]** shipped"
+run closed-prose-done "$p" '"hello"'
+case "$OUT" in *TEAM-MODE-CLOSED*) ;; *) fail closed-prose-done "expected closed: $OUT" ;; esac
+p="$(project closed-prose-complete)"; marker "$p" analyze_b_2026-08-11 "4 Close"; status "$p" analyze_b_2026-08-11 "# [Analyze] Complete — report written"
+run closed-prose-complete "$p" '"hello"'
+case "$OUT" in *TEAM-MODE-CLOSED*) ;; *) fail closed-prose-complete "expected closed: $OUT" ;; esac
+p="$(project open-complete-word)"; marker "$p" bug_fix_o_2026-10-30 "5 Implement"; status "$p" bug_fix_o_2026-10-30 "# Status: Complete the import flow"
+run open-complete-word "$p" '"hello"'
+case "$OUT" in *TEAM-MODE-ACTIVE*) ;; *) fail open-complete-word "'Complete' without the dash must stay open: $OUT" ;; esac
 
 # 7. legacy directory present: notice on every prompt, slash included, even when empty
 p="$(project legacy)"; mkdir -p "$p/.claude-tracking"
@@ -200,6 +228,13 @@ toolchain() { # dir command-cell: a TOOLCHAIN.md whose one row has the given Com
 
 p="$(project guard-no-marker)"
 expect_silence guard-no-marker "$p" 'git push --force origin x'
+# a closed run keeps its marker in state=closed: the guard sleeps
+closed_marker "$p" bug_fix_warm_2026-10-30 BUILT 2026-10-30 0
+expect_silence guard-closed-marker "$p" 'git push --force origin x'
+expect_silence guard-closed-marker-rm "$p" 'rm -rf ./out/*'
+printf 'context_id=bug_fix_g_2026-10-30\nworkflow=Bug Fix\nphase=5 Implement\nstate=open\n' > "$p/.dream-team-tracking/.team-mode"
+expect_deny guard-open-state "$p" 'git push --force origin x' 'force push'
+# a marker without a state line (4.4.x) is an open run
 
 p="$(project guard)"; marker "$p" bug_fix_g_2026-10-20 "5 Implement"; status "$p" bug_fix_g_2026-10-20 "# Status: g"
 expect_deny guard-force-push "$p" 'git push --force origin x' 'force push'

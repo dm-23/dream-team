@@ -2,6 +2,8 @@
 
 Read first: `learnings-check.md` (step 2) · `scope-gate.md` (step 3) · `quorum.md` (step 4) · `rework.md` (step 8) · `operations.md` (close)
 
+A linked run opened by `follow-up.md` (class 2) enters at step 5 or step 4 as that file says; its `**Parent:**` names the closed run.
+
 1. Clarify (symptoms, reproduction, environment; ≤3 questions).
 2. Learnings check.
 3. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`). Scope gate, from the `Scope Count` line of its pointer block — you do not read the report.

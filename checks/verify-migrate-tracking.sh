@@ -145,6 +145,13 @@ before="$(snap "$P")"; run "$P"
 has "$tmp/err" "analyze_z_2026-10-08"
 [ "$before" = "$(snap "$P")" ] || fail "a refused run changed files"
 
+case=closed-run-new
+P="$tmp/p5b"; make_project "$P"
+mkdir -p "$P/.dream-team-tracking"; printf 'context_id=analyze_z_2026-10-08\nstate=closed\nresult=ANSWERED\n' > "$P/.dream-team-tracking/.team-mode"
+run "$P"
+[ "$rc" = 0 ] || fail "a closed marker must not refuse the migration, got $rc: $(cat "$tmp/err")"
+[ -f "$P/.dream-team-tracking/.team-mode" ] || fail "the closed marker was removed"
+
 case=dry-run
 P="$tmp/p6"; make_project "$P"
 before="$(snap "$P")"; run "$P" --dry-run

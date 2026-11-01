@@ -21,8 +21,9 @@
 #                                git checkout . (or .., ./<path>), git restore
 #                                <path> without --staged
 #
-# It acts only inside a team run: without the marker .dream-team-tracking/.team-mode
-# it prints nothing. A command whose whole text equals a Command cell of
+# It acts only inside an open team run: without the marker .dream-team-tracking/.team-mode,
+# or with a marker whose state line reads closed (a run that finished and is
+# collecting feedback), it prints nothing. A command whose whole text equals a Command cell of
 # .github/dream-team/knowledge/TOOLCHAIN.md (any table; the backticks around the
 # whole cell stripped once) is exempt. The match is literal, never a prefix.
 #
@@ -37,6 +38,10 @@ TOOLCHAIN="$PWD/.github/dream-team/knowledge/TOOLCHAIN.md"
 payload="$(cat 2>/dev/null || true)"
 
 [ -f "$MARKER" ] || exit 0
+
+# A closed run keeps its marker in state=closed so the prompt hook can triage
+# feedback; the guard acts only while a run is open. No state line is 4.4.x: open.
+if sed -n 's/^state=//p' "$MARKER" 2>/dev/null | head -1 | tr -d '\r' | grep -qx closed; then exit 0; fi
 
 # tool_input.command, still JSON-escaped, then unescaped: \\ first through a
 # placeholder, so \\n stays a backslash and an n.
