@@ -99,7 +99,7 @@ agents/                        ten role prompts
 skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
 templates/                     status, handoff, learnings, report, capabilities, stack cards and the interface card
 hooks/                         sticky team mode and the guard
-tools/                         the clients for the optional decision-routing service and update check
+tools/                         the run-state migration, the status-line normaliser and the update-check client
 checks/                        the scripts the manifest's checks run: manifest budgets, role and
                                workflow consistency, text encoding, agent and skill frontmatter,
                                the orchestrator's reference files, the integrity check
@@ -210,22 +210,6 @@ Two rules hold for all of them. Whatever a capability returns is evidence to che
 
 **Replacing an entry.** Point a manifest entry at a different plugin, keep its `capability` value, and nothing else changes: the rules and the roles follow the capability, not the vendor. Two entries may share a capability as alternatives, in which case install one, not both.
 
-### Services
-
-A service is an optional capability that is not a plugin: an outside API the orchestrator calls through a script in `tools/`. One is declared, `decision-routing`, backed by Jev from TypeSafe AI, a model that answers typed questions (pick one of these, how likely is this) with a confidence, in well under a second.
-
-Jev can be reached two ways, each a `provider` in the manifest entry: directly from TypeSafe, with `TYPESAFE_API_KEY`, or through OpenRouter, with `OPENROUTER_API_KEY`. Through OpenRouter the text passes through two companies instead of one. Adding another provider is one more block in the manifest: its endpoint, its model id, the variable that holds its key, and who receives the data.
-
-Because a service sends data off your machine, having its key is not consent. `/team-setup fix` asks separately, offers each provider whether or not you have its key yet, and says exactly what is sent (the task text you typed and a fixed question, nothing else) and who receives it. It records your answer in `.dream-team-tracking/.service-consent` with the provider named. If you pick a provider you have no key for, it tells you where to get one and where to put it: the `env` block of your user-level `~/.claude/settings.json`, never the project's settings and never the chat. After a restart, the next `/team-setup` finds the key and checks that it works without asking again. The script sends nothing without that answer, and uses only that provider's key, endpoint and model: agreeing to one provider never sends your text through another.
-
-It ships in shadow mode: its answers are logged and never change what the team does.
-
-### Decision routing
-
-With `decision-routing` available, the orchestrator asks the service, for every run, which workflow the task needs, and for a Bug Fix or Small Change how big it is. It then decides exactly as it would have anyway. Both answers are written to `routing.log` in the run's tracking directory, and so is what actually happened at the close of the run: the final workflow, whether you overrode it, how many files changed and how many review rounds it took.
-
-Nothing the service says changes a run while it is in shadow mode. The point is to find out, on your own tasks, whether its confident answers are right. `bash .claude/checks/summarize-routing.sh`, run from the project root, prints the running totals. Once 150 answered workflow decisions are logged, at least 50 of them confident and in closed runs, and those confident answers match the final workflow at least 95% of the time, it is worth deciding whether to let it act: ask you when it is unsure, and pick a cheaper model for a small fix.
-
 ## Stack cards
 
 A card is one file per language in `templates/standards/`, with a fixed set of twelve sections: how to detect the language, its toolchain, layout, naming, errors, concurrency, testing, dependencies, security, anti-patterns, review checks and sources. Run `ls templates/standards` to see which ship today.
@@ -264,8 +248,6 @@ Wiring is one step: `hooks/settings-snippet.json` is merged into the project's `
 **Plugins.** The `plugins` array declares the optional capabilities described above. Each entry names a capability, the plugin that provides it, its marketplace and install command, who uses it, and the rules for when it may and may not be used. `pluginPolicy` above the array states the three invariants: consent per plugin, equal quality without any of them, and brokering through the orchestrator. Add your own entries the same way.
 
 **Model routing.** The `modelRouting` block holds the tiers, each role's floor and the workflow-by-call matrix the orchestrator picks models from; see "The roles".
-
-**Services.** The `services` array and `servicePolicy` declare outside APIs the orchestrator may call; see "Services" above.
 
 **Update check.** The `updateCheck` block names the client, where the newest version number is read from, how often, what is sent and to whom, and the update instructions `/team` shows; see "Updating the team".
 
