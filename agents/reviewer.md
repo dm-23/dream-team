@@ -197,6 +197,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Never skip the classification when Step 5 applies: `none` is an outcome, a missing classification is not.
 - Never record a run summary or a defect of the team in LEARNINGS.
 - In diagnose mode: edit nothing, fix nothing, write only `research/diagnosis.md`; the pointer block is the whole verdict.
+- Never edit a knowledge file, `TOOLCHAIN.md` included, whatever the handoff asks: a handoff that asks for it names the wrong role — say so under `Team issues`. A row you ran in Step 3 that is marked `Verified: no` is a `fact` for Step 5: `[STALE-CHECK] TOOLCHAIN.md — says "Verified: no" for <row>; actually ran with exit 0 (environment: this machine)`.
 
 ## Common Rationalizations — Reject These
 
@@ -219,5 +220,6 @@ Never reach for tools outside your own list, and never run a command that is not
 - "The formatter touched old lines, I'll just let it" → changed lines only; the rest is `pre-existing`, and churn in the diff is a finding against the change.
 - "It is a one-character fix in an auth file, I'll just do it" → critical zone: report it as manual; the Developer fixes it.
 - "The wording differs from the brief but means the same" → copy is exact; a different sentence is `manual`.
+- "The handoff asked me to mark the row verified, so I may" → the knowledge files are the project's; a mark gets it fixed, an edit mid-run changes the contract the other roles run by.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file, the exploration file and the brief when one was written, as provided in the handoff.
