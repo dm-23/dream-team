@@ -409,6 +409,11 @@ assert "bug_fix_x_2026-10-07" in a and "TEAM-MODE-ACTIVE" in a and "\"quoted\"" 
 else
   case "$out" in *bug_fix_x_2026-10-07*SessionStart*) ;; *) fail "hook output: $out" ;; esac
 fi
+printf 'context_id=bug_fix_x_2026-10-07\nworkflow=Bug Fix\nphase=9 Close\nstate=closed\nclosed=2026-10-07\nresult=BUILT\nverify_open=2\n' > "$hp/.dream-team-tracking/.team-mode"
+out="$(cd "$hp" && bash "$HOOK" < /dev/null)"
+case "$out" in *'Run bug_fix_x_2026-10-07 closed 2026-10-07 with result BUILT; 2 Verify by hand lines open.'*'.github/skills/team/references/follow-up.md'*) ;; *) fail "closed marker: expected the closed block: $out" ;; esac
+case "$out" in *'<TEAM-MODE-ACTIVE>'*) fail "closed marker: active block: $out" ;; esac
+printf 'context_id=bug_fix_x_2026-10-07\nworkflow=Bug Fix\nphase=3 "quoted" \\ back\n' > "$hp/.dream-team-tracking/.team-mode"
 mkdir -p "$hp/.claude-tracking"
 out="$(cd "$hp" && bash "$HOOK" < /dev/null)"
 case "$out" in *TEAM-LEGACY-STATE*'<TEAM-MODE-ACTIVE>'*) ;; *) fail "legacy dir present: expected legacy then active blocks: $out" ;; esac
