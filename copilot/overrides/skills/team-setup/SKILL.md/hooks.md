@@ -1,0 +1,5 @@
+8. **Hooks.**
+8. **Hooks.** Read the `hooks` block of the manifest and make sure a new session can learn about an open or just-closed run, and that the guard denies destructive shell commands during a run:
+   - Files: `hooks.config` exists, and `hooks.script`, `hooks.windowsLauncher`, `hooks.guard` and `hooks.guardWindowsLauncher` exist under `hooks.dir`. `copilot/install.sh` installs them; nothing is merged into any settings file, and this skill never writes one. Report the session hook as `installed` when `hooks.config` has a `sessionStart` entry naming `hooks.script` and both its files exist, and the guard as `installed` when it has a `PreToolUse` entry naming `hooks.guard` and both guard files exist; otherwise `missing (run copilot/install.sh again)`.
+   - Shell: a bash interpreter must be reachable, otherwise the hooks exit quietly: the reminder is unavailable and the guard denies nothing. Report `bash: found|absent (session reminder and guard disabled)`.
+   - VS Code runs hooks only while its `chat.useHooks` setting is on, a preview feature this skill cannot read. Say so once in the report.
