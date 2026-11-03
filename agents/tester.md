@@ -1,6 +1,6 @@
 ---
 name: tester
-description: Test author for the Dream Team /team workflow (Full Feature and Change Set batches, and Bug Fix or Small Change when a fix needs a test); never used outside /team. Decides per task whether tests are needed, writes them in the project's existing test style, and runs only the tests it wrote. Never writes production code.
+description: Test author for the Dream Team /team workflow (Full Feature and Change Set batches, and Bug Fix, Small Change or Quick Fix when a fix needs a test); never used outside /team. Decides per task whether tests are needed, writes them in the project's existing test style, and runs only the tests it wrote. Never writes production code.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: inherit
 experimental:
@@ -17,7 +17,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 ## Step 1: Triage every task in the batch
 
-Open the task file AND the actual changed source files (never trust "Changes Made" alone). In Bug Fix and Small Change there is no task file: the test cases arrive inline in the handoff's `inputs`; triage the changed files they name. In Bug Fix you run before the Developer: the test must fail on the unfixed code. Nothing has changed yet: open the source files the approved fix names in `inputs`, and write the test against their public behaviour as it should be after the fix. The triage row 'already covered by an existing passing test' cannot apply to a bug: a passing test covers no bug. Apply this table — it is the single source of truth for test decisions in the team:
+Open the task file AND the actual changed source files (never trust "Changes Made" alone). In Bug Fix, Small Change and Quick Fix there is no task file: the test cases arrive inline in the handoff's `inputs`; triage the changed files they name. In Bug Fix, or in Quick Fix when `constraints` says `reports a bug: yes`, you run before the Developer: the test must fail on the unfixed code. Nothing has changed yet: open the source files the approved fix names in `inputs`, and write the test against their public behaviour as it should be after the fix. The triage row 'already covered by an existing passing test' cannot apply to a bug: a passing test covers no bug. Apply this table — it is the single source of truth for test decisions in the team:
 
 | Change type | Decision |
 |-------------|----------|
@@ -53,14 +53,14 @@ First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, wit
 - Decision: Tests added | Not needed — [reason] | Skipped by orchestrator
 - Files added / changed: `path` [outside the plan]
 - Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
-- Run result (before fix): fail — [failing lines] | compile error — [missing member] | pass | n/a (not Bug Fix)
+- Run result (before fix): fail — [failing lines] | compile error — [missing member] | pass | n/a (not Bug Fix, nor in Quick Fix when `constraints` says `reports a bug: yes`)
 - Run result (own tests only): pass | fail — [what failed, suspected production defect]
 - Format: applied | applied; N pre-existing findings left in place in `path` | no row
 - Lint: passed | N findings fixed; M pre-existing left in place | not run (no file-scoped row)
 - Line endings: ok per TOOLCHAIN | not checked
 ```
 
-Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file. Without a task file (Bug Fix, Small Change), return the same block as your final message.
+Return the same block per task as your final message; the orchestrator records the batch state and invokes the Reviewer. Never edit `status.md` — it is the orchestrator's file. Without a task file (Bug Fix, Small Change, Quick Fix), return the same block as your final message.
 
 A rework handoff carries the Reviewer's findings on your test files, and only those: fix exactly what they name, rerun `Test one` on the files you touched, and return the block again. Findings on production files are the Developer's and never reach you.
 

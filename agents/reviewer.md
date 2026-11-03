@@ -44,7 +44,7 @@ Additionally, always:
 - Tests assert behaviour: no assertion on the order of internal calls, on log text or on reference identity unless that is the documented contract; no fixture or builder duplicated across test files when an existing one fits; a test lives in the fixture of the symbol it exercises.
 - Formatting is judged on the lines the change set touched; pre-existing findings in a touched file are left and reported, never fixed as part of the change.
 
-A criterion — or, in Bug Fix and Small Change, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified: its line reads `- [x] … — evidence: external context (<what produced it>)`. Otherwise write its line as `- [ ] <criterion> — unverified: <what would check it>` and list it on the report's `Unverified` line with what would check it. An unverified criterion is not red: it never forces `needs rework`, and the verdict is `approved — N unverified` or `fixed — N unverified` as below. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
+A criterion — or, in Bug Fix, Small Change and Quick Fix, a requirement of the inline task — that neither the diff nor a `TOOLCHAIN.md` command can confirm is not checked by any other means: no live database, no running service, no one-off script. The one exception is evidence the handoff already carries under `external context` (see "Optional capabilities"): a criterion it confirms is met, approved with the evidence stated plainly, not listed as unverified: its line reads `- [x] … — evidence: external context (<what produced it>)`. Otherwise write its line as `- [ ] <criterion> — unverified: <what would check it>` and list it on the report's `Unverified` line with what would check it. An unverified criterion is not red: it never forces `needs rework`, and the verdict is `approved — N unverified` or `fixed — N unverified` as below. If it sat under `Acceptance Criteria` rather than the task's `Verify by hand`, the task put it in the wrong place: add that to `Team issues`. If this project could run such a check as a command (its CI or repository already has one), Step 5, when it runs, records it as a `fact` for `TOOLCHAIN.md`, as for any command the file lacks. Lines already under the task's `Verify by hand` belong to the user: do not check them and do not repeat them in `Unverified`.
 
 A checklist item suffixed `(after commit)` exists only once the user has committed. Do not check it, do not list it under `Unverified`, do not make it a finding: list it on the report's `After commit:` line, and the orchestrator names it with the commit offer.
 
@@ -88,7 +88,7 @@ Findings:
   advisory: [...] | none
   pre-existing: [...] | none
 Criteria: N green / M red / K waived / U unverified | n/a — <red ones, each with its line>
-Fail-before: confirmed (<test file>) | not demonstrated — <reason> | not applicable — no test (<reason>)   (Bug Fix only)
+Fail-before: confirmed (<test file>) | not demonstrated — <reason> | not applicable — no test (<reason>)   (Bug Fix, or in Quick Fix when `constraints` says `reports a bug: yes`)
 Toolchain: format ok|fail, lint ok|fail|missing, build ok|fail, tests: N passed / M failed (per runner), validate ok|fail|by reading (per document) | n/a
 Documentation obligations: satisfied | missing: [...]
 Unverified: [<criterion> — <what would check it>] | none
@@ -98,11 +98,11 @@ Team issues: [...] | none
 Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework whenever `manual` is not `none`, and also when M red > 0; never `fixed` in critical-zone mode)
 ```
 
-Bug Fix / Small Change: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan. The `Fail-before:` line is Bug Fix only. Confirmed means the Tester's block shows a fail or compile error before the fix and the full suite is green now.
+Bug Fix / Small Change / Quick Fix: same block with `Reviewed: single pass`. They have no task file: the same criterion forms are written under the report's `Criteria:` line, one per bullet of the approved fix or plan. The `Fail-before:` line is Bug Fix only, or in Quick Fix when `constraints` says `reports a bug: yes`; otherwise a Quick Fix is reviewed as a Small Change. Confirmed means the Tester's block shows a fail or compile error before the fix and the full suite is green now.
 
 For the final review also append a "## Final review" section to `plans/detailed-plan.md` (Full Feature) with the verdict.
 
-## Step 5: Classify what the run taught (Bug Fix, Change Set, Full Feature; Small Change only if a real defect was found)
+## Step 5: Classify what the run taught (Bug Fix, Change Set, Full Feature, and Quick Fix when `constraints` says `reports a bug: yes`; Small Change and any other Quick Fix only if a real defect was found)
 
 `LEARNINGS.md` is an inbox of traps that have not yet earned a rule, not a log of runs. Classify every candidate lesson before writing anything. One run may produce several outcomes, and `none` is a valid one.
 
