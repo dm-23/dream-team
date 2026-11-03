@@ -27,6 +27,8 @@ skills/team/*	5. AskUserQuestion:	5. Ask through the question tool:
 skills/team/*	 Its model is the cell `bug_fix.tester`.	
 skills/team/*	 The wide pass and every open-facts pass of this run take the cell `researcher-explorer:wide`.	
 skills/team/*	, model from the cell `small_change.tester`	
+skills/team/*	 The Tester's model cell is `quick_fix.tester`.	
+skills/team/*	; the Verifier's cell is `quick_fix.verifier`	
 skills/team/*	, model from the cell `analyze.designer`	
 skills/team/*	, model from the cell `full_feature.designer`	
 skills/team/*	, model from the cell `change_set.designer`	

@@ -1,6 +1,6 @@
 # Status: {title}
 
-**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature} (provisional: the class announced at Step 0, or — when it is the same)
+**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature} (provisional: the class announced at Step 0, or — when it is the same)
 **Context:** `.dream-team-tracking/{context_id}/`
 **Parent:** {context_id of the run this one follows | —}
 **Started:** {YYYY-MM-DD}
@@ -17,8 +17,8 @@
 - [ ] 0 Preflight (knowledge present, LEARNINGS checked: {matched entry titles or "none"})
 - [ ] 1 Clarification ({N} questions asked / not needed)
 - [ ] 2 Research ({targeted | wide})
-- [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a}; design: {brief — N decisions | ux-audit — B/S/C | not user-facing | n/a})
-- [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected})
+- [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated} | advisor: {N consults, M evidence routes}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a}; design: {brief — N decisions | ux-audit — B/S/C | not user-facing | n/a})
+- [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected | minimum approved, add-ons: T taken / L later / D dropped})
 - [ ] 5 Implementation
 - [ ] 6 Tests (Tester: {run — before fix: fail | compile error | pass | n/a} | skipped — reason)
 - [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived / U unverified | n/a}; unverified: {N | none})

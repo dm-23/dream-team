@@ -40,7 +40,7 @@ Marker path: `.dream-team-tracking/.team-mode` (plain text, one `key=value` per 
 
 ```
 context_id={workflow_key}_{slug}_{YYYY-MM-DD}
-workflow={Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
+workflow={Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature}
 phase={number and name of the phase just entered}
 state={open | closed}
 language={language the user wrote the task in}
@@ -51,7 +51,7 @@ result={BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED}
 verify_open={number of Verify by hand lines not yet confirmed}
 ```
 
-`workflow_key` is the manifest's key for the workflow: lower case, spaces as underscores (`analyze`, `docs`, `bug_fix`, `small_change`, `change_set`, `full_feature`). `slug` is the task in at most forty characters: lower case, every run of characters that are not letters or digits replaced by one hyphen, no leading or trailing hyphen. The same string names the run directory; older runs used other spellings of the workflow, which changes nothing about how they are read.
+`workflow_key` is the manifest's key for the workflow: lower case, spaces as underscores (`analyze`, `docs`, `bug_fix`, `small_change`, `quick_fix`, `change_set`, `full_feature`). `slug` is the task in at most forty characters: lower case, every run of characters that are not letters or digits replaced by one hyphen, no leading or trailing hyphen. The same string names the run directory; older runs used other spellings of the workflow, which changes nothing about how they are read.
 
 - **Write** it in Step 0 with `state=open`, immediately after creating `status.md`; `parent=` when `follow-up.md` or the user named the run this one follows.
 - **Update** the `phase` line at every phase change, in the same edit as `status.md`.
@@ -112,6 +112,7 @@ Each workflow's steps live in one file. Read it in full before the workflow's fi
 | Docs | `.claude/skills/team/references/docs.md` |
 | Bug Fix | `.claude/skills/team/references/bug_fix.md` |
 | Small Change | `.claude/skills/team/references/small_change.md` |
+| Quick Fix | `.claude/skills/team/references/quick_fix.md` |
 | Change Set | `.claude/skills/team/references/change_set.md` |
 | Full Feature | `.claude/skills/team/references/full_feature.md` |
 

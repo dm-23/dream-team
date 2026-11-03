@@ -171,6 +171,7 @@ else
 docs:doc-writer
 bug_fix:researcher-explorer brainstorm developer tester reviewer reviewer:diagnose verifier
 small_change:researcher-explorer brainstorm developer tester reviewer verifier
+quick_fix:researcher-explorer advisor developer tester reviewer verifier
 change_set:researcher-explorer brainstorm plan-auditor designer developer doc-writer tester reviewer verifier
 full_feature:brainstorm researcher-explorer:wide designer researcher-explorer architect plan-auditor developer doc-writer tester reviewer reviewer:final verifier"
   while IFS=: read -r wf cells; do
