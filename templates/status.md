@@ -40,6 +40,7 @@
 - {date} — Small Change named — opened from {parent context_id} closing question   (Quick Fix only, in the linked run opened at the closing question)
 - {date} — advisor: {mode} #{n}   (Quick Fix only, one per counted Advisor call)
 - {date} — evidence route #{m}   (Quick Fix only, one per evidence route)
+- {date} — resolution: Resolved   (Quick Fix only, the one decision-mark resolution by the Advisor)
 - {date} — risks: {…} | none   (Quick Fix only, at the gate)
 - {date} — add-on: {title} — taken | later | dropped   (Quick Fix only, at the gate)
 - {date} — add-on: {title} — opened as {context_id} | kept | dropped   (Quick Fix only, at the closing question)
