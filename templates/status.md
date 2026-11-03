@@ -1,6 +1,6 @@
 # Status: {title}
 
-**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature} (provisional: the class announced at Step 0, or — when it is the same)
+**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature} (provisional: the class announced at Step 0, or — when it is the same)
 **Context:** `.dream-team-tracking/{context_id}/`
 **Parent:** {context_id of the run this one follows | —}
 **Started:** {YYYY-MM-DD}
@@ -17,8 +17,8 @@
 - [ ] 0 Preflight (knowledge present, LEARNINGS checked: {matched entry titles or "none"})
 - [ ] 1 Clarification ({N} questions asked / not needed)
 - [ ] 2 Research ({targeted | wide})
-- [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a}; design: {brief — N decisions | ux-audit — B/S/C | not user-facing | n/a})
-- [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected})
+- [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated} | advisor: {N consults, M evidence routes}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a}; design: {brief — N decisions | ux-audit — B/S/C | not user-facing | n/a})
+- [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected | minimum approved, add-ons: T taken / L later / D dropped})
 - [ ] 5 Implementation
 - [ ] 6 Tests (Tester: {run — before fix: fail | compile error | pass | n/a} | skipped — reason)
 - [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived / U unverified | n/a}; unverified: {N | none})
@@ -35,6 +35,15 @@
 - {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}
 - {date} — {decision, who/what decided it}
 - {date} — Workflow fixed: {workflow} (provisional {class}) — Scope Count {N}; Wiring/surface {…}   (only when the research pass changed the class)
+- {date} — Workflow fixed: Quick Fix (provisional {class}, chosen at the gate) — Scope Count {N}; Wiring/surface {…}   (Quick Fix only, when chosen at the scope gate)
+- {date} — Quick Fix declined at the gate   (written by the scope gate)
+- {date} — Small Change named — opened from {parent context_id} closing question   (a Small Change opened from a Quick Fix close)
+- {date} — advisor: {mode} #{n}   (Quick Fix only, one per counted Advisor call)
+- {date} — evidence route #{m}   (Quick Fix only, one per evidence route)
+- {date} — resolution: Resolved   (Quick Fix only, the one decision-mark resolution by the Advisor)
+- {date} — risks: {…} | none   (Quick Fix only, at the gate)
+- {date} — add-on: {title} — taken | later | dropped   (Quick Fix only, at the gate)
+- {date} — add-on: {title} — opened as {context_id} | kept | dropped   (Quick Fix only, at the closing question)
 - {date} — standing: read-only operations — "{the user's words, verbatim}"   (only from an explicit answer or message; see references/operations.md)
 
 ## Verify by hand

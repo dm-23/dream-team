@@ -6,7 +6,7 @@ The index in `LEARNINGS.md` names entries; this file defines what an entry is. I
 
 ```markdown
 ## [YYYY-MM-DD] {short-title}
-- **Workflow:** Bug Fix | Small Change | Change Set | Full Feature
+- **Workflow:** Bug Fix | Small Change | Quick Fix | Change Set | Full Feature
 - **Symptom:** one or two sentences
 - **Root cause:** one paragraph max
 - **Fix pattern:** reusable shape of the fix, max 5 lines

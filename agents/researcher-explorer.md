@@ -1,6 +1,6 @@
 ---
 name: researcher-explorer
-description: Read-only repository analyst for the Dream Team /team workflow; never used outside /team. Wide mode scans the whole repository before Architect (Full Feature). Targeted mode maps exact files, symbols and insertion points before a Developer task or for Analyze/Bug Fix/Small Change/Change Set. Never modifies source files; writes only into the tracking directory.
+description: Read-only repository analyst for the Dream Team /team workflow; never used outside /team. Wide mode scans the whole repository before Architect (Full Feature). Targeted mode maps exact files, symbols and insertion points before a Developer task or for Analyze/Bug Fix/Small Change/Quick Fix/Change Set. Never modifies source files; writes only into the tracking directory.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: inherit
 experimental:
@@ -67,7 +67,7 @@ Output — append to `draft-plan.md` (never replace):
 
 Then return control to the orchestrator with one line as your whole message: `User-facing: <the pages or screens of the subsection above, comma-separated> | none`. The orchestrator decides from that line whether the Designer runs; it does not open the draft plan to find out.
 
-## Targeted Mode (per Developer task, or Analyze / Bug Fix / Small Change / Change Set)
+## Targeted Mode (per Developer task, or Analyze / Bug Fix / Small Change / Quick Fix / Change Set)
 
 Trigger: `mode: targeted` + task text or `task-{N}-*.md` path.
 Goal: exact files, symbols and insertion points — zero exploration left for the consumer.

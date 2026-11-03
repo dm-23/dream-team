@@ -1,6 +1,6 @@
 # Dream Team
 
-A multi-agent development team for Claude Code: ten subagents, three commands, one manifest.
+A multi-agent development team for Claude Code: eleven subagents, three commands, one manifest.
 
 It knows nothing about your technology and nothing about your project. Everything specific is generated locally on first run and never committed. The same repository plugs into any codebase unchanged.
 
@@ -50,7 +50,7 @@ Step 2 takes a few minutes and is the only step that reads your whole codebase. 
 /team resume      — pick it back up
 ```
 
-`/team` picks the workflow itself and announces it. You approve the plan before anyone writes code.
+`/team` picks the workflow itself and announces it, and on a small task may offer you Quick Fix before settling the workflow. You approve the plan before anyone writes code.
 
 The two task lines above are not decoration. The team answers in whichever language you wrote the task in and records that language in the run's status file, so a run resumed days later still answers the way it started.
 
@@ -97,7 +97,7 @@ This repository, and equally the project's `.claude/` after deployment:
 
 ```
 team-manifest.json             the contract: what must exist, where, and what to check
-agents/                        ten role prompts
+agents/                        eleven role prompts
 skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
 templates/                     status, handoff, learnings, report, capabilities, stack cards and the interface card
 hooks/                         sticky team mode and the guard
@@ -122,6 +122,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Role | Tools | Does | Never does |
 |------|-------|------|------------|
 | Brainstorm | read only | Three parallel instances propose questions, solutions or a diagnosis | Reads your source; talks to you |
+| Advisor | read only | One read-only advisor consulted at the decision points of a Quick Fix: the minimum change, the add-ons, a blocked developer | Searches your source; reads past a cited line; talks to you; edits; returns a patch |
 | ResearcherExplorer | read, search, git history, write to run state; a `Build` (cheap only), `Test one` or `Validate` row of the toolchain when the handoff names it | Finds the exact files, symbols and insertion points; runs a named row to confirm a signature, a failing test or a document and lists every command it ran under `## Commands run`, which the orchestrator copies into the run's Operations log | Modifies source; runs a command the handoff did not name |
 | Architect | read, search, write to run state | Detailed plan and task breakdown for a full feature | Writes production code |
 | Designer | read, search, write to run state | Audits the interface against your users' tasks (Analyze), or writes the design brief a user-facing feature is built from: surface, states, exact copy, the existing elements to reuse, done-when lines | Writes markup or code; proposes a palette, a typeface or a brand; changes a recorded interface convention without your decision |
@@ -136,11 +137,11 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question. A lens that needs a piece of code it was not given says so, and the team fetches it rather than letting the lens guess; a choice the research or the Architect finds afterwards goes back to the three lenses once, by a count, before it can reach you.
 
-**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm, Architect, Designer and PlanAuditor opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
+**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm, Advisor, Architect, Designer and PlanAuditor opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
-**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix or Small Change runs its Developer, Reviewer and Verifier on sonnet. Change Set and Full Feature tasks follow their `Complexity`; the Verifier takes the `Complexity` of the Reviewer call whose findings it judges. The Architect, the Full Feature plan audit and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block or lacks a cell for a call that workflow makes (the check's own table lists them), a tier is misspelt, or an agent file pins a model.
+**Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix, Small Change or Quick Fix runs its Developer, Reviewer and Verifier on sonnet. The Quick Fix Advisor has the same floor as Brainstorm, so it runs at the Brainstorm tier. Change Set and Full Feature tasks follow their `Complexity`; the Verifier takes the `Complexity` of the Reviewer call whose findings it judges. The Architect, the Full Feature plan audit and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block or lacks a cell for a call that workflow makes (the check's own table lists them), a tier is misspelt, or an agent file pins a model.
 
-## The six workflows
+## The seven workflows
 
 | Workflow | Trigger | Shape |
 |----------|---------|-------|
@@ -148,10 +149,11 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Docs | update the readme, the documentation, the changelog | Your approval of the file list, then one role writes the prose and verifies every claim against the code. No brainstorm, no review, no toolchain. |
 | Bug Fix | something is broken | Research, three diagnoses, your approval, a test that fails before the fix when one is needed, a surgical fix, review |
 | Small Change | one concern, up to three files | Research, three proposals, your approval, implementation, a test when the plan names one, review |
+| Quick Fix | a small fix or change, the minimum first | Research, one advisor instead of three proposals, your approval of the minimum change with each add-on approved, deferred or dropped separately, a test when the fix needs one, review; deferred add-ons are asked about again at close |
 | Change Set | a list of independent small items | One research pass, a design brief when the items are user-facing, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
 | Full Feature | a new capability across modules | Questions, wide research, a design brief when the feature is user-facing (its open decisions asked before anything is designed), design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
 
-`/team` announces a provisional class from your words and fixes the workflow after the research pass, from the files and wiring it found: up to three files and no wiring is a Small Change or a Bug Fix, more is a Change Set or a Full Feature. It asks only when your own words named a workflow and the evidence disagrees; the run keeps its directory either way.
+`/team` announces a provisional class from your words and fixes the workflow after the research pass, from the files and wiring it found: up to three files and no wiring is a Quick Fix, a Small Change or a Bug Fix, more is a Change Set or a Full Feature. When your words did not name a workflow and the research finds up to three files and no wiring, or a list of independent items within that limit, `/team` asks whether to run it as a Quick Fix or as the Bug Fix or Small Change with three lenses, and recommends Quick Fix unless the run was judged hard, when it recommends the three-lens road and says why. Saying "quick fix" or "as a Quick Fix" reaches it at any size, after you confirm when the evidence is bigger. Apart from the Quick Fix offer, it asks only when your own words named a workflow and the evidence disagrees; the run keeps its directory either way.
 
 ## Knowledge files
 
@@ -307,7 +309,7 @@ Then:
 
 | Path | Contents |
 |------|----------|
-| `.github/agents/<role>.agent.md` | The ten roles, hidden from the agent picker and called as subagents |
+| `.github/agents/<role>.agent.md` | The eleven roles, hidden from the agent picker and called as subagents |
 | `.github/skills/<command>/SKILL.md` | `/team`, `/generate-knowledge`, `/team-setup` |
 | `.github/hooks/dream-team.json` | The session-start hook and the guard |
 | `.github/dream-team/` | Manifest, templates, clients, runtime checks, and `.installed`, the list of what was installed |
@@ -352,7 +354,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 
 | Check | VS Code | Copilot CLI |
 |-------|---------|-------------|
-| The ten roles are callable as subagents | not yet checked | not yet checked |
+| The eleven roles are callable as subagents | not yet checked | not yet checked |
 | The roles are absent from the agent picker | not yet checked | not yet checked |
 | `/team <task>` receives the task text | not yet checked | not yet checked |
 | Gates appear as questions with options | not yet checked | not yet checked |

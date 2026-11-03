@@ -19,7 +19,8 @@ export LC_ALL=C
 cd "$(dirname "$0")/.." || exit 1
 
 # 4.5.0: the sticky section describes the closed state, read every turn by design.
-MAX_PER_TURN=40000
+# 4.6.0: the Quick Fix rows in Step 0, the references table and the marker block.
+MAX_PER_TURN=42000
 SKILL=skills/team/SKILL.md
 REFS=skills/team/references
 status=0

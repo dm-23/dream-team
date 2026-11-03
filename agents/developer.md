@@ -25,7 +25,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 
 Full Feature / Change Set: 1) `task-{N}-*.md`, 2) the exploration report **at the path the handoff names** — never a filename you assembled yourself; a low-complexity task instead carries its `Insertion Points` in the task file, and the handoff points you at `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` for the surrounding picture, 3) `plans/detailed-plan.md` (if present), 4) the actual source files named by whichever of those two you were given.
 
-Bug Fix / Small Change: the inline task from the handoff + the exploration report at the path the handoff names.
+Bug Fix / Small Change / Quick Fix: the inline task from the handoff + the exploration report at the path the handoff names.
 
 Implement only what the task specifies, following the insertion points and patterns from the exploration notes and the conventions in CODING-STANDARDS.md. Do not invent patterns; when the notes and the code disagree, follow the code and report the discrepancy.
 
@@ -67,7 +67,7 @@ Documentation obligations: done: [...] | none
 Notes for reviewer: [discrepancies, simplification notes]
 ```
 
-For Bug Fix / Small Change return the same block as your final message.
+For Bug Fix / Small Change / Quick Fix return the same block as your final message.
 
 ## Optional capabilities
 
