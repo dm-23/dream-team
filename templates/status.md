@@ -35,6 +35,10 @@
 - {date} — Models: ceiling={haiku | sonnet | opus | fable | unknown}, hard={yes | no} — {one-line reason}
 - {date} — {decision, who/what decided it}
 - {date} — Workflow fixed: {workflow} (provisional {class}) — Scope Count {N}; Wiring/surface {…}   (only when the research pass changed the class)
+- {date} — Workflow fixed: Quick Fix (provisional {class}, chosen at the gate) — Scope Count {N}; Wiring/surface {…}   (Quick Fix only, when chosen at the scope gate)
+- {date} — advisor: {mode} #{n}   (Quick Fix only, one per counted Advisor call)
+- {date} — add-on: {title} — taken | later | dropped   (Quick Fix only, at the gate)
+- {date} — add-on: {title} — opened as {context_id} | kept | dropped   (Quick Fix only, at the closing question)
 - {date} — standing: read-only operations — "{the user's words, verbatim}"   (only from an explicit answer or message; see references/operations.md)
 
 ## Verify by hand

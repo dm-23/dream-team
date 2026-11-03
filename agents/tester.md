@@ -53,7 +53,7 @@ First `Format` (apply) from TOOLCHAIN.md on every file you wrote or changed, wit
 - Decision: Tests added | Not needed — [reason] | Skipped by orchestrator
 - Files added / changed: `path` [outside the plan]
 - Coverage: [one line per `Test cases` line → the test that covers it; then any scenario you added]
-- Run result (before fix): fail — [failing lines] | compile error — [missing member] | pass | n/a (not Bug Fix, nor in Quick Fix when `constraints` says `reports a bug: yes`)
+- Run result (before fix): fail — [failing lines] | compile error — [missing member] | pass | n/a (neither Bug Fix nor a Quick Fix with `reports a bug: yes`)
 - Run result (own tests only): pass | fail — [what failed, suspected production defect]
 - Format: applied | applied; N pre-existing findings left in place in `path` | no row
 - Lint: passed | N findings fixed; M pre-existing left in place | not run (no file-scoped row)
