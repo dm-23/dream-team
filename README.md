@@ -122,7 +122,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Role | Tools | Does | Never does |
 |------|-------|------|------------|
 | Brainstorm | read only | Three parallel instances propose questions, solutions or a diagnosis | Reads your source; talks to you |
-| Advisor | read only | One read-only advisor consulted at the decision points of a Quick Fix: the minimum change, the add-ons, a blocked developer | Reads your source; talks to you; edits; returns a patch |
+| Advisor | read only | One read-only advisor consulted at the decision points of a Quick Fix: the minimum change, the add-ons, a blocked developer | Searches your source; reads past a cited line; talks to you; edits; returns a patch |
 | ResearcherExplorer | read, search, git history, write to run state; a `Build` (cheap only), `Test one` or `Validate` row of the toolchain when the handoff names it | Finds the exact files, symbols and insertion points; runs a named row to confirm a signature, a failing test or a document and lists every command it ran under `## Commands run`, which the orchestrator copies into the run's Operations log | Modifies source; runs a command the handoff did not name |
 | Architect | read, search, write to run state | Detailed plan and task breakdown for a full feature | Writes production code |
 | Designer | read, search, write to run state | Audits the interface against your users' tasks (Analyze), or writes the design brief a user-facing feature is built from: surface, states, exact copy, the existing elements to reuse, done-when lines | Writes markup or code; proposes a palette, a typeface or a brand; changes a recorded interface convention without your decision |
