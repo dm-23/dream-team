@@ -50,7 +50,7 @@ Step 2 takes a few minutes and is the only step that reads your whole codebase. 
 /team resume      — pick it back up
 ```
 
-`/team` picks the workflow itself and announces it, and on a small task may offer you Quick Fix first. You approve the plan before anyone writes code.
+`/team` picks the workflow itself and announces it, and on a small task may offer you Quick Fix before settling the workflow. You approve the plan before anyone writes code.
 
 The two task lines above are not decoration. The team answers in whichever language you wrote the task in and records that language in the run's status file, so a run resumed days later still answers the way it started.
 
