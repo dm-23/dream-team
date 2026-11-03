@@ -36,7 +36,11 @@
 - {date} — {decision, who/what decided it}
 - {date} — Workflow fixed: {workflow} (provisional {class}) — Scope Count {N}; Wiring/surface {…}   (only when the research pass changed the class)
 - {date} — Workflow fixed: Quick Fix (provisional {class}, chosen at the gate) — Scope Count {N}; Wiring/surface {…}   (Quick Fix only, when chosen at the scope gate)
+- {date} — Quick Fix declined at the gate   (Quick Fix only, written by the scope gate when the offer is declined)
+- {date} — Small Change named — opened from {parent context_id} closing question   (Quick Fix only, in the linked run opened at the closing question)
 - {date} — advisor: {mode} #{n}   (Quick Fix only, one per counted Advisor call)
+- {date} — evidence route #{m}   (Quick Fix only, one per evidence route)
+- {date} — risks: {…} | none   (Quick Fix only, at the gate)
 - {date} — add-on: {title} — taken | later | dropped   (Quick Fix only, at the gate)
 - {date} — add-on: {title} — opened as {context_id} | kept | dropped   (Quick Fix only, at the closing question)
 - {date} — standing: read-only operations — "{the user's words, verbatim}"   (only from an explicit answer or message; see references/operations.md)

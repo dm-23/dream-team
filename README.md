@@ -50,7 +50,7 @@ Step 2 takes a few minutes and is the only step that reads your whole codebase. 
 /team resume      — pick it back up
 ```
 
-`/team` picks the workflow itself and announces it. You approve the plan before anyone writes code.
+`/team` picks the workflow itself and announces it, and on a small task may offer you Quick Fix first. You approve the plan before anyone writes code.
 
 The two task lines above are not decoration. The team answers in whichever language you wrote the task in and records that language in the run's status file, so a run resumed days later still answers the way it started.
 
@@ -153,7 +153,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Change Set | a list of independent small items | One research pass, a design brief when the items are user-facing, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
 | Full Feature | a new capability across modules | Questions, wide research, a design brief when the feature is user-facing (its open decisions asked before anything is designed), design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
 
-`/team` announces a provisional class from your words and fixes the workflow after the research pass, from the files and wiring it found: up to three files and no wiring is a Quick Fix, a Small Change or a Bug Fix, more is a Change Set or a Full Feature. When your words did not name a workflow and the research finds up to three files and no wiring, or a list of independent items within that limit, `/team` asks whether to run it as a Quick Fix or as the Bug Fix or Small Change with three lenses, and recommends Quick Fix unless the run was judged hard. Saying "quick fix" or "as a Quick Fix" reaches it at any size, after you confirm when the evidence is bigger. Apart from the Quick Fix offer, it asks only when your own words named a workflow and the evidence disagrees; the run keeps its directory either way.
+`/team` announces a provisional class from your words and fixes the workflow after the research pass, from the files and wiring it found: up to three files and no wiring is a Quick Fix, a Small Change or a Bug Fix, more is a Change Set or a Full Feature. When your words did not name a workflow and the research finds up to three files and no wiring, or a list of independent items within that limit, `/team` asks whether to run it as a Quick Fix or as the Bug Fix or Small Change with three lenses, and recommends Quick Fix unless the run was judged hard, when it recommends the three-lens road and says why. Saying "quick fix" or "as a Quick Fix" reaches it at any size, after you confirm when the evidence is bigger. Apart from the Quick Fix offer, it asks only when your own words named a workflow and the evidence disagrees; the run keeps its directory either way.
 
 ## Knowledge files
 
