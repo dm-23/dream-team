@@ -68,7 +68,7 @@ templates/capabilities.md	`agents/{role}.md`	`.github/agents/{role}.agent.md`
 # manifest
 team-manifest.json	Stack-agnostic multi-agent development team for Claude Code.	Stack-agnostic multi-agent development team for GitHub Copilot (VS Code and the Copilot CLI).
 team-manifest.json	"runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into"	"runFrom": "the team root, which is .github/dream-team/ in the project"
-team-manifest.json	 agents/*.md skills/*/SKILL.md skills/team/references/*.md README.md"	 ../agents/brainstorm.agent.md ../agents/researcher-explorer.agent.md ../agents/architect.agent.md ../agents/designer.agent.md ../agents/plan-auditor.agent.md ../agents/developer.agent.md ../agents/doc-writer.agent.md ../agents/tester.agent.md ../agents/reviewer.agent.md ../agents/verifier.agent.md ../skills/team/SKILL.md ../skills/team/references/*.md ../skills/generate-knowledge/SKILL.md ../skills/team-setup/SKILL.md"
+team-manifest.json	 agents/*.md skills/*/SKILL.md skills/team/references/*.md README.md"	 ../agents/brainstorm.agent.md ../agents/advisor.agent.md ../agents/researcher-explorer.agent.md ../agents/architect.agent.md ../agents/designer.agent.md ../agents/plan-auditor.agent.md ../agents/developer.agent.md ../agents/doc-writer.agent.md ../agents/tester.agent.md ../agents/reviewer.agent.md ../agents/verifier.agent.md ../skills/team/SKILL.md ../skills/team/references/*.md ../skills/generate-knowledge/SKILL.md ../skills/team-setup/SKILL.md"
 team-manifest.json	    ".claude/.github/",\n	
 team-manifest.json	    "manifestBudgets": "bash checks/verify-manifest-budgets.sh",\n	
 team-manifest.json	    "roleConsistency": "bash checks/verify-role-consistency.sh",\n	

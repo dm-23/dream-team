@@ -7,6 +7,7 @@
   },
   "agents": [
     "brainstorm",
+    "advisor",
     "researcher-explorer",
     "architect",
     "designer",
@@ -27,6 +28,7 @@
     "tiers": ["haiku", "sonnet", "opus", "fable"],
     "floors": {
       "brainstorm": "opus",
+      "advisor": "opus",
       "researcher-explorer": "haiku",
       "architect": "opus",
       "plan-auditor": "opus",

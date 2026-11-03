@@ -4,8 +4,8 @@
 
 - context_id: {workflow_key}_{slug}_{YYYY-MM-DD}
 - workflow: {Analyze | Docs | Bug Fix | Small Change | Change Set | Full Feature}
-- role: {brainstorm | researcher-explorer | architect | designer | plan-auditor | developer | doc-writer | tester | reviewer | verifier}
-- mode/phase: {wide | targeted | questions | solution | diagnosis | ux-audit | brief | audit | batch-review | final-review | diagnose | verify | n/a}
+- role: {brainstorm | advisor | researcher-explorer | architect | designer | plan-auditor | developer | doc-writer | tester | reviewer | verifier}
+- mode/phase: {wide | targeted | questions | solution | diagnosis | ux-audit | brief | audit | batch-review | final-review | diagnose | verify | approach | blocked | n/a}
 - lens (brainstorm only): {minimalism | risk | reuse}
 - language: {answer in this language}
 - knowledge dir: .claude/knowledge (read the files your role prompt names; do not read others unless needed)
