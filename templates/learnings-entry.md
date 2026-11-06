@@ -18,7 +18,7 @@ The index in `LEARNINGS.md` names entries; this file defines what an entry is. I
 
 Entry length limit: `learningsEntryLines` in `team-manifest.json → knowledge.budgets`. Put long narratives into `.dream-team-tracking/{context_id}/status.md`, not here.
 
-Two things are never entries. A summary of what a run did or what passed is the review report in `status.md`. A defect of the team itself — a role, a permission, a handoff, a subagent's report — goes to `status.md → Process notes` and the run's final report.
+Two things are never entries. A summary of what a run did or what passed is the review report in `status.md`. A defect of the team itself — a role, a permission, a handoff, a subagent's report — goes to `status.md → Process notes` and the run's final report, and becomes a team-amendment candidate (`.claude/skills/team/references/amendments.md`).
 
 An entry is written only when a run taught something a later run needs: a trap, or a mark asking for a rule or a fact to be written into a knowledge file. A run that taught nothing leaves nothing.
 
