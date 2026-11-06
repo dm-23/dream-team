@@ -14,6 +14,7 @@ hooks/team-mode-prompt text eol=lf
 hooks/guard-command text eol=lf
 tools/migrate-tracking.sh text eol=lf
 tools/normalize-status.sh text eol=lf
+tools/collect-amendments.sh text eol=lf
 # copilot/ builds the GitHub Copilot edition; its scripts and awk programs run
 # through bash and awk, which a CRLF checkout breaks the same way.
 copilot/*.sh text eol=lf
