@@ -1,6 +1,6 @@
 # Quorum (Brainstorm ×3)
 
-Always launch three Brainstorm instances in parallel with lenses `minimalism`, `risk`, `reuse`. Agreement of 2 of 3 on a point → accepted. When proposals differ in complexity, prefer the simpler unless the complex one solves a stated problem the simple one does not.
+Always launch three Brainstorm instances in parallel with lenses `minimalism`, `risk`, `reuse`. Agreement of 2 of 3 on a point → accepted. When proposals differ in complexity, prefer the simpler unless the complex one solves a shown problem the simple one does not. A shown problem is behaviour that the code, a test or a `— fact: reachable` mark of the research demonstrates. The wording of a reviewer, a ticket or a lens never counts. A reviewer's suggestion ("maybe X") is adopted only when it is no more complex than the simplest proposal, or when its extra complexity solves a shown problem. `do nothing` is a proposal like any other and wins the same way.
 
 **Reconcile round.** The three lenses again, in the phase the workflow used, with `inputs`: the path they read before, the items below (verbatim, or named by section for trigger 2), the learnings lines. Quorum per item; every resolution goes to status.md → "Decisions log". Three triggers, each counted from an output, never weighed:
 
