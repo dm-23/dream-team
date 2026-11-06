@@ -12,6 +12,7 @@ The index in `LEARNINGS.md` names entries; this file defines what an entry is. I
 - **Fix pattern:** reusable shape of the fix, max 5 lines
 - **Files touched:** key paths
 - **Tags:** comma-separated keywords, at most `learningsIndexRowMaxTags` of them, each one word or one hyphenated term
+- **Reachable:** sequence of events, each step with path:line   <- required for a risk (race, stale value, ordering, read after it should be cleared); omit otherwise
 [PROMOTE] {knowledge file} — {the rule, one imperative sentence}   <- only for a rule, or a trap seen a second time
 [STALE-CHECK] {knowledge file} — says "{quote}" | says nothing about {subject}; actually {claim} ({repo path} | environment: {what was observed})   <- only for a fact a knowledge file gets wrong or omits, after reading both
 ```
