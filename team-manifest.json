@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "4.6.0",
+    "version": "4.7.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -24,7 +24,7 @@
     "team-setup"
   ],
   "modelRouting": {
-    "_comment": "The model for each Agent call: the cell for its workflow and call (by the task's Complexity where the cell is low/medium/high), one tier up when the orchestrator judged the run hard, then raised to the role's floor and capped at the session model; the ceiling wins over the floor. ceiling = the session model, passed by omitting model, which is why every agent file declares model: inherit. A call key's suffix marks a second kind of call to one role (researcher-explorer:wide = the wide research pass, reviewer:final = the review of the whole diff, reviewer:diagnose = the diagnosis a linked run opens with after a developer reports a defect in a closed run); its floor is the role's. Layout is read line by line: each workflow opens on its own line, one call per line, a low/medium/high object inline. Bug Fix, Small Change and Quick Fix carry a tester cell for the test a fix sometimes needs; full_feature carries a doc-writer cell for its documentation-only tasks.",
+    "_comment": "The model for each Agent call: the cell for its workflow and call (by the task's Complexity where the cell is low/medium/high), one tier up when the orchestrator judged the run hard, then raised to the role's floor and capped at the session model; the ceiling wins over the floor. ceiling = the session model, passed by omitting model, which is why every agent file declares model: inherit. A call key's suffix marks a second kind of call to one role (researcher-explorer:wide = the wide research pass, reviewer:final = the review of the whole diff, reviewer:diagnose = the diagnosis a linked run opens with after a developer reports a defect in a closed run, and the verification of review comments and complaints about delivered code, skills/team/references/review-comments.md); its floor is the role's. Layout is read line by line: each workflow opens on its own line, one call per line, a low/medium/high object inline. Bug Fix, Small Change and Quick Fix carry a tester cell for the test a fix sometimes needs; full_feature carries a doc-writer cell for its documentation-only tasks.",
     "tiers": ["haiku", "sonnet", "opus", "fable"],
     "floors": {
       "brainstorm": "opus",
@@ -62,6 +62,7 @@
         "developer": "sonnet",
         "tester": "sonnet",
         "reviewer": "sonnet",
+        "reviewer:diagnose": "opus",
         "verifier": "sonnet"
       },
       "quick_fix": {
@@ -70,6 +71,7 @@
         "developer": "sonnet",
         "tester": "sonnet",
         "reviewer": "sonnet",
+        "reviewer:diagnose": "opus",
         "verifier": "sonnet"
       },
       "change_set": {
@@ -81,6 +83,7 @@
         "doc-writer": "sonnet",
         "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
         "reviewer": "opus",
+        "reviewer:diagnose": "opus",
         "verifier": "opus"
       },
       "full_feature": {
@@ -95,6 +98,7 @@
         "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
         "reviewer": { "low": "sonnet", "medium": "opus", "high": "opus" },
         "reviewer:final": "ceiling",
+        "reviewer:diagnose": "ceiling",
         "verifier": { "low": "sonnet", "medium": "opus", "high": "opus" }
       }
     }
@@ -166,6 +170,14 @@
     "migration": "tools/migrate-tracking.sh",
     "_comment": "Run state shared by every edition of the team. Teams before 4.0.0 kept it in legacyDir; tools/migrate-tracking.sh moves it, run by /team-setup when its dry run is clean."
   },
+  "amendments": {
+    "file": ".dream-team-tracking/team-amendments.md",
+    "resolvedFile": ".claude/skills/team/amendments-resolved.tsv",
+    "template": ".claude/templates/team-amendments.md",
+    "maxActive": 12,
+    "maxPerClose": 4,
+    "_comment": "Team amendments: lessons about the team itself, kept per project and applied by the running team until the team absorbs them (skills/team/references/amendments.md). The collector lives in run state, which survives git pull inside .claude/ and is never committed; the resolution list ships with the team and is where the lead records each amendment adopted, declined or superseded. maxActive only makes the final report ask for the collector to be sent to the lead; it never blocks an entry. maxPerClose caps the consent question at one run's close. The Verifier's amendment and retire calls use the run's verifier cell, or the verifier floor where the workflow has none (Analyze, Docs, or Step -1 before a workflow is fixed)."
+  },
   "update": {
     "repository": "https://github.com/dm-23/dream-team",
     "clone": "git clone https://github.com/dm-23/dream-team.git .claude",
@@ -180,7 +192,8 @@
       "_comment": "Keyed by the version that introduced the step. /team-setup compares the record's lastVersion with team.version and applies every step of every version above it, oldest first, then writes the record; a missing record applies them all. A do step is performed by setup itself; knowledge steps are named in one report line, because /generate-knowledge is a command only the user starts.",
       "4.3.0": { "knowledge": "PROJECT-RULES.md (critical zones section)" },
       "4.4.0": { "knowledge": "FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md (design language and its checks)" },
-      "4.5.0": { "do": "normalize the first line of every status.md closed in old prose (setup.normalizer)" }
+      "4.5.0": { "do": "normalize the first line of every status.md closed in old prose (setup.normalizer)" },
+      "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" }
     }
   },
   "hooks": {
@@ -202,6 +215,7 @@
     "reportHtml": "report-html.md",
     "capabilities": "capabilities.md",
     "learningsEntry": "learnings-entry.md",
+    "teamAmendments": "team-amendments.md",
     "interface": "interface",
     "standards": "standards"
   },

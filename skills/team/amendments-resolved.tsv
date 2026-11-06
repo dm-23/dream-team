@@ -1,0 +1,2 @@
+# outcome is adopted, declined or superseded. The lead adds one row when porting a team amendment into the team or rejecting it; /team removes the matching entry from a project collector after the next update.
+id	version	outcome	note

@@ -145,6 +145,7 @@ Never reach for tools outside your own list. If the design turns on external doc
 
 ## Rules
 
+- Apply the `team amendments` lines of the handoff as part of this prompt. An amendment that would loosen a rule of this file is not applied: name the conflict in your report as `amendment <id> conflicts with <rule>`.
 - No production code; no files outside `.dream-team-tracking/{context_id}/`.
 - Every task has `RecommendedBatch`, `Files`, `Test files` and `Insertion Points`; no test path appears under `Files`.
 - Every `Acceptance Criteria` item is a property of the diff and names no toolchain command; every other check is a `Verify by hand` line.

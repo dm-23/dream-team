@@ -12,13 +12,14 @@ The index in `LEARNINGS.md` names entries; this file defines what an entry is. I
 - **Fix pattern:** reusable shape of the fix, max 5 lines
 - **Files touched:** key paths
 - **Tags:** comma-separated keywords, at most `learningsIndexRowMaxTags` of them, each one word or one hyphenated term
+- **Reachable:** sequence of events, each step with path:line   <- required for a risk (race, stale value, ordering, read after it should be cleared); omit otherwise
 [PROMOTE] {knowledge file} — {the rule, one imperative sentence}   <- only for a rule, or a trap seen a second time
 [STALE-CHECK] {knowledge file} — says "{quote}" | says nothing about {subject}; actually {claim} ({repo path} | environment: {what was observed})   <- only for a fact a knowledge file gets wrong or omits, after reading both
 ```
 
 Entry length limit: `learningsEntryLines` in `team-manifest.json → knowledge.budgets`. Put long narratives into `.dream-team-tracking/{context_id}/status.md`, not here.
 
-Two things are never entries. A summary of what a run did or what passed is the review report in `status.md`. A defect of the team itself — a role, a permission, a handoff, a subagent's report — goes to `status.md → Process notes` and the run's final report.
+Two things are never entries. A summary of what a run did or what passed is the review report in `status.md`. A defect of the team itself — a role, a permission, a handoff, a subagent's report — goes to `status.md → Process notes` and the run's final report, and becomes a team-amendment candidate (`.claude/skills/team/references/amendments.md`).
 
 An entry is written only when a run taught something a later run needs: a trap, or a mark asking for a rule or a fact to be written into a knowledge file. A run that taught nothing leaves nothing.
 

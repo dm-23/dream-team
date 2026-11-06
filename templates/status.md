@@ -5,7 +5,7 @@
 **Parent:** {context_id of the run this one follows | —}
 **Started:** {YYYY-MM-DD}
 **Closed:** —
-**Baseline:** commit `{git rev-parse --short HEAD}`; pre-existing uncommitted files: {none | list from `git status --porcelain`}
+**Baseline:** commit `{git rev-parse --short HEAD}` on `{git rev-parse --abbrev-ref HEAD}`; pre-existing uncommitted files: {none | list from `git status --porcelain`}
 **Language:** {language the user wrote the task in}
 
 ## Task (user's words)
@@ -23,7 +23,7 @@
 - [ ] 6 Tests (Tester: {run — before fix: fail | compile error | pass | n/a} | skipped — reason)
 - [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived / U unverified | n/a}; unverified: {N | none})
 - [ ] 8 Docs sync (PROJECT-RULES.md obligations: {done | n/a})
-- [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes})
+- [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes}; amendments: {N confirmed, K adopted | none})
 
 ## Batches / tasks (Change Set and Full Feature only)
 
@@ -58,13 +58,19 @@ Commands from `TOOLCHAIN.md → Operations` run during this run, and the Researc
 
 - {none}
 
-## Process notes (deviations from SKILL.md, for the next retrospective)
+## Process notes (deviations from SKILL.md)
+
+- {none}
+
+## Team amendment candidates
+
+Lessons about the team itself found in this run, in the entry format of `.claude/templates/team-amendments.md` without `Added`, or `seen again: <id> — <context_id>` for one an active amendment already covers. Verified and offered to the developer after the closing question (`.claude/skills/team/references/amendments.md`).
 
 - {none}
 
 ## Result
 
-<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED — see the team skill's Global rules. -->
+<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED (Analyze, or a run that only answered review comments) — see the team skill's Global rules. -->
 {final summary for the user, filled at close}
 
 <!--
