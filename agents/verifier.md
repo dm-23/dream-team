@@ -58,7 +58,7 @@ Confirmed <c> of <n>.
 
 ## Mode: retire
 
-Trigger: `mode: retire`. The team was updated. The handoff carries the project's active amendments and, for each, the deployed path of its `Proposal` file (`.claude/…`). Steps 1–3 above do not apply.
+Trigger: `mode: retire`. The team was updated. The handoff carries the project's active amendments and, for each, the deployed path of its `Proposal` file, as the handoff gives it. Steps 1–3 above do not apply.
 
 For each entry, open the `Proposal` file and decide whether a rule there now prevents what `Why` describes. Different wording counts when the rule covers the problem. A rule that covers only part of it is `unclear`.
 

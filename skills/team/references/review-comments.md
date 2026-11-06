@@ -25,7 +25,7 @@ Only the code items enter the workflow's design step: the quorum, the Advisor, t
 
 **6. Replies.** Write `.dream-team-tracking/{context_id}/plans/pr-replies.md` with the plan or the inline fix, so the gate can show it. One section per item, `## #<n> — <file or subject>`. The reply text, in the language of the pull request, comes first. Then `Evidence:`, which is never posted: one bullet per factual claim of the reply, `<claim> — <path:line>`, or `<claim> — (planned) task-<k>` / `(planned) fix bullet <k>` for code not yet written. A reply states only what a line shows. "Would be read as valid if …" without the line that reads it is not a claim you may make. Name the file in the `inputs` of the PlanAuditor (Change Set, Full Feature) and of the Reviewer, in every workflow.
 
-**7. A run that only answers.** When the gate approves no code row, no Developer and no Tester run. Handoff → Reviewer with an empty change set and the replies path; it checks the replies and runs Step 5. Close the run with the status word `ANSWERED`.
+**7. A run that only answers.** When the gate approves no code row, there is no plan and no audit: no Developer and no Tester run, and no plan file, task file or PlanAuditor call is written for it. Handoff → Reviewer with an empty change set and the replies path; it checks the replies and runs Step 5. Close the run with the status word `ANSWERED`.
 
 **8. Lessons.** For every item with `Valid: yes` or `partially`, or a `no` or `question` the team provoked:
 

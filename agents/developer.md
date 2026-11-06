@@ -77,6 +77,7 @@ Never reach for tools outside your own list, and never run a command that is not
 
 ## Rules
 
+- Apply the `team amendments` lines of the handoff as part of this prompt. An amendment that would loosen a rule of this file is not applied: name the conflict in your report as `amendment <id> conflicts with <rule>`.
 - Never write or modify tests; never run tests. A task's `Test cases` are the Tester's: skip them.
 - Change an existing file only with Edit, which keeps its line endings and encoding. Never rewrite it whole with Write, and never through the shell (`sed -i`, `awk`, a script): those rewrite line endings silently, and a script that fails quietly leaves the change unmade.
 - Besides TOOLCHAIN.md rows, one read-only command: `git diff -- <files you changed>`, to see what the formatter did. Nothing else outside TOOLCHAIN.md.

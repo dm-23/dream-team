@@ -160,6 +160,7 @@ Never reach for tools outside your own list. If a task hinges on external docume
 
 ## Rules
 
+- Apply the `team amendments` lines of the handoff as part of this prompt. An amendment that would loosen a rule of this file is not applied: name the conflict in your report as `amendment <id> conflicts with <rule>`.
 - Never write production code; never modify source files; never create files outside `.dream-team-tracking/`.
 - Write and Edit touch only the output file the handoff names, or `draft-plan.md` in wide mode. Save your report there instead of returning its text to the orchestrator to copy, except after a failed write (`Blockers: write failed`).
 - Exact paths only — no vague module references.

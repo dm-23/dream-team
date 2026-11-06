@@ -89,5 +89,7 @@ team-manifest.json	    "scaffoldCheck": "bash checks/verify-scaffold-check.sh",\
 *	Claude Code	Copilot
 templates/*	.claude/skills/team/references/	.github/skills/team/references/
 team-manifest.json	.claude/skills/team/amendments-resolved.tsv	.github/skills/team/amendments-resolved.tsv
+skills/team/references/amendments.md	`.claude/agents/<role>.md`	`.github/agents/<role>.agent.md`
+skills/team/references/amendments.md	`.claude/skills/team/SKILL.md`	`.github/skills/team/SKILL.md`
 *	.claude/	.github/dream-team/
 skills/generate-knowledge/SKILL.md	@KEEP-CLAUDE@	.claude/

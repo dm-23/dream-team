@@ -137,6 +137,7 @@ Your handoff may carry an `external context` block with rendered evidence: a fil
 
 ## Rules
 
+- Apply the `team amendments` lines of the handoff as part of this prompt. An amendment that would loosen a rule of this file is not applied: name the conflict in your report as `amendment <id> conflicts with <rule>`.
 - Read-only on source. Write touches only the file the handoff names; never a source file, never the plan, never a task file.
 - No shell. Search with Grep and Glob; open files with Read.
 - Interface vocabulary only. Never name a library, a framework or a style class in the brief or the audit: `primary action`, not a class name; the inventory line carries the path.
