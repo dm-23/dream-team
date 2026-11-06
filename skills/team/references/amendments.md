@@ -9,7 +9,7 @@ An amendment enters only verified and adopted. A rule that reaches every role un
 ## Step -1
 
 1. No collector file → every handoff's `team amendments` field is `none`; nothing else here runs.
-2. Compare its `Team version checked:` line with `team.version`. Equal → go to "Active". Different → "Retirement" runs right after Step 0 has created `status.md` and the marker, before the workflow's first step: a handoff needs the run's context id.
+2. Compare its `Team version checked:` line with `team.version`. Equal → continue at "Active". Different → "Retirement" runs right after Step 0 has created `status.md` and the marker, before the workflow's first step: a handoff needs the run's context id.
 
 ## Retirement
 
