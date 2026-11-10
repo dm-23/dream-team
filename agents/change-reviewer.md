@@ -95,7 +95,7 @@ Each finding:
 - Confidence: <1–10>
 ```
 
-`Decision:` is written in `mode: final-pass` only. `Story` is mandatory for Critical, High and Medium; for Low and Nit it names the next person who pays and how; `n/a` is never accepted. Every location is a `path:line` you read in this session. `Comment (EN)` is English whatever the handoff language.
+`Decision:` is written in `mode: final-pass` only. `Story` is mandatory for Critical, High and Medium; for Low and Nit it names the next person who pays and how; `n/a` is never accepted. Every location is a `path:line` you read in this session. A finding under baseline section 4 cites the uncovered sibling's line in its heading and ends its `Issue:` line with `(covered: <path:line>)`, the line of the rule on the covered path; the Verifier reads both from there. `Comment (EN)` is English whatever the handoff language.
 
 The pointer block is the last lines of the file and the only part the orchestrator reads before the report:
 
@@ -119,7 +119,7 @@ The recommendation is derived, never felt:
 
 Write it in both modes. In `mode: final-pass` the orchestrator does not use it: the Reviewer's verdict stays the run's verdict.
 
-`Out of scope` holds defects on lines the change neither touches nor makes newly reachable. A line the change makes newly reachable (a new caller, a removed guard) is in scope. A sibling-path finding (baseline section 4) belongs to the change when its covered path is a changed line: it is a finding, never `Out of scope`, though the sibling's own line is unchanged.
+`Out of scope` holds defects on lines the change neither touches nor makes newly reachable. A line the change makes newly reachable (a new caller, a removed guard) is in scope. A sibling-path finding (baseline section 4) belongs to the change when the rule, check, guard or message on its covered path is a line the change adds or changes: it is then a finding, never `Out of scope`, though the sibling's own line is unchanged. A covered line the change edits only for another reason (a rename, a new argument) leaves the asymmetry `Out of scope`.
 
 ## Boundaries
 
