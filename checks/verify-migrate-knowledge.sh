@@ -99,7 +99,7 @@ done
 [ ! -e "$P/$NEW" ] || fail "$NEW was created"
 has "$tmp/out" "operative: moved 3 entries to $OPS"
 has "$tmp/out" "project: waiting for $NEW in the repository; the first knowledge commit is made with --first-commit"
-[ ! -e "$P/$OPS/.legacy-rules-imported" ] || fail "stamp written while nothing is tracked"
+[ ! -e "$P/$CAPS/.legacy-rules-imported" ] || fail "stamp written while nothing is tracked"
 
 # --- (i) dry run on (a) -----------------------------------------------------
 case="i: dry run"
@@ -131,14 +131,23 @@ has "$tmp/out" "project: moved to $NEW: run /generate-knowledge, then commit it 
 
 # --- (j) a second run right after (b) ----------------------------------------
 case="j: rerun after first commit"
+# The move is done and nothing is committed yet: the report says to commit
+# the directory, never "nothing to move" or "made with --first-commit".
 before="$(snap "$P")"; run
 expect_rc 0
 has "$tmp/out" "operative: nothing to move"
-has "$tmp/out" "project: nothing to move"
+has "$tmp/out" "project: moved to $NEW: run /generate-knowledge, then commit it alone, one commit and one pull request, no other file"
+lacks "$tmp/out" "nothing to move ("
+lacks "$tmp/out" "made with --first-commit"
 [ "$before" = "$(snap "$P")" ] || fail "a second run changed files"
 run --first-commit
 expect_rc 1
+has "$tmp/err" "commit $NEW/ alone"
 [ "$before" = "$(snap "$P")" ] || fail "a refused first commit changed files"
+commit_knowledge
+run
+expect_rc 0
+has "$tmp/out" "project: in place ($NEW)"
 
 # --- (c) a tracked committed copy, authored lines in the private copy -----------
 case="c: authored lines"
@@ -185,9 +194,9 @@ if [ -f "$L" ]; then
     [ -f "$P/$OPS/learnings/$d-$(slug "$t").md" ] || fail "row '$t' names no entry file"
   done < "$tmp/rows"
 fi
-[ -f "$P/$OPS/.legacy-rules-imported" ] || fail "no stamp"
-has "$P/$OPS/.legacy-rules-imported" "$TODAY"
-has "$P/$OPS/.legacy-rules-imported" "lines=2"
+[ -f "$P/$CAPS/.legacy-rules-imported" ] || fail "no stamp"
+has "$P/$CAPS/.legacy-rules-imported" "$TODAY"
+has "$P/$CAPS/.legacy-rules-imported" "lines=2"
 (cd "$P" && bash .claude/checks/verify-learnings-inbox.sh "$OPS") > "$tmp/inbox" 2>&1; irc=$?
 [ "$irc" = 1 ] || fail "inbox check exit $irc, expected 1 (pending marks): $(cat "$tmp/inbox")"
 has "$tmp/inbox" "2 pending marks"
@@ -202,14 +211,32 @@ lacks "$tmp/out" "private copy kept"
 
 # --- (k) --drop-legacy ----------------------------------------------------------
 case="k: drop legacy after (c)"
+# The stamp is present; a line authored since must still reach the inbox,
+# once, and the two already there must not come again.
+printf -- '- Third Z %s source: user\n' "$EM" >> "$P/$OLD/PROJECT-RULES.md"
+rm -rf "$tmp/c.drop"; cp -R "$P/$OLD" "$tmp/c.drop"
+run --drop-legacy --dry-run
+expect_rc 0
+has "$tmp/out" "would: project: private copy removed (backup $OPS/legacy-knowledge-"
+has "$tmp/out" "; 1 authored lines kept as inbox entries)"
+[ -d "$P/$OLD" ] || fail "a dry run removed $OLD"
 run --drop-legacy
 expect_rc 0
 [ ! -e "$P/$OLD" ] || fail "$OLD still there"
 bk="$(ls -d "$P/$OPS"/legacy-knowledge-* 2>/dev/null | head -1)"
 [ -n "$bk" ] || fail "no backup"
-[ -n "$bk" ] && { diff -r "$tmp/c.orig" "$bk" > "$tmp/diff" 2>&1 || fail "backup differs: $(head -c 400 "$tmp/diff")"; }
+[ -n "$bk" ] && { diff -r "$tmp/c.drop" "$bk" > "$tmp/diff" 2>&1 || fail "backup differs: $(head -c 400 "$tmp/diff")"; }
 has "$tmp/out" "project: private copy removed (backup $OPS/legacy-knowledge-"
+has "$tmp/out" "; 1 authored lines kept as inbox entries)"
 [ -f "$P/$OPS/learnings/$TODAY-migrated-rule-1.md" ] || fail "an entry was lost"
+E3="$P/$OPS/learnings/$TODAY-migrated-rule-3.md"
+[ -f "$E3" ] && { tr -d '\r' < "$E3" | grep -qxF "[PROMOTE] PROJECT-RULES.md $EM Third Z" || fail "entry 3 mark: $(cat "$E3")"; } \
+  || fail "the line authored after the stamp was not kept: $(ls "$P/$OPS/learnings")"
+[ "$(ls "$P/$OPS/learnings" | grep -c -e '-migrated-rule-')" = 3 ] || fail "expected exactly 3 entries: $(ls "$P/$OPS/learnings")"
+for r in "Always X" "Never Y" "Third Z"; do
+  [ "$(cat "$P/$OPS/learnings"/*.md | tr -d '\r' | grep -cxF "[PROMOTE] PROJECT-RULES.md $EM $r")" = 1 ] || fail "'$r' is not in the inbox exactly once"
+done
+[ "$(tr -d '\r' < "$P/$OPS/LEARNINGS.md" | grep -c '| Migrated rule ')" = 3 ] || fail "expected 3 index rows"
 
 case="k: drop legacy, nothing tracked"
 new_project k operative
@@ -247,7 +274,7 @@ lines="$(wc -l < "$L" | tr -d ' ')"; crs="$(tr -cd '\r' < "$L" | wc -c | tr -d '
 r4="$(tr -d '\r' < "$L" | grep -nxF "| 2026-10-01 | Migrated rule 4 | migration |" | cut -d: -f1)"
 r5="$(tr -d '\r' < "$L" | grep -nxF "| $TODAY | Migrated rule 5 | migration |" | cut -d: -f1)"
 [ -n "$r4" ] && [ -n "$r5" ] && [ "$r5" = "$((r4 + 1))" ] || fail "row 5 not right after row 4 ($r4, $r5)"
-has "$P/$OPS/.legacy-rules-imported" "lines=1"
+has "$P/$CAPS/.legacy-rules-imported" "lines=1"
 
 # --- (e) an open run ----------------------------------------------------------
 case="e: open run"
@@ -309,9 +336,17 @@ has "$tmp/err" "$OLD"
 has "$tmp/err" "$OTHER"
 [ "$before" = "$(snap "$P")" ] || fail "a refused run changed files"
 kbefore="$(snap "$P/$OLD")"
+NOTE="note: $OTHER/ keeps its operative files for that edition's own migration"
+run --first-commit --from "$OTHER" --dry-run
+expect_rc 0
+has "$tmp/out" "would: $NOTE"
+[ "$before" = "$(snap "$P")" ] || fail "a dry run changed files"
 run --first-commit --from "$OTHER"
 expect_rc 0
 has "$tmp/out" "project: moved to $NEW"
+has "$tmp/out" "$NOTE"
+[ ! -e "$P/$NEW.migrating" ] || fail "the staging directory is left"
+[ ! -e "$P/$NEW/.migrate-source" ] || fail "the source record moved into the committed directory"
 [ "$(cat "$P/$NEW/PROJECT-OVERVIEW.md")" = "$(printf '# Overview\n\nThe other edition.')" ] || fail "not moved from $OTHER"
 [ -f "$P/$NEW/TOOLCHAIN.md" ] || fail "TOOLCHAIN.md not moved"
 [ ! -e "$P/$NEW/LEARNINGS.md" ] || fail "the other edition's LEARNINGS.md moved into the committed directory"
@@ -341,6 +376,108 @@ out="$(cd "$P" && bash .claude/tools/knowledge-dir.sh project)"
 run
 expect_rc 0
 has "$tmp/out" "project: waiting for $NEW"
+
+# --- (m) an interrupted import: an entry without its index row --------------------
+case="m: interrupted import"
+new_project m
+mkdir -p "$P/$NEW"
+printf '# Project Rules\n\n- Keep the build green.\n' > "$P/$NEW/PROJECT-RULES.md"
+commit_knowledge
+{ printf -- '- Always X %s source: user\n' "$EM"; printf -- '- Never Y %s source: user\n' "$EM"; } >> "$P/$OLD/PROJECT-RULES.md"
+run
+expect_rc 0
+has "$tmp/out" "(2 authored lines kept as inbox entries)"
+# What an interrupt after the entry files and before the rows and stamp leaves.
+L="$P/$OPS/LEARNINGS.md"
+grep -v -F "| Migrated rule 2 |" "$L" > "$tmp/idx" && cat "$tmp/idx" > "$L"
+rm -f "$P/$CAPS/.legacy-rules-imported"
+run
+expect_rc 0
+has "$tmp/out" "(0 authored lines kept as inbox entries)"
+[ "$(tr -d '\r' < "$L" | grep -cxF "| $TODAY | Migrated rule 2 | migration |")" = 1 ] || fail "the missing row was not restored once"
+[ "$(tr -d '\r' < "$L" | grep -cxF "| $TODAY | Migrated rule 1 | migration |")" = 1 ] || fail "row 1 duplicated or lost"
+[ "$(ls "$P/$OPS/learnings" | grep -c -e '-migrated-rule-')" = 2 ] || fail "an entry was written twice: $(ls "$P/$OPS/learnings")"
+has "$P/$CAPS/.legacy-rules-imported" "lines=0"
+
+# --- (n) an interrupted first commit ------------------------------------------------
+# A stub mv that fails for one path, the way a file held open fails on Windows.
+mkdir -p "$tmp/stub"
+cat > "$tmp/stub/mv" <<'STUB'
+#!/usr/bin/env bash
+for a in "$@"; do case "$a" in *"$FAIL_ON") exit 1 ;; esac; done
+exec /usr/bin/env -i PATH="$REAL_PATH" mv "$@"
+STUB
+chmod +x "$tmp/stub/mv"
+run_failing() { # <suffix> [args]
+  local f="$1"; shift
+  (cd "$P" && REAL_PATH="$PATH" FAIL_ON="$f" PATH="$tmp/stub:$PATH" bash .claude/tools/migrate-knowledge.sh "$@") > "$tmp/out" 2> "$tmp/err"; rc=$?
+}
+
+case="n: interrupted rename of this edition's directory"
+new_project n1 operative
+run_failing "/knowledge" --first-commit
+expect_rc 2
+[ ! -e "$P/$NEW" ] && [ ! -e "$P/$NEW.migrating" ] || fail "a partial committed directory was left"
+for f in PROJECT-OVERVIEW.md PROJECT-RULES.md REVIEW-CHECKLIST.md REVIEW-CHECKLIST/security.md; do
+  same "$tmp/n1.orig/$f" "$P/$OLD/$f"
+done
+same "$tmp/n1.orig/LEARNINGS.md" "$P/$OPS/LEARNINGS.md"
+run
+expect_rc 0
+has "$tmp/out" "project: waiting for $NEW in the repository; the first knowledge commit is made with --first-commit"
+run --first-commit
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW"
+for f in PROJECT-OVERVIEW.md PROJECT-RULES.md REVIEW-CHECKLIST.md REVIEW-CHECKLIST/security.md; do
+  same "$tmp/n1.orig/$f" "$P/$NEW/$f"
+done
+[ ! -e "$P/$OLD" ] || fail "$OLD still there"
+
+case="n: interrupted move from another edition, a topic directory left"
+new_project n2
+mkdir -p "$P/$OTHER/TOPIC"
+printf '# Overview\n\nThe other edition.\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"
+printf '# Topic\n' > "$P/$OTHER/TOPIC/x.md"
+cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+kbefore="$(snap "$P/$OLD")"
+run_failing "/TOPIC" --first-commit --from "$OTHER"
+expect_rc 2
+[ ! -e "$P/$NEW" ] || fail "$NEW appeared before the move was complete"
+[ -f "$P/$NEW.migrating/PROJECT-OVERVIEW.md" ] || fail "the staged entry is missing"
+[ -d "$P/$OTHER/TOPIC" ] || fail "the stub did not stop the move"
+run
+expect_rc 0
+has "$tmp/out" "an interrupted --first-commit left $NEW.migrating/: run --first-commit again to finish the move"
+lacks "$tmp/out" "nothing to move ("
+before="$(snap "$P")"
+run --first-commit --dry-run
+expect_rc 0
+has "$tmp/out" "would: project: moved to $NEW"
+has "$tmp/out" "would: note: $OTHER/ keeps its operative files"
+[ "$before" = "$(snap "$P")" ] || fail "a dry run changed files"
+# No --from: the interrupted run recorded its source, though both directories
+# hold project files now.
+run --first-commit
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW"
+has "$tmp/out" "note: $OTHER/ keeps its operative files"
+[ -f "$P/$NEW/PROJECT-OVERVIEW.md" ] && [ -f "$P/$NEW/TOPIC/x.md" ] || fail "the resumed move is incomplete: $(cd "$P" && find "$NEW" 2>&1)"
+[ ! -e "$P/$NEW.migrating" ] && [ ! -e "$P/$NEW/.migrate-source" ] || fail "staging left behind"
+[ ! -e "$P/$OTHER/TOPIC" ] && [ -f "$P/$OTHER/LEARNINGS.md" ] || fail "the other edition's directory is not as expected"
+[ "$kbefore" = "$(snap "$P/$OLD")" ] || fail "$OLD changed"
+run
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW: run /generate-knowledge, then commit it alone"
+
+case="n: resume refuses a name on both sides"
+new_project n3
+mkdir -p "$P/$OTHER" "$P/$NEW.migrating"
+printf '# A\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"; printf '# B\n' > "$P/$NEW.migrating/PROJECT-OVERVIEW.md"
+printf '%s\n' "$OTHER" > "$P/$NEW.migrating/.migrate-source"
+before="$(snap "$P")"; run --first-commit
+expect_rc 1
+has "$tmp/err" "PROJECT-OVERVIEW.md"
+[ "$before" = "$(snap "$P")" ] || fail "a refused resume changed files"
 
 # --- arguments, outside git, source guards -----------------------------------------
 case="usage"

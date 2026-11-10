@@ -11,14 +11,19 @@
 # Every mode moves the operative files first. Then, for the project files:
 #   default         the committed copy is tracked in this branch: authored
 #                   lines of the private copy that the committed copy lacks
-#                   become inbox entries, once (a stamp file records it), and
-#                   the private copy stays for branches without knowledge.
-#                   Nothing tracked: the report says the first commit waits.
+#                   become inbox entries, once per edition (a stamp in
+#                   capabilitiesDir records it), and the private copy stays
+#                   for branches without knowledge. Nothing tracked: the
+#                   report says what the first commit still needs.
 #   --first-commit  the project files move into knowledge.dir, which must not
-#                   exist yet. --from picks the source when this edition's
-#                   directory and another edition's both hold project files.
-#   --drop-legacy   the committed copy is tracked: the private copy is backed
-#                   up under operativeDir, then removed.
+#                   exist yet. This edition's directory moves with one rename;
+#                   another edition's (--from picks it when both hold project
+#                   files) is staged entry by entry in knowledge.dir.migrating,
+#                   which is renamed at the end, so an interrupted run resumes
+#                   and knowledge.dir only ever appears complete.
+#   --drop-legacy   the committed copy is tracked: authored lines the inbox
+#                   does not hold yet become entries, then the private copy is
+#                   backed up under operativeDir, checked, and removed.
 #   --dry-run       prints what a run would do, prefixed "would:"; writes nothing.
 #
 # Every refusal is decided before the first write, so a refused run leaves the
@@ -95,14 +100,20 @@ OTHERS="$(array_in knowledge otherEditionDirs)"
 
 TMP="$(mktemp -d)" || exit 2
 trap 'rm -rf "$TMP"' EXIT
-STAMP="$OPS/.legacy-rules-imported"
+# Per edition: each edition's private copy is imported once, by its own migration.
+STAMP="$CAPS/.legacy-rules-imported"
+# An interrupted move from another edition's directory, and the source it records.
+STAGE="$DIR.migrating"
+SRCREC="$STAGE/.migrate-source"
 TODAY="$(date +%Y-%m-%d)"
+TAB="$(printf '\t')"
 # GNU sed on Windows (Git Bash) drops CR in text mode; -b keeps CRLF files intact.
 SEDB=""; sed -b p </dev/null >/dev/null 2>&1 && SEDB="-b"
+COMMIT_LINE="project: moved to $DIR: run /generate-knowledge, then commit it alone, one commit and one pull request, no other file"
 
 # --- 1. refusals ---------------------------------------------------------
 links=""
-for p in "$LEGACY" "$LEGACY/learnings" "$DIR" "$OPS" "$OPS/learnings" "$CAPS" ${from:+"$from"}; do
+for p in "$LEGACY" "$LEGACY/learnings" "$DIR" "$STAGE" "$OPS" "$OPS/learnings" "$CAPS" ${from:+"$from"}; do
   [ ! -L "$p" ] || links="$links $p"
 done
 if [ "$mode" = first ]; then
@@ -114,7 +125,7 @@ if [ -n "$links" ]; then
   echo "migrate-knowledge: a symbolic link:$links; refusing to touch anything. Replace it with a real directory and run again." >&2
   exit 2
 fi
-for p in "$LEGACY" "$DIR" "$OPS" "$CAPS"; do
+for p in "$LEGACY" "$DIR" "$STAGE" "$OPS" "$CAPS"; do
   [ ! -e "$p" ] || [ -d "$p" ] || { echo "migrate-knowledge: $p exists but is not a directory" >&2; exit 2; }
 done
 
@@ -148,6 +159,11 @@ project_entries() {
     printf '%s\n' "$e"
   done
 }
+# This edition's directory or one of the other editions' directories.
+known_dir() {
+  [ "$1" = "$LEGACY" ] && return 0
+  printf '%s\n' "$OTHERS" | sed 's|/$||' | grep -qxF -- "$1"
+}
 
 # --- 2. the operative part, planned ----------------------------------------
 : > "$TMP/moves"; : > "$TMP/conflicts"
@@ -180,76 +196,15 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   [ -z "$(git ls-files -- "$DIR" 2>/dev/null | head -1)" ] || tracked=1
 fi
 legacy_project=0; has_project "$LEGACY" && legacy_project=1
-action=none INDEX_FROM=""
+action=none INDEX_FROM="" note_line="" SRC=""
 
-case "$mode" in
-first)
-  if [ -e "$DIR" ]; then
-    echo "migrate-knowledge: refused — $DIR/ already exists; the first knowledge commit has been made. Run without --first-commit." >&2
-    exit 1
-  fi
-  : > "$TMP/cands"
-  [ "$legacy_project" = 0 ] || echo "$LEGACY" >> "$TMP/cands"
-  while IFS= read -r o; do
-    o="${o%/}"; [ -n "$o" ] && [ "$o" != "$LEGACY" ] || continue
-    ! has_project "$o" || echo "$o" >> "$TMP/cands"
-  done <<EOF
-$OTHERS
-EOF
-  ncands="$(wc -l < "$TMP/cands" | tr -d ' ')"
-  if [ "$ncands" = 0 ]; then
-    echo "migrate-knowledge: refused — no directory holds project files to make the first knowledge commit from; run /generate-knowledge instead." >&2
-    exit 1
-  fi
-  if [ "$fromset" = 1 ]; then
-    grep -qxF -- "$from" "$TMP/cands" || {
-      echo "migrate-knowledge: refused — --from $from is not a directory holding project files. Candidates:" >&2
-      sed 's/^/  /' "$TMP/cands" >&2; exit 1; }
-    SRC="$from"
-  elif [ "$ncands" -gt 1 ]; then
-    echo "migrate-knowledge: refused — more than one directory holds project files; choose one with --from <dir>:" >&2
-    sed 's/^/  /' "$TMP/cands" >&2
-    exit 1
-  else
-    SRC="$(head -1 "$TMP/cands")"
-  fi
-  project_entries "$SRC" > "$TMP/pentries"
-  proj_line="project: moved to $DIR: run /generate-knowledge, then commit it alone, one commit and one pull request, no other file"
-  action=first
-  ;;
-drop)
-  if [ "$tracked" = 0 ]; then
-    echo "migrate-knowledge: refused — nothing under $DIR/ is tracked in this branch, so the private copy in $LEGACY/ is the only knowledge here; nothing was removed." >&2
-    exit 1
-  fi
-  if [ -d "$LEGACY" ] && [ -n "$(project_entries "$LEGACY")" ]; then
-    BK="$OPS/legacy-knowledge-$(date +%Y-%m-%d-%H%M)"
-    [ ! -e "$BK" ] || BK="$BK-$$"
-    proj_line="project: private copy removed (backup $BK)"
-    action=drop
-  else
-    proj_line="project: in place ($DIR)"
-  fi
-  ;;
-default)
-  if [ "$legacy_project" = 1 ]; then
-    if [ "$tracked" = 0 ]; then
-      proj_line="project: waiting for $DIR in the repository; the first knowledge commit is made with --first-commit"
-    elif [ -f "$STAMP" ]; then
-      proj_line="project: in place ($DIR)"
-    else
-      action=import
-    fi
-  elif [ "$tracked" = 1 ]; then
-    proj_line="project: in place ($DIR)"
-  else
-    proj_line="project: nothing to move"
-  fi
-  ;;
-esac
-
-if [ "$action" = import ]; then
-  # Authored lines of the private copy: they end in "— source: user" or carry
+# plan_import: the authored lines of the private copy, what the inbox already
+# holds, and what this run writes. Fills $TMP/new (n, rel, line, mark per
+# entry to write) and $TMP/rows (index rows to add, existing entries' missing
+# rows first); sets K, the number of entries this run writes.
+plan_import() {
+  local f rel d n line rule mark hit
+  # Authored lines: they end in "— source: user" or carry
   # "— source: learnings ", compared without a trailing CR.
   find "$LEGACY" -type f -name '*.md' 2>/dev/null | LC_ALL=C sort > "$TMP/lfiles"
   : > "$TMP/cand"
@@ -268,69 +223,34 @@ if [ "$action" = import ]; then
     FILENAME == ARGV[1] { c[$0] = 1; next }
     { t = index($0, "\t"); line = substr($0, t + 1)
       if (!(line in c) && !(line in seen)) { seen[line] = 1; print } }' "$TMP/committed" "$TMP/cand" > "$TMP/kept"
-  K="$(wc -l < "$TMP/kept" | tr -d ' ')"
-  proj_line="project: in place ($DIR); private copy kept for branches without knowledge ($K authored lines kept as inbox entries)"
 
-  # Numbering continues after the highest Migrated rule already present.
-  {
-    for d in "$OPS/learnings" "$LEGACY/learnings"; do
-      [ -d "$d" ] && find "$d" -mindepth 1 -maxdepth 1 -name '*-migrated-rule-*' | sed -n 's/.*-migrated-rule-\([0-9][0-9]*\)[^/]*$/\1/p'
-    done
-    for f in "$OPS/LEARNINGS.md" "$LEGACY/LEARNINGS.md"; do
-      [ -f "$f" ] && tr -d '\r' < "$f" | sed -n 's/^|[^|]*| *Migrated rule \([0-9][0-9]*\) *|.*/\1/p'
-    done
-    echo 0
-  } | sort -n | tail -1 > "$TMP/maxn"
-  # Marks an interrupted run already wrote are not written twice.
+  # The inbox as it will be after the operative move: its marks (resolved ones
+  # count as present) with the entry file holding each, and its index.
   : > "$TMP/marks"
   for d in "$OPS/learnings" "$LEGACY/learnings"; do
     [ -d "$d" ] || continue
-    find "$d" -mindepth 1 -maxdepth 1 -type f -name '*-migrated-rule-*.md' -exec awk '{ sub(/\r$/, "") } /^\[PROMOTE\] / { print }' {} + >> "$TMP/marks" 2>/dev/null
+    for f in "$d"/*.md; do
+      [ -f "$f" ] || continue
+      LC_ALL=C awk -v b="${f##*/}" '
+        { sub(/\r$/, ""); sub(/^[ \t]*- /, ""); sub(/^\[PROMOTE RESOLVED [0-9-]*\] /, "[PROMOTE] ") }
+        /^\[PROMOTE\] / { print $0 "\t" b }' "$f" >> "$TMP/marks"
+    done
   done
-  if [ "$K" -gt 0 ] && [ ! -f "$OPS/LEARNINGS.md" ] && [ ! -f "$LEGACY/LEARNINGS.md" ]; then
-    INDEX_FROM="$TPL"
-    [ -f "$INDEX_FROM" ] || INDEX_FROM="$TEAM_ROOT/templates/${TPL##*/}"
-    [ -f "$INDEX_FROM" ] || { echo "migrate-knowledge: the LEARNINGS.md template ($TPL) is missing; nothing was moved or written" >&2; exit 2; }
-  fi
-fi
+  IDXSRC=""
+  if [ -f "$OPS/LEARNINGS.md" ]; then IDXSRC="$OPS/LEARNINGS.md"; elif [ -f "$LEGACY/LEARNINGS.md" ]; then IDXSRC="$LEGACY/LEARNINGS.md"; fi
+  : > "$TMP/index"; [ -z "$IDXSRC" ] || tr -d '\r' < "$IDXSRC" > "$TMP/index"
+  # Numbering continues after the highest Migrated rule already present.
+  n="$({
+    for d in "$OPS/learnings" "$LEGACY/learnings"; do
+      [ -d "$d" ] && find "$d" -mindepth 1 -maxdepth 1 -name '*-migrated-rule-*' | sed -n 's/.*-migrated-rule-\([0-9][0-9]*\)[^/]*$/\1/p'
+    done
+    sed -n 's/^|[^|]*| *Migrated rule \([0-9][0-9]*\) *|.*/\1/p' "$TMP/index"
+    echo 0
+  } | sort -n | tail -1)"
 
-# --- dry run ------------------------------------------------------------------
-if [ "$dry" = 1 ]; then
-  echo "would: $ops_line"
-  echo "would: $proj_line"
-  exit 0
-fi
-
-# --- 4. act ---------------------------------------------------------------------
-while IFS="$(printf '\t')" read -r src dst; do
-  mkdir -p "$(dirname "$dst")" && mv -- "$src" "$dst" \
-    || { echo "migrate-knowledge: could not move $src to $dst (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
-done < "$TMP/moves"
-[ ! -d "$LEGACY/learnings" ] || rmdir "$LEGACY/learnings" 2>/dev/null
-[ ! -d "$LEGACY" ] || rmdir "$LEGACY" 2>/dev/null
-echo "$ops_line"
-
-case "$action" in
-first)
-  mkdir -p "$DIR" || { echo "migrate-knowledge: could not create $DIR/" >&2; exit 2; }
-  while IFS= read -r e; do
-    mv -- "$e" "$DIR/${e##*/}" || { echo "migrate-knowledge: could not move $e (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
-  done < "$TMP/pentries"
-  rmdir "$SRC" 2>/dev/null
-  echo "$proj_line"
-  [ ! -d "$SRC" ] || echo "note: $SRC/ keeps its operative files for that edition's own migration"
-  ;;
-drop)
-  { mkdir -p "$BK" && cp -Rp "$LEGACY/." "$BK/" && diff -r "$LEGACY" "$BK" >/dev/null 2>&1; } \
-    || { echo "migrate-knowledge: could not back up $LEGACY/ to $BK/; nothing was removed" >&2; exit 2; }
-  rm -rf -- "$LEGACY" || { echo "migrate-knowledge: could not remove $LEGACY/ (the backup is $BK/); fix that and run again" >&2; exit 2; }
-  echo "$proj_line"
-  ;;
-import)
-  n="$(cat "$TMP/maxn")"
-  : > "$TMP/rows"
+  : > "$TMP/new"; : > "$TMP/repair"; : > "$TMP/newrows"
   while IFS= read -r kept; do
-    rel="${kept%%"$(printf '\t')"*}"; line="${kept#*"$(printf '\t')"}"
+    rel="${kept%%"$TAB"*}"; line="${kept#*"$TAB"}"
     rule="$(printf '%s\n' "$line" | LC_ALL=C awk '
       BEGIN { u = "— source: user"; l = "— source: learnings " }
       { s = $0
@@ -339,8 +259,175 @@ import)
         sub(/[ \t]+$/, "", s); sub(/^[ \t]*([-*+]|[0-9]+\.)[ \t]+/, "", s); sub(/^[ \t]+/, "", s)
         print s }')"
     mark="[PROMOTE] $rel — $rule"
-    ! grep -qxF -- "$mark" "$TMP/marks" || continue
+    hit="$(MK="$mark" LC_ALL=C awk -F'\t' 'BEGIN { m = ENVIRON["MK"] } $1 == m { print $2; exit }' "$TMP/marks")"
+    if [ -n "$hit" ]; then
+      # Already in the inbox. A migrated entry an interrupted run wrote without
+      # its index row gets the row now.
+      d="$(printf '%s' "$hit" | sed -n 's/^\([0-9]\{4\}-[0-9][0-9]-[0-9][0-9]\)-migrated-rule-[0-9][0-9]*\.md$/\1/p')"
+      if [ -n "$d" ]; then
+        hn="$(printf '%s' "$hit" | sed -n 's/^.*-migrated-rule-\([0-9][0-9]*\)\.md$/\1/p')"
+        grep -qF -- "| $d | Migrated rule $hn |" "$TMP/index" || grep -qxF -- "| $d | Migrated rule $hn | migration |" "$TMP/repair" \
+          || printf '| %s | Migrated rule %s | migration |\n' "$d" "$hn" >> "$TMP/repair"
+      fi
+      continue
+    fi
     n=$((n + 1))
+    printf '%s\t%s\t%s\t%s\n' "$n" "$rel" "$line" "$mark" >> "$TMP/new"
+    printf '%s\t%s-migrated-rule-%s.md\n' "$mark" "$TODAY" "$n" >> "$TMP/marks"
+    printf '| %s | Migrated rule %s | migration |\n' "$TODAY" "$n" >> "$TMP/newrows"
+  done < "$TMP/kept"
+  cat "$TMP/repair" "$TMP/newrows" > "$TMP/rows"
+  K="$(wc -l < "$TMP/new" | tr -d ' ')"
+  if [ -s "$TMP/rows" ] && [ -z "$IDXSRC" ]; then
+    INDEX_FROM="$TPL"
+    [ -f "$INDEX_FROM" ] || INDEX_FROM="$TEAM_ROOT/templates/${TPL##*/}"
+    [ -f "$INDEX_FROM" ] || { echo "migrate-knowledge: the LEARNINGS.md template ($TPL) is missing; nothing was moved or written" >&2; exit 2; }
+  fi
+}
+
+case "$mode" in
+first)
+  if [ -e "$DIR" ]; then
+    if [ "$tracked" = 1 ]; then
+      echo "migrate-knowledge: refused — $DIR/ is already committed; run without --first-commit." >&2
+    else
+      echo "migrate-knowledge: refused — $DIR/ already exists, so the move is done: run /generate-knowledge, then commit $DIR/ alone." >&2
+    fi
+    exit 1
+  fi
+  : > "$TMP/cands"
+  if [ -d "$STAGE" ]; then
+    # Resume: a directory still holding any project entry, topic directories
+    # included, is unfinished; the source the interrupted run recorded wins.
+    recorded=""; [ ! -f "$SRCREC" ] || recorded="$(head -n 1 "$SRCREC" | tr -d '\r')"
+    if [ -n "$recorded" ] && ! known_dir "$recorded"; then
+      echo "migrate-knowledge: $SRCREC names '$recorded', which is no knowledge directory; check $STAGE/ by hand" >&2; exit 2
+    fi
+    [ -z "$(project_entries "$LEGACY")" ] || echo "$LEGACY" >> "$TMP/cands"
+    while IFS= read -r o; do
+      o="${o%/}"; [ -n "$o" ] && [ "$o" != "$LEGACY" ] || continue
+      [ -z "$(project_entries "$o")" ] || echo "$o" >> "$TMP/cands"
+    done <<EOF
+$OTHERS
+EOF
+    if [ "$fromset" = 1 ]; then
+      if [ -n "$recorded" ] && [ "$recorded" != "$from" ]; then
+        echo "migrate-knowledge: refused — the interrupted first commit was moving from $recorded, not $from; run --first-commit --from $recorded." >&2; exit 1
+      fi
+      known_dir "$from" || { echo "migrate-knowledge: refused — --from $from is no knowledge directory." >&2; exit 1; }
+      SRC="$from"
+    elif [ -n "$recorded" ]; then
+      SRC="$recorded"
+    elif [ "$(wc -l < "$TMP/cands" | tr -d ' ')" = 1 ]; then
+      SRC="$(head -n 1 "$TMP/cands")"
+    elif [ -s "$TMP/cands" ]; then
+      echo "migrate-knowledge: refused — an interrupted first commit left $STAGE/ and more than one directory holds project files; choose the one it was moving from with --from <dir>:" >&2
+      sed 's/^/  /' "$TMP/cands" >&2; exit 1
+    fi
+    : > "$TMP/pentries"; : > "$TMP/conflicts"
+    if [ -n "$SRC" ]; then
+      project_entries "$SRC" > "$TMP/pentries"
+      while IFS= read -r e; do
+        [ ! -e "$STAGE/${e##*/}" ] || echo "  ${e##*/}" >> "$TMP/conflicts"
+      done < "$TMP/pentries"
+    fi
+    if [ -s "$TMP/conflicts" ]; then
+      echo "migrate-knowledge: refused — these names exist in both $SRC/ and $STAGE/. Keep one of each by hand, then run --first-commit again; nothing was moved:" >&2
+      cat "$TMP/conflicts" >&2; exit 1
+    fi
+    action=stage
+  else
+    [ "$legacy_project" = 0 ] || echo "$LEGACY" >> "$TMP/cands"
+    while IFS= read -r o; do
+      o="${o%/}"; [ -n "$o" ] && [ "$o" != "$LEGACY" ] || continue
+      ! has_project "$o" || echo "$o" >> "$TMP/cands"
+    done <<EOF
+$OTHERS
+EOF
+    ncands="$(wc -l < "$TMP/cands" | tr -d ' ')"
+    if [ "$ncands" = 0 ]; then
+      echo "migrate-knowledge: refused — no directory holds project files to make the first knowledge commit from; run /generate-knowledge instead." >&2
+      exit 1
+    fi
+    if [ "$fromset" = 1 ]; then
+      grep -qxF -- "$from" "$TMP/cands" || {
+        echo "migrate-knowledge: refused — --from $from is not a directory holding project files. Candidates:" >&2
+        sed 's/^/  /' "$TMP/cands" >&2; exit 1; }
+      SRC="$from"
+    elif [ "$ncands" -gt 1 ]; then
+      echo "migrate-knowledge: refused — more than one directory holds project files; choose one with --from <dir>:" >&2
+      sed 's/^/  /' "$TMP/cands" >&2
+      exit 1
+    else
+      SRC="$(head -n 1 "$TMP/cands")"
+    fi
+    if [ "$SRC" = "$LEGACY" ]; then action=rename; else project_entries "$SRC" > "$TMP/pentries"; action=stage; fi
+  fi
+  proj_line="$COMMIT_LINE"
+  # Another edition's directory keeps its operative files for its own migration.
+  if [ "$action" = stage ] && [ -n "$SRC" ] && [ "$SRC" != "$LEGACY" ]; then
+    for nm in LEARNINGS.md learnings CAPABILITIES.md; do
+      [ ! -e "$SRC/$nm" ] || { note_line="note: $SRC/ keeps its operative files for that edition's own migration"; break; }
+    done
+  fi
+  ;;
+drop)
+  if [ "$tracked" = 0 ]; then
+    echo "migrate-knowledge: refused — nothing under $DIR/ is tracked in this branch, so the private copy in $LEGACY/ is the only knowledge here; nothing was removed." >&2
+    exit 1
+  fi
+  if [ -d "$LEGACY" ] && [ -n "$(project_entries "$LEGACY")" ]; then
+    plan_import
+    BK="$OPS/legacy-knowledge-$(date +%Y-%m-%d-%H%M)"
+    [ ! -e "$BK" ] || BK="$BK-$$"
+    proj_line="project: private copy removed (backup $BK; $K authored lines kept as inbox entries)"
+    action=drop
+  else
+    proj_line="project: in place ($DIR)"
+  fi
+  ;;
+default)
+  if [ "$tracked" = 1 ]; then
+    if [ "$legacy_project" = 1 ] && [ ! -f "$STAMP" ]; then
+      plan_import
+      proj_line="project: in place ($DIR); private copy kept for branches without knowledge ($K authored lines kept as inbox entries)"
+      action=import
+    else
+      proj_line="project: in place ($DIR)"
+    fi
+  elif [ -e "$DIR" ]; then
+    proj_line="$COMMIT_LINE"
+  elif [ -d "$STAGE" ]; then
+    proj_line="project: waiting for $DIR in the repository; an interrupted --first-commit left $STAGE/: run --first-commit again to finish the move"
+  elif [ "$legacy_project" = 1 ]; then
+    proj_line="project: waiting for $DIR in the repository; the first knowledge commit is made with --first-commit"
+  else
+    proj_line="project: nothing to move"
+  fi
+  ;;
+esac
+
+# --- dry run ------------------------------------------------------------------
+if [ "$dry" = 1 ]; then
+  echo "would: $ops_line"
+  echo "would: $proj_line"
+  [ -z "$note_line" ] || echo "would: $note_line"
+  exit 0
+fi
+
+# --- 4. act ---------------------------------------------------------------------
+while IFS="$TAB" read -r src dst; do
+  mkdir -p "$(dirname "$dst")" && mv -- "$src" "$dst" \
+    || { echo "migrate-knowledge: could not move $src to $dst (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
+done < "$TMP/moves"
+[ ! -d "$LEGACY/learnings" ] || rmdir "$LEGACY/learnings" 2>/dev/null
+[ "$action" = rename ] || [ ! -d "$LEGACY" ] || rmdir "$LEGACY" 2>/dev/null
+echo "$ops_line"
+
+# write_import: the planned entries and index rows.
+write_import() {
+  local n rel line mark entry IDX cr pos last hd at
+  while IFS="$TAB" read -r n rel line mark; do
     mkdir -p "$OPS/learnings" || exit 2
     entry="$OPS/learnings/$TODAY-migrated-rule-$n.md"
     {
@@ -352,36 +439,66 @@ import)
       printf -- '- **Tags:** migration\n'
       printf '%s\n' "$mark"
     } > "$entry" || { echo "migrate-knowledge: could not write $entry" >&2; exit 2; }
-    printf '| %s | Migrated rule %s | migration |\n' "$TODAY" "$n" >> "$TMP/rows"
-  done < "$TMP/kept"
-
-  if [ -s "$TMP/rows" ]; then
-    IDX="$OPS/LEARNINGS.md"
-    if [ ! -f "$IDX" ]; then
-      { [ -n "$INDEX_FROM" ] && cp -p -- "$INDEX_FROM" "$IDX"; } || { echo "migrate-knowledge: could not create $IDX" >&2; exit 2; }
-    fi
-    # Rows go after the last row of the index table, in the file's own line ending.
-    # $'\r', not $(printf '\r'): command substitution drops a trailing CR in Git Bash.
-    cr=""; [ "$(head -n 1 "$IDX" | tr -cd '\r' | wc -c | tr -d ' ')" = 0 ] || cr=$'\r'
-    pos="$(tr -d '\r' < "$IDX" | awk '
-      /^```/ { fence = !fence; next }
-      fence { next }
-      /^## / { inidx = ($0 ~ /^## Index[ \t]*$/); if (inidx && !h) h = NR; next }
-      inidx && /^\|/ { last = NR }
-      END { print (last ? last : 0) " " (h ? h : 0) }')"
-    last="${pos% *}"; hd="${pos#* }"
-    {
-      if [ "$last" = 0 ]; then
-        [ "$hd" != 0 ] || printf '%s\n## Index%s\n' "$cr" "$cr"
-        printf '%s\n| Date | Title | Tags |%s\n|------|-------|------|%s\n' "$cr" "$cr" "$cr"
-      fi
-      while IFS= read -r r; do printf '%s%s\n' "$r" "$cr"; done < "$TMP/rows"
-    } > "$TMP/insert"
-    if [ "$last" != 0 ]; then at="$last"; elif [ "$hd" != 0 ]; then at="$hd"; else at='$'; fi
-    { LC_ALL=C sed $SEDB "${at}r $TMP/insert" "$IDX" > "$IDX.mk-tmp" && mv -f -- "$IDX.mk-tmp" "$IDX"; } \
-      || { rm -f -- "$IDX.mk-tmp"; echo "migrate-knowledge: could not add the index rows to $IDX" >&2; exit 2; }
+  done < "$TMP/new"
+  [ -s "$TMP/rows" ] || return 0
+  IDX="$OPS/LEARNINGS.md"
+  if [ ! -f "$IDX" ]; then
+    { [ -n "$INDEX_FROM" ] && cp -p -- "$INDEX_FROM" "$IDX"; } || { echo "migrate-knowledge: could not create $IDX" >&2; exit 2; }
   fi
-  mkdir -p "$OPS" && printf 'date=%s\nlines=%s\n' "$TODAY" "$K" > "$STAMP" \
+  # Rows go after the last row of the index table, in the file's own line ending.
+  # $'\r', not $(printf '\r'): command substitution drops a trailing CR in Git Bash.
+  cr=""; [ "$(head -n 1 "$IDX" | tr -cd '\r' | wc -c | tr -d ' ')" = 0 ] || cr=$'\r'
+  pos="$(tr -d '\r' < "$IDX" | awk '
+    /^```/ { fence = !fence; next }
+    fence { next }
+    /^## / { inidx = ($0 ~ /^## Index[ \t]*$/); if (inidx && !h) h = NR; next }
+    inidx && /^\|/ { last = NR }
+    END { print (last ? last : 0) " " (h ? h : 0) }')"
+  last="${pos% *}"; hd="${pos#* }"
+  {
+    if [ "$last" = 0 ]; then
+      [ "$hd" != 0 ] || printf '%s\n## Index%s\n' "$cr" "$cr"
+      printf '%s\n| Date | Title | Tags |%s\n|------|-------|------|%s\n' "$cr" "$cr" "$cr"
+    fi
+    while IFS= read -r r; do printf '%s%s\n' "$r" "$cr"; done < "$TMP/rows"
+  } > "$TMP/insert"
+  if [ "$last" != 0 ]; then at="$last"; elif [ "$hd" != 0 ]; then at="$hd"; else at='$'; fi
+  { LC_ALL=C sed $SEDB "${at}r $TMP/insert" "$IDX" > "$IDX.mk-tmp" && mv -f -- "$IDX.mk-tmp" "$IDX"; } \
+    || { rm -f -- "$IDX.mk-tmp"; echo "migrate-knowledge: could not add the index rows to $IDX" >&2; exit 2; }
+}
+
+case "$action" in
+rename)
+  # One rename: the knowledge directory appears whole or not at all.
+  { mkdir -p "$(dirname "$DIR")" && mv -- "$LEGACY" "$DIR"; } \
+    || { echo "migrate-knowledge: could not move $LEGACY/ to $DIR/ (a file open elsewhere?); nothing of it was moved; fix that and run again" >&2; exit 2; }
+  echo "$proj_line"
+  ;;
+stage)
+  mkdir -p "$STAGE" || { echo "migrate-knowledge: could not create $STAGE/" >&2; exit 2; }
+  if [ -n "$SRC" ] && [ ! -f "$SRCREC" ]; then
+    printf '%s\n' "$SRC" > "$SRCREC" || { echo "migrate-knowledge: could not write $SRCREC" >&2; exit 2; }
+  fi
+  while IFS= read -r e; do
+    mv -- "$e" "$STAGE/${e##*/}" \
+      || { echo "migrate-knowledge: could not move $e (read-only or open elsewhere?); fix that and run --first-commit again to finish" >&2; exit 2; }
+  done < "$TMP/pentries"
+  rm -f -- "$SRCREC"
+  mv -- "$STAGE" "$DIR" || { echo "migrate-knowledge: could not rename $STAGE/ to $DIR/; fix that and run --first-commit again to finish" >&2; exit 2; }
+  [ -z "$SRC" ] || rmdir "$SRC" 2>/dev/null
+  echo "$proj_line"
+  [ -z "$note_line" ] || echo "$note_line"
+  ;;
+drop)
+  write_import
+  { mkdir -p "$BK" && cp -Rp "$LEGACY/." "$BK/" && diff -r "$LEGACY" "$BK" >/dev/null 2>&1; } \
+    || { echo "migrate-knowledge: could not back up $LEGACY/ to $BK/; nothing was removed" >&2; exit 2; }
+  rm -rf -- "$LEGACY" || { echo "migrate-knowledge: could not remove $LEGACY/ (the backup is $BK/); fix that and run again" >&2; exit 2; }
+  echo "$proj_line"
+  ;;
+import)
+  write_import
+  mkdir -p "$CAPS" && printf 'date=%s\nlines=%s\n' "$TODAY" "$K" > "$STAMP" \
     || { echo "migrate-knowledge: could not write $STAMP" >&2; exit 2; }
   echo "$proj_line"
   ;;
