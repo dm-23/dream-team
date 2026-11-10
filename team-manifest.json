@@ -328,6 +328,7 @@
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
     "knowledgeDir": "bash checks/verify-knowledge-dir.sh",
+    "neutralCheck": "bash checks/verify-neutral-check.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",
@@ -341,6 +342,9 @@
     "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge",
     "knowledgeScaffold": "bash checks/verify-knowledge-scaffold.sh",
     "knowledgeScaffoldArgs": "<project-dir> <knowledge-dir>, in that order; exit 0 = nothing to say, 1 = scaffold knowledge and the project has content (regeneration due), 2 = a path could not be read, 3 = scaffold knowledge and the project is still empty",
-    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . .claude/knowledge"
+    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . .claude/knowledge",
+    "knowledgeNeutral": "bash checks/verify-knowledge-neutral.sh",
+    "knowledgeNeutralArgs": "<knowledge-dir>; exit 0 = no team path named, 1 = lines listed, 2 = unreadable",
+    "knowledgeNeutralRunFrom": "the project root: bash .claude/checks/verify-knowledge-neutral.sh <the resolver's project dir>"
   }
 }

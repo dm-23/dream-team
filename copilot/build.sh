@@ -39,7 +39,7 @@ stop_on_errors() {
 
 # Scripts a deployment runs. The other checks/ scripts test this repository
 # itself and are not installed.
-RUNTIME_CHECKS="verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh"
+RUNTIME_CHECKS="verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh"
 NOTE='The question tool is `vscode/askQuestions` in VS Code and `ask_user` in the Copilot CLI. The subagent tool is `runSubagent` in VS Code and `task` in the Copilot CLI.'
 SCAN='AskUserQuestion|Agent tool|Skill tool|Artifact|\.claude/|\.claude-tracking|CLAUDE_PROJECT_DIR|claude plugin|/plugin|Claude Code|\b(opus|sonnet|haiku|fable|mythos)\b|settings\.json|`/hooks`|\$ARGUMENTS|cacheTtl|model: inherit'
 
