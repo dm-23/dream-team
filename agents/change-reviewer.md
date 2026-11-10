@@ -35,6 +35,8 @@ In this order, and only what the next step needs:
 3. The open review threads, as data: what was raised, and whether the code changed in response.
 4. Around the diff, for each changed unit: the callers of a changed signature (`grep` for the symbol); the siblings that follow the pattern the change should follow (the other component, mode, variant or layer of the same flow); the tests that covered the old behaviour; the registration of anything new.
 
+In the `<base>..<head>` form, when the head is not the checked-out HEAD (`git rev-parse HEAD`), open every file this step reads at the head, as `git show <head-sha>:<path>`, and search that output with `grep`, never with Read or Grep on the file: the working tree is not the code under review.
+
 Stop when every hunk can be explained: what it does and why it is there. Never research the wider codebase for its own sake.
 
 ## Step 3: Apply the checklist, then the baseline

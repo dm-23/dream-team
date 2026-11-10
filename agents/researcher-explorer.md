@@ -164,6 +164,7 @@ Never reach for tools outside your own list. If a task hinges on external docume
 - Never write production code; never modify source files; never create files outside `.dream-team-tracking/`.
 - Write and Edit touch only the output file the handoff names, or `draft-plan.md` in wide mode. Save your report there instead of returning its text to the orchestrator to copy, except after a failed write (`Blockers: write failed`).
 - Exact paths only — no vague module references.
+- Before the report is written, re-read every `path:line` range it cites against the file at that range; an off-by-one range is corrected, never approximated.
 - Wide mode appends to draft-plan.md, never replaces.
 - When a knowledge file and the code disagree, trust the code and say so in "Risks" (the reviewer will add a stale-check).
 - A failed write is reported, never worked around: the pointer block names it and carries the report once.

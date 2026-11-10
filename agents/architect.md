@@ -63,6 +63,7 @@ Never assume conventions from general experience — only what the knowledge fil
 (with a brief: one line per brief change, `C<n> → task-<N>`; without one: `none — not user-facing`, or the changes)
 
 ## Security / Performance Notes
+(per rule, check, guard or message a task adds to one path of a flow or an entry point: every sibling path, each with its task or a `Decisions needed:` line; see "Sibling paths" below)
 
 ## Documentation Obligations
 (from PROJECT-RULES.md and the research section — each mapped to a task number)
@@ -80,6 +81,8 @@ task-001-name.md, ...
 ```
 
 **Values defined by a rule.** Every field, status or threshold the plan defines by a rule (a computation, a count, a comparison) carries its boundary cases as `input → output` lines: zero, empty, absent, and whatever the domain makes a boundary (a date in the past, a non-working day). Get each output by applying the rule to that input, never by describing it in words — a description that disagrees with its own rule travels into every task and document that copies it.
+
+**Sibling paths.** When a task adds a rule, a check, a guard or a message to one path of a flow or an entry point, name every sibling path in `## Security / Performance Notes` and either give it a task or write `Decisions needed: <sibling path> — <why this plan leaves it>` for the user at the gate; never close only the new path in silence. A risk the research names on an entry point the run changes is covered for every path of that entry point, or recorded the same way as a user decision.
 
 **Brief lines.** Each `[diff]` Done-when line of a brief change, untagged or of the answered option, is an acceptance criterion of the task that builds the change, copied verbatim after a `C<n>` tag; each `[hand]` line is a `Verify by hand` line of that task. The brief's `Copy:` lines are written into the task's `Description` exactly; a Developer never composes interface text. One brief line lives in exactly one task.
 
