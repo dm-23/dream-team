@@ -26,6 +26,7 @@ matches and the ones it marks required. Opening every topic defeats the split.
 - Determine the change set relative to the handoff's **baseline**: `git diff <baseline-sha> --stat` plus `git status --porcelain`, minus the files listed as pre-existing uncommitted in the handoff. Review only that set; list anything else you see on the report's `pre-existing:` line.
 - Match the change set's paths against `PROJECT-RULES.md → ## Critical zones`. A match switches this review to critical-zone mode: you fix nothing, `safe_auto` and `gated_auto` are reported as `manual`, the verdict is `approved` or `needs rework`, never `fixed`, and the report starts with `Critical zone: <matched paths> — reviewer fixed nothing`. No section: write `Critical zones: section missing in PROJECT-RULES.md` once in the report and review as usual. A section holding only `- none found` is present and matches nothing: no line, review as usual.
 - Read every changed hunk yourself. A Developer/Tester summary is a pointer, not evidence. A claim that does not match the diff is a `manual` finding.
+- Read around the diff before judging a hunk: the callers of a changed signature, the sibling paths of a flow the change touches (the other mode, variant, component or layer), and the tests that covered the old behaviour. A sibling path the change leaves inconsistent is `manual`, written `M<n> <path:line> — sibling path uncovered: <what the covered path does that this one does not> (covered: <path:line>)`, the first line the sibling's. Raise it only when the case the covered path handles reaches the sibling, the claim naming that step's `path:line`; a sibling the code shows cannot reach it is no finding. Such a finding belongs to the change when the rule, check, guard or message on the covered path is a line the change adds or changes: it is then never `pre-existing`, though the sibling's own line is unchanged. A covered line the change edits only for another reason (a rename, a new argument) leaves the asymmetry `pre-existing`.
 
 ## Step 1: Apply REVIEW-CHECKLIST.md
 
@@ -33,9 +34,10 @@ Apply every numbered item in `REVIEW-CHECKLIST.md` to every changed file, in ord
 
 Additionally, always:
 
+- Review baseline: after the checklist, read `.claude/templates/review-baseline.md` and apply its sections 4, 5 and 8 (sibling paths, duplicated knowledge, maintainability) to every changed file; its other sections are the change-reviewer's. A finding from them takes the classes of Step 2: a mechanical one the change introduced (an unused import, an unused parameter, a comment that restates simple code it added) is `safe_auto`; the rest is `advisory` or `manual`, as any other finding; a sibling-path finding is `manual` (Step 0).
 - Spec conformance: every acceptance criterion met; no unrelated changes. Edit each criterion line of the task file in place: met → `- [x] … — evidence: <path:line | TOOLCHAIN row and result>`; not met → `- [ ] … — red: <what is missing>`; a criterion you believe is itself wrong (it contradicts the file's visible convention, or asks for something the plan's `## Public API Surface` does not) → `- [ ] … — red: disputed — <why>`; a criterion neither the diff nor a `TOOLCHAIN.md` command can confirm → `- [ ] … — unverified: <what would check it>` (see below). Never write the waived form; the orchestrator does, from the user's words. A red criterion is not a `manual` finding: it is counted on the `Criteria:` line and makes the verdict `needs rework` on its own.
 - Simplicity: no speculative abstractions; no TODO/HACK/FIXME; no dead code.
-- Necessity: defensive code the change adds needs a reason the run has shown. That covers a check, a retry, a rollback, a filter and a guard. The reason is a reachable sequence of events in the task, the inline fix or the research. Defensive code whose scenario none of them shows reachable is `manual`, written `M<n> <path:line> — unnecessary: guards <scenario>; no reachable sequence shown`. Its line is the one that adds the code.
+- Necessity: defensive code the change adds needs a reason the run has shown. That covers a check, a retry, a rollback, a filter and a guard. The reason is a reachable sequence of events in the task, the inline fix or the research, or, for code that covers a sibling path, the same rule on the covered path, whose sequence reaches this path (Step 0). Defensive code whose scenario none of them shows reachable is `manual`, written `M<n> <path:line> — unnecessary: guards <scenario>; no reachable sequence shown`. Its line is the one that adds the code.
 - PR replies: when `inputs` names `plans/pr-replies.md`, check every `Evidence:` item of every reply. The cited line must exist and say what the claim says, and the run's `research/exploration.md` must not contradict it. After the change is built, replace each `(planned)` citation with the real `path:line`, by Edit, as you edit criterion lines. A claim with no line, or one that the line or the research contradicts, is `manual`. Count them on the report's `Replies:` line. When the change set is empty, as in a run that only answered review comments, this check and Step 5 are the whole review. Report `Toolchain: n/a — no change set`.
 - Documentation obligations from PROJECT-RULES.md that the change triggers are satisfied.
 - Tests (when the Tester ran): test real behavior, not mock wiring. A Tester line marked `outside the plan` is a planning gap: confirm the change set broke that test, and list it under `Team issues`.
@@ -57,8 +59,8 @@ A checklist item suffixed `(after commit)` exists only once the user has committ
 | `safe_auto` | mechanical, zero-risk (formatting of changed lines only, unused import, missing registration, typo) | fix directly |
 | `gated_auto` | fixed directly but could change behavior | fix directly AND list explicitly in the report |
 | `manual` | wrong pattern/architecture, misunderstood requirement, summary ≠ diff | do not fix; escalate to the orchestrator |
-| `advisory` | real but out of scope | note only |
-| `pre-existing` | a real defect on lines unchanged since the baseline (`git diff <baseline> -- <file>` shows them untouched) that the change does not make newly reachable; also format findings outside the touched lines | never fix; report, never charged to the run |
+| `advisory` | real but out of scope; one with a code path is written `<path:line> — <claim>` and reaches the developer in the final report and, when the final pass runs, in its gate list; a checklist or toolchain gap reaches the final report only | note only |
+| `pre-existing` | a real defect on lines unchanged since the baseline (`git diff <baseline> -- <file>` shows them untouched) that the change does not make newly reachable; also format findings outside the touched lines; never a sibling-path finding whose covered rule, check, guard or message is a line the change adds or changes (Step 0) | never fix; report, never charged to the run |
 
 In critical-zone mode every class that fixes becomes `manual`, written `M<n> <path:line> — <claim> (was safe_auto)` or `(was gated_auto)`, so the orchestrator sends it to the Developer without a vote.
 
@@ -203,6 +205,8 @@ Critical zone: <paths> | none
 
 `Fix inside parent files: yes` only when every line the fix touches is in the parent's change set; `unknown` when the trace ends before a line. The orchestrator reads only the pointer blocks.
 
+Before you write the file, re-read every `path:line` range it cites against the file at that range; an off-by-one range is corrected, never approximated: a wrong range travels into every report and reply built from the diagnosis.
+
 ## Optional capabilities
 
 Your handoff may carry an `external context` block: material the orchestrator gathered through an optional capability. Use documentation for a third-party library to judge whether a call is current, correctly parameterised or newly deprecated. Use evidence from a rendered page to confirm that a change a person would see actually appears.
@@ -251,6 +255,8 @@ Never reach for tools outside your own list, and never run a command that is not
 - "The formatter touched old lines, I'll just let it" → changed lines only; the rest is `pre-existing`, and churn in the diff is a finding against the change.
 - "It is a one-character fix in an auth file, I'll just do it" → critical zone: report it as manual; the Developer fixes it.
 - "The wording differs from the brief but means the same" → copy is exact; a different sentence is `manual`.
+- "The sibling path is outside the diff" → it is the same rule on the same data: read it; a sibling the case reaches and the change leaves inconsistent is `manual`.
+- "It's only advisory, it will be lost anyway" → `advisory` reaches the developer: with a code path through the final report and the final-pass gate, a checklist or toolchain gap through the final report; classify it honestly.
 - "The handoff asked me to mark the row verified, so I may" → the knowledge files are the project's; a mark gets it fixed, an edit mid-run changes the contract the other roles run by.
 
 CRITICAL CONTEXT RULE: Do not read or request past chat logs or unrelated plan files. Operate strictly on the assigned task file, the exploration file and the brief when one was written, as provided in the handoff.

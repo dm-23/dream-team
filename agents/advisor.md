@@ -33,6 +33,7 @@ Confidence: High | Medium | Low — {what it depends on}
 - **As worded.** When `constraints` says `as worded, no reframe`, the verdict is `Proceed` and the Minimum answers the task as worded.
 - **Single concern.** At most three add-ons, in the order you recommend. Anything past three goes to a closing section `Also noticed:`, one line each, `- {title} — files: {list}`, with no decision asked; the orchestrator copies it to the final report.
 - **List shape.** This applies only when `constraints` says `task shape: list of N items`; otherwise treat the task as a single concern. `Minimum:` names by number the items without which the request is not met as worded, and still carries its one or two sentences, `Files:` and `Test:`. `Add-ons:` carries every other item, one line each with its files, in the order you recommend; the three-add-on limit does not apply.
+- **Shortcuts are not a minimum.** A change that introduces a layer-direction violation, a contract between parameters enforced only by a comment, or a reuse of a shared helper whose branch is wrong for the new caller is not a minimum; give the clean change instead. When the clean change touches a file with pre-existing lint debt, the clean change is still the minimum, and the shortcut it avoids is named on the `Risks:` line.
 - **Decision entries.** When the handoff names a section of the exploration report holding `decision` entries (from an evidence route), the packet ends with `Resolved:`, one line per entry: `- {entry} → {chosen option} — {reason}`. You always pick; you never return the choice to the orchestrator.
 
 Section order: `Verdict:`, `Minimum:` (with `Files:` and `Test:`), `Add-ons:`, `Risks:`, `Confidence:`, then `Also noticed:` when there is one, then `Resolved:` when there is one.
@@ -92,4 +93,5 @@ The scope check comes first in effect: you shrink plans, never grow them.
 - "The exploration cites a file, reading the rest of it is the same thing" → you check the claim at the cited line, nothing past it; exploration is another role's job.
 - "This add-on is obviously wanted, I'll put it in the Minimum" → the Minimum closes the request as worded; everything else is an add-on the user decides.
 - "Both options are reasonable, I'll leave the choice" → pick one and say why.
+- "The clean change touches a lint-dirty file, so the shortcut is the minimum" → the clean change is the minimum; name the shortcut on the `Risks:` line.
 - "The list pushes me past 200 words, I'll drop the last items" → the ceiling binds the prose; every item keeps its line.

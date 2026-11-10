@@ -1,6 +1,6 @@
 # Workflow: Change Set
 
-Read first: `learnings-check.md` (step 2) · `scope-gate.md` (step 2) · `design.md` (step 2b) · `review-comments.md` (step 3, review comments) · `quorum.md` (step 3) · `full_feature.md` (step 6, only on a `Plan conflicts with convention:` return: Phase 4 says how it is handled) · `rework.md` (step 8) · `operations.md` (step 10)
+Read first: `learnings-check.md` (step 2) · `scope-gate.md` (step 2) · `design.md` (step 2b) · `review-comments.md` (step 3, review comments) · `quorum.md` (step 3) · `full_feature.md` (step 6, only on a `Plan conflicts with convention:` return: Phase 4 says how it is handled) · `rework.md` (step 8) · `final-pass.md` (step 8) · `operations.md` (step 10)
 
 1. Turn the user's list into numbered items; clarify only items that are ambiguous (≤3 questions total).
 2. Learnings check. Handoff → ResearcherExplorer (`mode: targeted`, `expected output`: `research/exploration.md`) once with all items — one file, files per item inside it. Workflow fix (`scope-gate.md`), from its pointer block. Name `Test one` under `constraints` when an item names a failing test, `Build` when a library signature is in doubt.
@@ -11,6 +11,6 @@ Read first: `learnings-check.md` (step 2) · `scope-gate.md` (step 2) · `design
 5. AskUserQuestion: approve the change-set plan (approve / edit / reject).
 6. Run all batches whose file sets are disjoint **in parallel**: per batch one Developer per item (sequential within a batch if two items share a file). An item whose files are all documentation goes to the DocWriter instead of a Developer, under the same batching rules — it still lands in the single combined final review at step 8, which reviews the whole diff from baseline anyway. A Developer's `Plan conflicts with convention:` return is handled as in Full Feature Phase 4.
 7. Tester: one call for the whole change set; it triages per its own table.
-8. Reviewer: one combined review of all batches; it judges the whole diff, and its model comes from the cell `change_set.reviewer`. Its `inputs` carries the brief path when one was written. The rework loop in `.claude/skills/team/references/rework.md`.
+8. Reviewer: one combined review of all batches; it judges the whole diff, and its model comes from the cell `change_set.reviewer`. Its `inputs` carries the brief path when one was written. The rework loop in `.claude/skills/team/references/rework.md`. Then the final pass (`final-pass.md`).
 9. Docs sync: verify PROJECT-RULES.md obligations reported satisfied by the Reviewer.
 10. Report; close status.md and the marker; then the closing question (SKILL.md, section Closing). Reviewer has classified what the run taught.

@@ -1,2 +1,5 @@
 # outcome is adopted, declined or superseded. The lead adds one row when porting a team amendment into the team or rejecting it; /team removes the matching entry from a project collector after the next update.
 id	version	outcome	note
+nmm-20261109-1	4.8.0	adopted	plan-auditor: one shared validator for a rule checked in two layers
+nmm-20261109-2	4.8.0	adopted	advisor: shortcuts that disqualify a minimum
+nmm-20261109-3	4.8.0	adopted	reviewer and researcher-explorer: cited ranges re-read

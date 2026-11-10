@@ -1,6 +1,6 @@
 ---
 name: team
-description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Quick Fix / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, Advisor, ResearcherExplorer, Designer, Architect, Developer, DocWriter, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
+description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Quick Fix / Change Set / Full Feature / Review Changes) instead of ad-hoc chat — routes the task through Brainstorm, Advisor, ResearcherExplorer, Designer, Architect, Developer, DocWriter, Tester, Reviewer and ChangeReviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
 argument-hint: "task description | resume [context_id] | stop | status"
 disable-model-invocation: true
 user-invocable: true
@@ -14,7 +14,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Global rules
 
-- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`; before running one, read `.claude/skills/team/references/operations.md` and follow it.
+- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations` (before running one, read `.claude/skills/team/references/operations.md` and follow it) and the read-only `git` and `gh` reads of Review Changes step 1.
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Quick Fix / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
@@ -29,8 +29,9 @@ Answer in the language the task is written in. Record that language in status.md
 - A ResearcherExplorer pointer block whose `Commands run:` line is above zero: copy the report's `## Commands run` lines, one each, into status.md → "Operations log".
 - Every task's `Verify by hand` lines and every Reviewer's `Unverified` line are copied into status.md → "Verify by hand", tagged with their task or batch, each item once — a rework pass or the final review that reports it again adds nothing: task lines when the plan is approved, Reviewer lines after each review. The final report names each of them, or says there are none. A verdict `approved — N unverified`, `fixed — N unverified`, `approved — N advisory[, K unverified]` or `fixed — N advisory` is an approval: it does not start the rework loop and does not count as rework.
 - When your turn ends with something required from the user and no AskUserQuestion is open — a commit, a Verify by hand confirmation, an access grant — the message ends with one line in the task's language: `Waiting on you: <the one thing>`, written after re-reading `status.md` in the same turn, never from memory. Never write `Waiting on you: nothing`, and never put the line inside an AskUserQuestion.
-- Status words in `status.md → Result`, the final report and the Operations log are exactly: `BUILT` (the change set is in the working tree and the Reviewer's verdict is approved or fixed), `COMMITTED <sha>` (the user committed), `DEPLOYED <environment>` (an Operations row ran with exit 0), `VERIFIED` (the user confirmed every Verify by hand line), `ANSWERED` (Analyze, or a run that only answered review comments). Never a stronger word than the evidence allows: a deployed change with open Verify by hand lines is `DEPLOYED dev, not VERIFIED`.
+- Status words in `status.md → Result`, the final report and the Operations log are exactly: `BUILT` (the change set is in the working tree and the Reviewer's verdict is approved or fixed), `COMMITTED <sha>` (the user committed), `DEPLOYED <environment>` (an Operations row ran with exit 0), `VERIFIED` (the user confirmed every Verify by hand line), `ANSWERED` (Analyze, a Review Changes run, or a run that only answered review comments). Never a stronger word than the evidence allows: a deployed change with open Verify by hand lines is `DEPLOYED dev, not VERIFIED`.
 - A Reviewer report's `pre-existing` line is named in the final report to the user as candidates for a separate run; it never blocks and is never sent to rework.
+- Every `advisory` item of a Reviewer report is named in the final report to the user with its location, when it has one; an item with a code path also enters the final-pass gate list when the pass runs (`references/final-pass.md`).
 - The final report also names the `Fail-before:` result of a Bug Fix, or of a Quick Fix that reports a bug, and, when the Reviewer reported any, the critical-zone paths from its `Critical zone:` line.
 
 ## Sticky team mode
@@ -41,7 +42,7 @@ Marker path: `.dream-team-tracking/.team-mode` (plain text, one `key=value` per 
 
 ```
 context_id={workflow_key}_{slug}_{YYYY-MM-DD}
-workflow={Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature}
+workflow={Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature | Review Changes}
 phase={number and name of the phase just entered}
 state={open | closed}
 language={language the user wrote the task in}
@@ -52,7 +53,7 @@ result={BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED}
 verify_open={number of Verify by hand lines not yet confirmed}
 ```
 
-`workflow_key` is the manifest's key for the workflow: lower case, spaces as underscores (`analyze`, `docs`, `bug_fix`, `small_change`, `quick_fix`, `change_set`, `full_feature`). `slug` is the task in at most forty characters: lower case, every run of characters that are not letters or digits replaced by one hyphen, no leading or trailing hyphen. The same string names the run directory; older runs used other spellings of the workflow, which changes nothing about how they are read.
+`workflow_key` is the manifest's key for the workflow: lower case, spaces as underscores (`analyze`, `docs`, `bug_fix`, `small_change`, `quick_fix`, `change_set`, `full_feature`, `review_changes`). `slug` is the task in at most forty characters: lower case, every run of characters that are not letters or digits replaced by one hyphen, no leading or trailing hyphen. The same string names the run directory; older runs used other spellings of the workflow, which changes nothing about how they are read.
 
 - **Write** it in Step 0 with `state=open`, immediately after creating `status.md`; `parent=` when `follow-up.md` or the user named the run this one follows.
 - **Update** the `phase` line at every phase change, in the same edit as `status.md`.
@@ -98,12 +99,13 @@ When a message arrives carrying the injected `<TEAM-MODE-ACTIVE>` block, treat i
 | Quick Fix | a small fix or change where you want the minimum first and the extras as separate decisions | light (one advisor instead of three lenses; a Tester when the fix needs a test) |
 | Change Set | several independent small items (post-release polish, a list of tweaks), each small, files mostly disjoint | medium, parallel |
 | Full Feature | new capability across modules (new entity + API + user interface, new page, new integration) | full |
+| Review Changes | review a pull request, a branch against its base or a release, or the current branch; the code is not changed | minimal (independent reviewer, Verifier on blocking findings) |
 
-Announce a **provisional** class from the task (any language): analysis verbs, or the interface's usability or design as the subject → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "quick fix", "quickly", "as a Quick Fix" or the same in the task's language → Quick Fix (only the name, not "quickly", counts as the user naming it); "broken/error/exception/not working" → Bug Fix; a single small add or change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Analyze and Docs are final. For the five code-changing classes the workflow is fixed after the targeted research pass, from its `Scope Count` and `Wiring/surface` lines, as `.claude/skills/team/references/scope-gate.md` says; the user's own words naming a workflow ("switch to X", "as a Bug Fix") are kept unless the evidence disagrees, and then the user is asked.
+Announce a **provisional** class from the task (any language): review words for a pull request, a branch or a range ("review the PR", "review the changes against <ref>") → Review Changes, even beside analysis verbs, while a task that quotes review comments stays with `review-comments.md`; analysis verbs, or the interface's usability or design as the subject → Analyze; "update the readme / the documentation / the changelog", or any request whose whole subject is a documentation file → Docs; "quick fix", "quickly", "as a Quick Fix" or the same in the task's language → Quick Fix (only the name, not "quickly", counts as the user naming it); "broken/error/exception/not working" → Bug Fix; a single small add or change → Small Change; an enumerated list of independent items → Change Set; multi-module scope → Full Feature. Analyze, Docs and Review Changes are final. For the five code-changing classes the workflow is fixed after the targeted research pass, from its `Scope Count` and `Wiring/surface` lines, as `.claude/skills/team/references/scope-gate.md` says; the user's own words naming a workflow ("switch to X", "as a Bug Fix") are kept unless the evidence disagrees, and then the user is asked.
 
 Two boundaries on Docs, both narrow. Comments inside source files are not documentation for this purpose — they live in files only the Developer may edit, so a request about them is a code change. And a request for a **report** is never Docs: a report is the HTML file described in `.claude/skills/team/references/report-requests.md`, written into the tracking directory, and it stays that whatever else the message says.
 
-Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`, `**Parent:**` filled when this run follows another. Fill `Baseline` with `git rev-parse --short HEAD`, `git rev-parse --abbrev-ref HEAD` and the list from `git status --porcelain`. Those three, `git diff` (for the Docs workflow's own verification step), `ls`, `head -1` and `head -12` over the tracking directory, `grep` over `amendments.resolvedFile`, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker and the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` are the only shell commands you run — none of them a build, a test or a lint. A knowledge refresh accepted at Step -1 or here runs now, before the marker is written (`knowledge-refresh.md`). Then write the sticky-mode marker (`state=open`). Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
+Create `.dream-team-tracking/{workflow_key}_{slug}_{YYYY-MM-DD}/` and `status.md` from `.claude/templates/status.md`, `**Parent:**` filled when this run follows another. Fill `Baseline` with `git rev-parse --short HEAD`, `git rev-parse --abbrev-ref HEAD` and the list from `git status --porcelain`. Those three, `git diff` (for the Docs workflow's own verification step), `ls`, `head -1` and `head -12` over the tracking directory, `grep` over `amendments.resolvedFile`, read-only `grep` over `.claude/knowledge/learnings/`, `rm -f` of the marker, the rows of `TOOLCHAIN.md → Operations` under the rules of `.claude/skills/team/references/operations.md` and, in Review Changes, the read-only commands its step 1 lists are the only shell commands you run — none of them a build, a test or a lint. A knowledge refresh accepted at Step -1 or here runs now, before the marker is written (`knowledge-refresh.md`). Then write the sticky-mode marker (`state=open`). Then fix the ceiling and judge `hard` as "Model routing" describes, and write the `Models:` line.
 
 ## Workflow references
 
@@ -118,8 +120,9 @@ Each workflow's steps live in one file. Read it in full before the workflow's fi
 | Quick Fix | `.claude/skills/team/references/quick_fix.md` |
 | Change Set | `.claude/skills/team/references/change_set.md` |
 | Full Feature | `.claude/skills/team/references/full_feature.md` |
+| Review Changes | `.claude/skills/team/references/review_changes.md` |
 
-Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `knowledge-refresh.md`, `report-requests.md`, `review-comments.md`, `amendments.md`, all under the same directory.
+Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `knowledge-refresh.md`, `report-requests.md`, `review-comments.md`, `amendments.md`, `final-pass.md`, all under the same directory.
 
 ## Closing
 
@@ -160,7 +163,7 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, Quick Fix, and the one combined pass of a Change Set) · `research/diagnosis.md` (a linked Bug Fix opened by `follow-up.md`).
+`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, Quick Fix, and the one combined pass of a Change Set) · `research/diagnosis.md` (a linked Bug Fix opened by `follow-up.md`) · `reports/review-findings.md`, `reports/review-findings-{part}.md` (Review Changes, final pass) · `reports/review-{slug}.html` (Review Changes).
 
 ## Simplicity enforcement
 
@@ -168,7 +171,7 @@ Bug Fix: surgical only. Small Change: each bullet a concrete minimal action. Cha
 
 ## Common Rationalizations — Reject These
 
-- "Small task, skip the approval gate" → gates are mandatory for every workflow that writes a file, prose included. Only Analyze, which writes nothing into the repository, has none.
+- "Small task, skip the approval gate" → gates are mandatory for every workflow that writes a file, prose included. Only Analyze and Review Changes, which write nothing into the repository, have none.
 - "Docs are trivial, the user does not need to see the file list first" → the same gate, the same words: nothing is written until they approve.
 - "They asked me to write up the findings, that is documentation" → a report is the HTML file in the tracking directory; the Docs workflow edits the repository's own documentation. A message asking for a report gets a report, whichever workflow is open.
 - "I remember how this workflow goes, no need to read its file" → the file is the workflow; read it before the first step and after every resume.
@@ -206,6 +209,7 @@ To keep subagent token usage minimal and context lean:
   3. The `prior learnings` lines (if matches exist).
   Do NOT include the rest of the draft plan, brainstorm outputs, or previous batch reviews.
 - **For the Reviewer (Full Feature):** `inputs` also names `plans/detailed-plan.md → ## Public API Surface`, so a deviation the plan states can be told from one it does not. In Full Feature and Change Set it also names `design/brief.md` when the run wrote one.
+- **For the change-reviewer:** `inputs` per `final-pass.md` → Handoff, or `review_changes.md` step 3; never the plan, a task file, the brief, the exploration or a Reviewer report.
 - **For Brainstorm:** Include ONLY:
   1. The task text or the user's answers.
   2. The path to the exploration report.

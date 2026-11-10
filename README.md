@@ -1,6 +1,6 @@
 # Dream Team
 
-A multi-agent development team for Claude Code: eleven subagents, three commands, one manifest.
+A multi-agent development team for Claude Code: twelve subagents, three commands, one manifest.
 
 It knows nothing about your technology and nothing about your project. Everything specific is generated locally on first run and never committed. The same repository plugs into any codebase unchanged.
 
@@ -63,6 +63,8 @@ The two task lines above are not decoration. The team answers in whichever langu
 - An `Analyze` run answers in chat, or writes a Markdown file under the run's `reports/` when the findings are long.
 - A task about the interface itself — audit it, review it, say what is wrong with a page — is an `Analyze` run with a designer in it: findings ranked by what they cost a person, with the pages to change in order. A user-facing feature gets a design brief before anyone designs the code, and a change to one of your interface conventions is asked, never assumed.
 - Ask for a report, in any wording, and you always get the same thing: a self-contained HTML file under the run's `reports/`, built from the report template, with its path given to you in chat. Nothing is published to the cloud. Say you want it some other way — a short answer in chat, Markdown, a particular path — and that message gets what you asked for; the next report request starts from the default again.
+- A review of a finished change — a pull request, or a branch against a base — is a Review Changes run. The team resolves the range from your words and the local repository, never reads from or writes to a git remote (read-only `gh` calls on a named pull request are its only contact with the host), and asks one question only when the base or head is missing or the change is larger than sixty files or three thousand changed lines, when it recommends splitting it into separate pull requests. A reviewer that never saw the plan reads the change, the blocking findings are voted on, and you get an HTML page under the run's `reports/` with the counts per severity and a recommendation. It changes no code; afterwards you may open a fix run for the blocking findings or for findings you choose, which needs the reviewed head checked out.
+- When the Reviewer approves a Full Feature or a Change Set, an independent reviewer reads the same change without the plan (a Bug Fix, Small Change or Quick Fix only when you ask or the run was judged hard). Its serious findings are voted on and reworked; the rest, and any decision of yours it would revisit, come to you in one question: fix all, fix selected, or keep in the report. It never changes the Reviewer's verdict.
 - The team reports the build and test results it actually ran, not a promise.
 - A message from the team that ends with something it needs from you — a commit, a confirmation, access — ends with `Waiting on you: …`; a message that needs nothing ends without it. The result is named with one of four words: built, committed, deployed to a named environment, or verified by you.
 - When a run closes, the team stays listening. Commit, deploy, check, then write what you found in the same session: a confirmation updates the run's result, a defect opens a linked fix that starts from the delivered change, a new task starts a new run, and a question about something else is just answered. `/team stop` ends the listening.
@@ -97,7 +99,7 @@ This repository, and equally the project's `.claude/` after deployment:
 
 ```
 team-manifest.json             the contract: what must exist, where, and what to check
-agents/                        eleven role prompts
+agents/                        twelve role prompts
 skills/                        three commands; skills/team/references/ holds one file per workflow and the shared mechanics the orchestrator reads per step
 templates/                     status, handoff, learnings, report, capabilities, stack cards and the interface card
 hooks/                         sticky team mode and the guard
@@ -132,16 +134,17 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Tester | read, edit, write, formatter and lint on its own files, runs only its own tests, a diff of its own files | Decides what needs tests and writes them; takes the review findings whose path is a test file | Touches production code |
 | Reviewer | read, search, edit, write, full toolchain | Reviews against the generated checklist, runs format, lint, build and tests, classifies what the run taught | Adds features; edits a knowledge file — a stale claim becomes a mark for `/generate-knowledge` |
 | Verifier | read, search, git history | Confirms or rejects the Reviewer's manual findings before a rework starts, from the code at the cited line | Edits anything; votes on style or criteria |
+| ChangeReviewer | read, search, git history, read-only toolchain rows | Reviews a finished change against the checklist and the team's review baseline, independent of the plan; writes findings with severity, story and required change | Edits anything; checks out a branch; posts to a pull request; reads the plan in a final pass |
 
 The orchestrator is the only role that talks to you. It never writes code and never runs a build.
 
 **Brainstorm lenses.** The three instances are not clones. One argues for the smallest change, one hunts regressions and edge cases, one looks for what already exists in the codebase. A point agreed by two of three is accepted. A three-way split is not resolved silently: it comes back to you as a question. A lens that needs a piece of code it was not given says so, and the team fetches it rather than letting the lens guess; a choice the research or the Architect finds afterwards goes back to the three lenses once, by a count, before it can reach you.
 
-**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm, Advisor, Architect, Designer and PlanAuditor opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
+**Model.** No role pins a model in its own file; every agent declares `inherit`. The orchestrator picks the model of each call from `team-manifest.json → modelRouting` and never goes above the model you run the session on — that is the ceiling. Each role also has a floor: Brainstorm, Advisor, Architect, Designer, PlanAuditor and ChangeReviewer opus; Developer, Reviewer, DocWriter and Verifier sonnet; ResearcherExplorer and Tester haiku. Where floor and ceiling clash, the ceiling wins, so a sonnet session runs every subagent on sonnet or below.
 
 **Model routing.** A matrix in the manifest gives every workflow and call a starting tier. A Bug Fix, Small Change or Quick Fix runs its Developer, Reviewer and Verifier on sonnet. The Quick Fix Advisor has the same floor as Brainstorm, so it runs at the Brainstorm tier. Change Set and Full Feature tasks follow their `Complexity`; the Verifier takes the `Complexity` of the Reviewer call whose findings it judges. The Architect, the Full Feature plan audit and the Full Feature final review run on the session model itself. One judgement sits on top. At the start of a run the orchestrator decides whether it is hard: an unclear cause, concurrency, security, a data migration, an invariant across modules, an earlier failed attempt. A hard run moves every call up one tier, still under the ceiling. The ceiling, the verdict and its reason are the first `Models:` line in the run's Decisions log. Brainstorm's cells are the main cost lever, because three instances run on every phase that uses it. Edit the matrix to change the policy. `checks/verify-role-consistency.sh` fails if a role has no floor, a workflow has no block or lacks a cell for a call that workflow makes (the check's own table lists them), a tier is misspelt, or an agent file pins a model.
 
-## The seven workflows
+## The eight workflows
 
 | Workflow | Trigger | Shape |
 |----------|---------|-------|
@@ -152,6 +155,7 @@ The orchestrator is the only role that talks to you. It never writes code and ne
 | Quick Fix | a small fix or change, the minimum first | Research, one advisor instead of three proposals, your approval of the minimum change with each add-on approved, deferred or dropped separately, a test when the fix needs one, review; deferred add-ons are asked about again at close |
 | Change Set | a list of independent small items | One research pass, a design brief when the items are user-facing, an audit of the batch plan before your approval, batches with non-overlapping files run in parallel, one combined review |
 | Full Feature | a new capability across modules | Questions, wide research, a design brief when the feature is user-facing (its open decisions asked before anything is designed), design, architecture, an adversarial audit of the plan and an HTML page of it before your approval of the plan with its new public API listed first, batched implementation with a stop after each batch, final review |
+| Review Changes | review this PR, review the branch against <ref> | Resolve the range; above sixty files or three thousand changed lines, a proposal to split it into separate pull requests, or a review in parallel parts if you prefer; an independent review, verification of the blocking findings, an HTML page with severity tabs and expandable findings. No code changes. |
 
 `/team` announces a provisional class from your words and fixes the workflow after the research pass, from the files and wiring it found: up to three files and no wiring is a Quick Fix, a Small Change or a Bug Fix, more is a Change Set or a Full Feature. When your words did not name a workflow and the research finds up to three files and no wiring, or a list of independent items within that limit, `/team` asks whether to run it as a Quick Fix or as the Bug Fix or Small Change with three lenses, and recommends Quick Fix unless the run was judged hard, when it recommends the three-lens road and says why. Saying "quick fix" or "as a Quick Fix" reaches it at any size, after you confirm when the evidence is bigger. Apart from the Quick Fix offer, it asks only when your own words named a workflow and the evidence disagrees; the run keeps its directory either way.
 
@@ -319,7 +323,7 @@ Then:
 
 | Path | Contents |
 |------|----------|
-| `.github/agents/<role>.agent.md` | The eleven roles, hidden from the agent picker and called as subagents |
+| `.github/agents/<role>.agent.md` | The twelve roles, hidden from the agent picker and called as subagents |
 | `.github/skills/<command>/SKILL.md` | `/team`, `/generate-knowledge`, `/team-setup` |
 | `.github/hooks/dream-team.json` | The session-start hook and the guard |
 | `.github/dream-team/` | Manifest, templates, clients, runtime checks, and `.installed`, the list of what was installed |
@@ -364,7 +368,7 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 
 | Check | VS Code | Copilot CLI |
 |-------|---------|-------------|
-| The eleven roles are callable as subagents | not yet checked | not yet checked |
+| The twelve roles are callable as subagents | not yet checked | not yet checked |
 | The roles are absent from the agent picker | not yet checked | not yet checked |
 | `/team <task>` receives the task text | not yet checked | not yet checked |
 | Gates appear as questions with options | not yet checked | not yet checked |
@@ -392,5 +396,6 @@ The documentation does not settle two behaviours: whether the hook's combined ou
 | The Reviewer reports "Critical zones: section missing" | `PROJECT-RULES.md` predates 4.3.0 | `/generate-knowledge PROJECT-RULES.md` |
 | The Designer reports `Design language: topic missing` | `FRONTEND-ARCHITECTURE.md` predates 4.4.0 | `/generate-knowledge FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md` |
 | `/team-setup` or a run reports scaffold knowledge | The knowledge was written on an empty project and the project now has content | `/generate-knowledge` |
+| A review run stops and says a ref is not in the local repository | The team never reads from a git remote, so a base or head it cannot resolve locally stops the run | Bring the ref into the local repository yourself, then write the next message; the run continues from there |
 | A command the Reviewer needs is denied by the guard | It is destructive and not listed in `TOOLCHAIN.md` | Add the exact command as a `TOOLCHAIN.md` row, or run it yourself |
 | A destructive command is not denied during a run | The guard is not wired (a team updated from before 4.3.0), or no bash | `/team-setup` wires the guard and reports `bash: absent` when there is no bash; open `/hooks` once after wiring |

@@ -1,11 +1,12 @@
 # Status: {title}
 
-**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature} (provisional: the class announced at Step 0, or — when it is the same)
+**Workflow:** {Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature | Review Changes} (provisional: the class announced at Step 0, or — when it is the same)
 **Context:** `.dream-team-tracking/{context_id}/`
 **Parent:** {context_id of the run this one follows | —}
 **Started:** {YYYY-MM-DD}
 **Closed:** —
 **Baseline:** commit `{git rev-parse --short HEAD}` on `{git rev-parse --abbrev-ref HEAD}`; pre-existing uncommitted files: {none | list from `git status --porcelain`}
+**Range:** {— | `<base-sha>..<head-sha>` (<base-ref> ← <head-ref>), N files, +a/−d}
 **Language:** {language the user wrote the task in}
 
 ## Task (user's words)
@@ -21,7 +22,7 @@
 - [ ] 4 Approval gate (AskUserQuestion: {approved | approved with changes | rejected | minimum approved, add-ons: T taken / L later / D dropped})
 - [ ] 5 Implementation
 - [ ] 6 Tests (Tester: {run — before fix: fail | compile error | pass | n/a} | skipped — reason)
-- [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived / U unverified | n/a}; unverified: {N | none})
+- [ ] 7 Review (Reviewer verdict: {approved | fixed | needs rework}; criteria: {N green / M red / K waived / U unverified | n/a}; unverified: {N | none}; final pass: {C/H/M/L/N → r rework, d decisions, k kept | skipped — reason | n/a})
 - [ ] 8 Docs sync (PROJECT-RULES.md obligations: {done | n/a})
 - [ ] 9 Learning (Reviewer: {entry | promote | stale-check | none — reason | not required}; team issues: {none | copied to Process notes}; amendments: {N confirmed, K adopted | none})
 
@@ -52,6 +53,10 @@ Checks the team may not run — from the tasks' `Verify by hand` lines and the R
 
 - {none | task or batch — what to run or look at — what to expect}
 
+## Review findings kept
+
+- {none | F-n · path:line · issue | A<n> · path:line · issue | F-n · path:line · issue — decision kept}
+
 ## Operations log
 
 Commands from `TOOLCHAIN.md → Operations` run during this run, and the ResearcherExplorer's `## Commands run` lines, one line each: who ran it, the command verbatim, the exit code, one line of output or the capture file under `run/`.
@@ -70,7 +75,7 @@ Lessons about the team itself found in this run, in the entry format of `.claude
 
 ## Result
 
-<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED (Analyze, or a run that only answered review comments) — see the team skill's Global rules. -->
+<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED (Analyze, a Review Changes run, or a run that only answered review comments) — see the team skill's Global rules. -->
 {final summary for the user, filled at close}
 
 <!--
