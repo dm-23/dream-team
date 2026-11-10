@@ -115,7 +115,14 @@
     }
   },
   "knowledge": {
-    "dir": ".claude/knowledge",
+    "dir": ".dream-team/knowledge",
+    "legacyDir": ".claude/knowledge",
+    "otherEditionDirs": [".github/dream-team/knowledge"],
+    "operativeDir": ".dream-team-tracking/operative",
+    "capabilitiesDir": ".dream-team-tracking/operative/claude",
+    "toolchainMissingFile": ".dream-team-tracking/toolchain-missing.md",
+    "resolver": "tools/knowledge-dir.sh",
+    "migration": "tools/migrate-knowledge.sh",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -320,6 +327,7 @@
     "textEncoding": "bash checks/verify-text-encoding.sh",
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
+    "knowledgeDir": "bash checks/verify-knowledge-dir.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",
