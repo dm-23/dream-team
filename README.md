@@ -132,6 +132,7 @@ Each role is a separate subagent with its own tool set. The narrow tools are the
 | Tester | read, edit, write, formatter and lint on its own files, runs only its own tests, a diff of its own files | Decides what needs tests and writes them; takes the review findings whose path is a test file | Touches production code |
 | Reviewer | read, search, edit, write, full toolchain | Reviews against the generated checklist, runs format, lint, build and tests, classifies what the run taught | Adds features; edits a knowledge file — a stale claim becomes a mark for `/generate-knowledge` |
 | Verifier | read, search, git history | Confirms or rejects the Reviewer's manual findings before a rework starts, from the code at the cited line | Edits anything; votes on style or criteria |
+| ChangeReviewer | read, search, git history, read-only toolchain rows | Reviews a finished change against the checklist and the team's review baseline, independent of the plan; writes findings with severity, story and required change | Edits anything; checks out a branch; posts to a pull request; reads the plan in a final pass |
 
 The orchestrator is the only role that talks to you. It never writes code and never runs a build.
 

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "4.7.0",
+    "version": "4.8.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -16,7 +16,8 @@
     "doc-writer",
     "tester",
     "reviewer",
-    "verifier"
+    "verifier",
+    "change-reviewer"
   ],
   "skills": [
     "team",
@@ -24,7 +25,7 @@
     "team-setup"
   ],
   "modelRouting": {
-    "_comment": "The model for each Agent call: the cell for its workflow and call (by the task's Complexity where the cell is low/medium/high), one tier up when the orchestrator judged the run hard, then raised to the role's floor and capped at the session model; the ceiling wins over the floor. ceiling = the session model, passed by omitting model, which is why every agent file declares model: inherit. A call key's suffix marks a second kind of call to one role (researcher-explorer:wide = the wide research pass, reviewer:final = the review of the whole diff, reviewer:diagnose = the diagnosis a linked run opens with after a developer reports a defect in a closed run, and the verification of review comments and complaints about delivered code, skills/team/references/review-comments.md); its floor is the role's. Layout is read line by line: each workflow opens on its own line, one call per line, a low/medium/high object inline. Bug Fix, Small Change and Quick Fix carry a tester cell for the test a fix sometimes needs; full_feature carries a doc-writer cell for its documentation-only tasks.",
+    "_comment": "The model for each Agent call: the cell for its workflow and call (by the task's Complexity where the cell is low/medium/high), one tier up when the orchestrator judged the run hard, then raised to the role's floor and capped at the session model; the ceiling wins over the floor. ceiling = the session model, passed by omitting model, which is why every agent file declares model: inherit. A call key's suffix marks a second kind of call to one role (researcher-explorer:wide = the wide research pass, reviewer:final = the review of the whole diff, reviewer:diagnose = the diagnosis a linked run opens with after a developer reports a defect in a closed run, and the verification of review comments and complaints about delivered code, skills/team/references/review-comments.md); its floor is the role's. Layout is read line by line: each workflow opens on its own line, one call per line, a low/medium/high object inline. Bug Fix, Small Change and Quick Fix carry a tester cell for the test a fix sometimes needs; full_feature carries a doc-writer cell for its documentation-only tasks. The change-reviewer call is the independent review of a finished change: the whole of Review Changes, and the final pass of a code-changing run (skills/team/references/final-pass.md).",
     "tiers": ["haiku", "sonnet", "opus", "fable"],
     "floors": {
       "brainstorm": "opus",
@@ -37,7 +38,8 @@
       "doc-writer": "sonnet",
       "tester": "haiku",
       "reviewer": "sonnet",
-      "verifier": "sonnet"
+      "verifier": "sonnet",
+      "change-reviewer": "opus"
     },
     "workflows": {
       "analyze": {
@@ -47,6 +49,10 @@
       "docs": {
         "doc-writer": "sonnet"
       },
+      "review_changes": {
+        "change-reviewer": "ceiling",
+        "verifier": "opus"
+      },
       "bug_fix": {
         "researcher-explorer": "sonnet",
         "brainstorm": "opus",
@@ -54,7 +60,8 @@
         "tester": "sonnet",
         "reviewer": "sonnet",
         "reviewer:diagnose": "opus",
-        "verifier": "sonnet"
+        "verifier": "sonnet",
+        "change-reviewer": "opus"
       },
       "small_change": {
         "researcher-explorer": "sonnet",
@@ -63,7 +70,8 @@
         "tester": "sonnet",
         "reviewer": "sonnet",
         "reviewer:diagnose": "opus",
-        "verifier": "sonnet"
+        "verifier": "sonnet",
+        "change-reviewer": "opus"
       },
       "quick_fix": {
         "researcher-explorer": "sonnet",
@@ -72,7 +80,8 @@
         "tester": "sonnet",
         "reviewer": "sonnet",
         "reviewer:diagnose": "opus",
-        "verifier": "sonnet"
+        "verifier": "sonnet",
+        "change-reviewer": "opus"
       },
       "change_set": {
         "researcher-explorer": "sonnet",
@@ -84,7 +93,8 @@
         "tester": { "low": "haiku", "medium": "sonnet", "high": "sonnet" },
         "reviewer": "opus",
         "reviewer:diagnose": "opus",
-        "verifier": "opus"
+        "verifier": "opus",
+        "change-reviewer": "ceiling"
       },
       "full_feature": {
         "brainstorm": "opus",
@@ -99,7 +109,8 @@
         "reviewer": { "low": "sonnet", "medium": "opus", "high": "opus" },
         "reviewer:final": "ceiling",
         "reviewer:diagnose": "ceiling",
-        "verifier": { "low": "sonnet", "medium": "opus", "high": "opus" }
+        "verifier": { "low": "sonnet", "medium": "opus", "high": "opus" },
+        "change-reviewer": "ceiling"
       }
     }
   },
@@ -216,6 +227,7 @@
     "capabilities": "capabilities.md",
     "learningsEntry": "learnings-entry.md",
     "teamAmendments": "team-amendments.md",
+    "reviewBaseline": "review-baseline.md",
     "interface": "interface",
     "standards": "standards"
   },
@@ -302,7 +314,7 @@
   "checks": {
     "runFrom": "the team root: this repository, or .claude/ in a project the team is deployed into",
     "note": "\"hook\" is deliberately absent from this pattern: it is a Claude Code harness term the team must be able to name. React's hooks are caught by useState/useEffect instead.",
-    "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md skills/team/references/*.md README.md",
+    "stackNeutralityLint": "grep -n -i -E \"\\b(go|golang|python|java|c#|csharp|dotnet|typescript|javascript|node|react|angular|vue|redux|usestate|useeffect|selector|slice|controller|mediatr|cqrs|linq|dbcontext|prisma|sqlalchemy|xunit|nunit|jest|vitest|pytest|npm|pip|nuget|cargo|csproj|axios|fetch|swagger|openapi|gofmt|eslint|prettier|nullable|eager.?load|n\\+1|re-?render|functional component|any types|router)\\b\" agents/*.md skills/*/SKILL.md skills/team/references/*.md templates/review-baseline.md README.md",
     "manifestBudgets": "bash checks/verify-manifest-budgets.sh",
     "roleConsistency": "bash checks/verify-role-consistency.sh",
     "textEncoding": "bash checks/verify-text-encoding.sh",

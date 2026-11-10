@@ -20,7 +20,8 @@ cd "$(dirname "$0")/.." || exit 1
 
 # 4.5.0: the sticky section describes the closed state, read every turn by design.
 # 4.6.0: the Quick Fix rows in Step 0, the references table and the marker block.
-MAX_PER_TURN=42000
+# 4.8.0: the Review Changes rows in Step 0 and the references table, the advisory rule.
+MAX_PER_TURN=44000
 SKILL=skills/team/SKILL.md
 REFS=skills/team/references
 status=0
