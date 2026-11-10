@@ -1,6 +1,6 @@
 # Workflow: Full Feature
 
-Read first: `review-comments.md` (Phase 2, review comments) · `quorum.md` (Phases 1–3) · `learnings-check.md` (Phase 2) · `design.md` (Phase 2) · `rework.md` (Phase 4) · `operations.md` (Phase 6)
+Read first: `review-comments.md` (Phase 2, review comments) · `quorum.md` (Phases 1–3) · `learnings-check.md` (Phase 2) · `design.md` (Phase 2) · `rework.md` (Phase 4) · `final-pass.md` (Phase 5) · `operations.md` (Phase 6)
 
 Phase 1 — Intake: Brainstorm ×3 (`phase: questions`); quorum; ask 3–7 questions via AskUserQuestion.
 
@@ -48,7 +48,7 @@ Execute batches according to the Batching Strategy. For each batch:
      ```
    - Stop execution here.
 
-Phase 5 — Final review: Reviewer reviews ALL changes against baseline (its `inputs` carries the brief path when one was written), runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) where its prompt allows; in critical-zone mode the failure is a `manual` finding and goes to the Developer; still failing → escalate to the user.
+Phase 5 — Final review: Reviewer reviews ALL changes against baseline (its `inputs` carries the brief path when one was written), runs the full toolchain, confirms documentation obligations, classifies what the run taught. Build/test failures → Reviewer fixes (max 2) where its prompt allows; in critical-zone mode the failure is a `manual` finding and goes to the Developer; still failing → escalate to the user. Then the final pass (`final-pass.md`).
 
 Phase 6 — Close: summarize, update status.md, mark `[DONE]`, close the marker (state=closed, see the team skill). The closing question (SKILL.md, section Closing) offers the commit — "Commit now with message '...' / I'll commit myself", naming every item from the Reviewer's `After commit:` line or saying there are none — the knowledge refresh when one is due, and the deploy row of `TOOLCHAIN.md → Operations` when there is one, under "Operations"; a deploy is never offered before the commit.
 
