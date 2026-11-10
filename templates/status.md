@@ -55,7 +55,7 @@ Checks the team may not run — from the tasks' `Verify by hand` lines and the R
 
 ## Review findings kept
 
-- {none | F-n · path:line · issue}
+- {none | F-n · path:line · issue | A<n> · path:line · issue | F-n · path:line · issue — decision kept}
 
 ## Operations log
 

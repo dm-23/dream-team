@@ -14,7 +14,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Global rules
 
-- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`, and the read-only `git` and `gh` reads of Review Changes step 1; before running one, read `.claude/skills/team/references/operations.md` and follow it.
+- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations` (before running one, read `.claude/skills/team/references/operations.md` and follow it) and the read-only `git` and `gh` reads of Review Changes step 1.
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Quick Fix / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
