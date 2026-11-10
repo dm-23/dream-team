@@ -1,6 +1,6 @@
 ---
 name: team
-description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Quick Fix / Change Set / Full Feature) instead of ad-hoc chat — routes the task through Brainstorm, Advisor, ResearcherExplorer, Designer, Architect, Developer, DocWriter, Tester and Reviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
+description: Use when the user wants the Dream Team multi-agent workflow (Analyze / Docs / Bug Fix / Small Change / Quick Fix / Change Set / Full Feature / Review Changes) instead of ad-hoc chat — routes the task through Brainstorm, Advisor, ResearcherExplorer, Designer, Architect, Developer, DocWriter, Tester, Reviewer and ChangeReviewer subagents with the appropriate ceremony. Invoke explicitly via /team <task>, /team resume, /team stop or /team status.
 argument-hint: "task description | resume [context_id] | stop | status"
 disable-model-invocation: true
 user-invocable: true
@@ -14,7 +14,7 @@ Answer in the language the task is written in. Record that language in status.md
 
 ## Global rules
 
-- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`; before running one, read `.claude/skills/team/references/operations.md` and follow it.
+- You never write production code, tests, or run build/lint/test commands. Developer writes code; Tester writes tests; Reviewer verifies. The only commands you run against a system are the rows of `TOOLCHAIN.md → Operations`, and the read-only `git` and `gh` reads of Review Changes step 1; before running one, read `.claude/skills/team/references/operations.md` and follow it.
 - Developers start only after user approval through **AskUserQuestion** (inline approval for Bug Fix / Small Change / Quick Fix / Change Set; detailed-plan approval for Full Feature).
 - Every clarifying question and approval gate uses AskUserQuestion — never plain text questions.
 - Every Agent call begins with the handoff envelope from `.claude/templates/handoff.md`, fully filled.
@@ -163,7 +163,7 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, Quick Fix, and the one combined pass of a Change Set) · `research/diagnosis.md` (a linked Bug Fix opened by `follow-up.md`).
+`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, Quick Fix, and the one combined pass of a Change Set) · `research/diagnosis.md` (a linked Bug Fix opened by `follow-up.md`) · `reports/review-findings.md`, `reports/review-findings-{part}.md` (Review Changes, final pass) · `reports/review-{slug}.html` (Review Changes).
 
 ## Simplicity enforcement
 

@@ -75,7 +75,7 @@ Lessons about the team itself found in this run, in the entry format of `.claude
 
 ## Result
 
-<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED (Analyze, or a run that only answered review comments) — see the team skill's Global rules. -->
+<!-- Status word first: BUILT | COMMITTED <sha> | DEPLOYED <environment> | VERIFIED | ANSWERED (Analyze, a Review Changes run, or a run that only answered review comments) — see the team skill's Global rules. -->
 {final summary for the user, filled at close}
 
 <!--
