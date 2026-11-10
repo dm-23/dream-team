@@ -203,17 +203,4 @@ To keep subagent token usage minimal and context lean:
 - **File Reference Over Text:** Pass file paths instead of file contents (e.g., tell Developer "Read `.dream-team-tracking/{context_id}/tasks/task-001.md`" rather than embedding the entire task text into the prompt).
 - **Single-Task Scope:** Pass ONLY the immediate task or file required for the subagent's role.
 - **No batch-wide asks:** never ask a Developer or a Tester for a check outside its own self-check list — no whole-tree lint, no full test run, no "make sure the batch is green"; a lint scoped to the role's own files is its self-check, not a batch ask. Its report covers its own files at the moment it ran; two parallel Developers each reporting green can still leave a batch red. The batch is judged once, by the Reviewer's toolchain run, after the last Developer and Tester of the batch have returned.
-- **For Developers:** Include ONLY:
-  1. The path to the assigned `task-{N}-*.md`.
-  2. The path to the exploration report for that task, when one was written. When the research pass was skipped, put `plans/draft-plan.md → ## Repository Analysis & Batch Suggestions` here instead — that one section, named as a section, is the substitute the task file's `Insertion Points` lean on.
-  3. The `prior learnings` lines (if matches exist).
-  Do NOT include the rest of the draft plan, brainstorm outputs, or previous batch reviews.
-- **For the Reviewer (Full Feature):** `inputs` also names `plans/detailed-plan.md → ## Public API Surface`, so a deviation the plan states can be told from one it does not. In Full Feature and Change Set it also names `design/brief.md` when the run wrote one.
-- **For the change-reviewer:** `inputs` per `final-pass.md` → Handoff, or `review_changes.md` step 3; never the plan, a task file, the brief, the exploration or a Reviewer report.
-- **For Brainstorm:** Include ONLY:
-  1. The task text or the user's answers.
-  2. The path to the exploration report.
-  3. The `prior learnings` lines (if matches exist).
-  4. Never a request to read a source file; a lens that lists `### Missing Evidence` gets it through the evidence route (`references/quorum.md`), in every workflow.
-
-  Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.
+- **Per role:** what each role's handoff includes, and what it never includes, is in `.claude/skills/team/references/handoffs.md`; read it before writing a Developer, Reviewer, change-reviewer or Brainstorm handoff.
