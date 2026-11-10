@@ -296,9 +296,12 @@ first)
     exit 1
   fi
   : > "$TMP/cands"
-  if [ -d "$STAGE" ]; then
+  # An empty staging directory without a record holds nothing to resume: the
+  # move starts afresh.
+  if [ -d "$STAGE" ] && { [ -f "$SRCREC" ] || [ -n "$(ls -A "$STAGE" 2>/dev/null)" ]; }; then
     # Resume: a directory still holding any project entry, topic directories
-    # included, is unfinished; the source the interrupted run recorded wins.
+    # included, is unfinished; the source the interrupted run recorded wins,
+    # and without a record only --from names it, never a guess.
     recorded=""; [ ! -f "$SRCREC" ] || recorded="$(head -n 1 "$SRCREC" | tr -d '\r')"
     if [ -n "$recorded" ] && ! known_dir "$recorded"; then
       echo "migrate-knowledge: $SRCREC names '$recorded', which is no knowledge directory; check $STAGE/ by hand" >&2; exit 2
@@ -318,11 +321,10 @@ EOF
       SRC="$from"
     elif [ -n "$recorded" ]; then
       SRC="$recorded"
-    elif [ "$(wc -l < "$TMP/cands" | tr -d ' ')" = 1 ]; then
-      SRC="$(head -n 1 "$TMP/cands")"
-    elif [ -s "$TMP/cands" ]; then
-      echo "migrate-knowledge: refused — an interrupted first commit left $STAGE/ and more than one directory holds project files; choose the one it was moving from with --from <dir>:" >&2
-      sed 's/^/  /' "$TMP/cands" >&2; exit 1
+    else
+      echo "migrate-knowledge: refused — an interrupted first commit left $STAGE/ without a record of the directory it was moving from; name that directory with --first-commit --from <dir>. Directories still holding project files:" >&2
+      if [ -s "$TMP/cands" ]; then sed 's/^/  /' "$TMP/cands" >&2; else echo "  none" >&2; fi
+      exit 1
     fi
     : > "$TMP/pentries"; : > "$TMP/conflicts"
     if [ -n "$SRC" ]; then
@@ -395,6 +397,9 @@ default)
     else
       proj_line="project: in place ($DIR)"
     fi
+    # The committed copy is what counts now; a staging directory beside it is
+    # an interrupted move from before it was committed.
+    [ ! -d "$STAGE" ] || proj_line="$proj_line; an interrupted move left $STAGE/: $DIR/ is committed, so remove it once nothing in it is missing from $DIR/"
   elif [ -e "$DIR" ]; then
     proj_line="$COMMIT_LINE"
   elif [ -d "$STAGE" ]; then
@@ -422,6 +427,9 @@ while IFS="$TAB" read -r src dst; do
 done < "$TMP/moves"
 [ ! -d "$LEGACY/learnings" ] || rmdir "$LEGACY/learnings" 2>/dev/null
 [ "$action" = rename ] || [ ! -d "$LEGACY" ] || rmdir "$LEGACY" 2>/dev/null
+# A source record left inside the committed directory by a run stopped right
+# after its final rename belongs to this script, never to the knowledge.
+[ ! -f "$DIR/${SRCREC##*/}" ] || rm -f -- "$DIR/${SRCREC##*/}"
 echo "$ops_line"
 
 # write_import: the planned entries and index rows.
@@ -469,7 +477,9 @@ write_import() {
 
 case "$action" in
 rename)
-  # One rename: the knowledge directory appears whole or not at all.
+  # One rename: the knowledge directory appears whole or not at all. An empty
+  # staging directory without a record is what an earlier start left; it goes.
+  [ ! -d "$STAGE" ] || rmdir "$STAGE" 2>/dev/null
   { mkdir -p "$(dirname "$DIR")" && mv -- "$LEGACY" "$DIR"; } \
     || { echo "migrate-knowledge: could not move $LEGACY/ to $DIR/ (a file open elsewhere?); nothing of it was moved; fix that and run again" >&2; exit 2; }
   echo "$proj_line"
@@ -483,8 +493,10 @@ stage)
     mv -- "$e" "$STAGE/${e##*/}" \
       || { echo "migrate-knowledge: could not move $e (read-only or open elsewhere?); fix that and run --first-commit again to finish" >&2; exit 2; }
   done < "$TMP/pentries"
-  rm -f -- "$SRCREC"
+  # The record goes with the staging directory and is removed only once the
+  # rename succeeded, so a failed rename resumes from the same source.
   mv -- "$STAGE" "$DIR" || { echo "migrate-knowledge: could not rename $STAGE/ to $DIR/; fix that and run --first-commit again to finish" >&2; exit 2; }
+  rm -f -- "$DIR/${SRCREC##*/}"
   [ -z "$SRC" ] || rmdir "$SRC" 2>/dev/null
   echo "$proj_line"
   [ -z "$note_line" ] || echo "$note_line"

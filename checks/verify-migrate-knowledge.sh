@@ -469,6 +469,67 @@ run
 expect_rc 0
 has "$tmp/out" "project: moved to $NEW: run /generate-knowledge, then commit it alone"
 
+case="n: the final rename fails"
+new_project n4
+mkdir -p "$P/$OTHER"
+printf '# Overview\n\nThe other edition.\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"
+printf '# Toolchain\n' > "$P/$OTHER/TOOLCHAIN.md"
+cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+kbefore="$(snap "$P/$OLD")"
+# Only the rename of the staging directory ends in ".migrating".
+run_failing ".migrating" --first-commit --from "$OTHER"
+expect_rc 2
+[ ! -e "$P/$NEW" ] || fail "$NEW appeared though the rename failed"
+[ -f "$P/$NEW.migrating/PROJECT-OVERVIEW.md" ] && [ -f "$P/$NEW.migrating/TOOLCHAIN.md" ] || fail "the staged entries are missing"
+[ "$(cat "$P/$NEW.migrating/.migrate-source" 2>/dev/null)" = "$OTHER" ] || fail "the source record did not survive the failed rename"
+[ "$kbefore" = "$(snap "$P/$OLD")" ] || fail "$OLD changed"
+run
+expect_rc 0
+has "$tmp/out" "an interrupted --first-commit left $NEW.migrating/: run --first-commit again to finish the move"
+[ "$kbefore" = "$(snap "$P/$OLD")" ] || fail "$OLD changed"
+# No --from: legacyDir is now the only directory with project files, and must
+# still not be taken for the source.
+run --first-commit
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW"
+[ "$(cat "$P/$NEW/PROJECT-OVERVIEW.md")" = "$(printf '# Overview\n\nThe other edition.')" ] && [ -f "$P/$NEW/TOOLCHAIN.md" ] \
+  || fail "not resumed from the recorded source: $(cd "$P" && find "$NEW" 2>&1)"
+[ ! -e "$P/$NEW/PROJECT-RULES.md" ] || fail "this edition's private copy was merged into the committed directory"
+[ ! -e "$P/$NEW/.migrate-source" ] && [ ! -e "$P/$NEW.migrating" ] || fail "staging or its record left behind"
+[ "$kbefore" = "$(snap "$P/$OLD")" ] || fail "$OLD changed"
+
+case="n: staging without a record"
+new_project n5
+# Every project file of the other edition is staged and the record is gone:
+# legacyDir is the only directory with project files, and no name overlaps,
+# so a guess would merge it in silently.
+mkdir -p "$P/$OTHER" "$P/$NEW.migrating"
+printf '# Toolchain\n' > "$P/$NEW.migrating/TOOLCHAIN.md"
+cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+kbefore="$(snap "$P/$OLD")"
+before="$(snap "$P")"; run --first-commit
+expect_rc 1
+has "$tmp/err" "--from"
+has "$tmp/err" "without a record"
+[ "$before" = "$(snap "$P")" ] || fail "a refused resume changed files"
+run --first-commit --from "$OTHER"
+expect_rc 0
+[ -f "$P/$NEW/TOOLCHAIN.md" ] || fail "the resume with --from is incomplete"
+[ ! -e "$P/$NEW/PROJECT-RULES.md" ] || fail "this edition's private copy was merged in"
+has "$tmp/out" "note: $OTHER/ keeps its operative files"
+[ "$kbefore" = "$(snap "$P/$OLD")" ] || fail "$OLD changed"
+
+case="n: staging beside a committed copy"
+new_project n6
+mkdir -p "$P/$NEW" "$P/$NEW.migrating"
+printf '# Project Rules\n\n- Keep the build green.\n' > "$P/$NEW/PROJECT-RULES.md"
+commit_knowledge
+printf '# Overview\n' > "$P/$NEW.migrating/PROJECT-OVERVIEW.md"
+run
+expect_rc 0
+has "$tmp/out" "project: in place ($NEW)"
+has "$tmp/out" "an interrupted move left $NEW.migrating/"
+
 case="n: resume refuses a name on both sides"
 new_project n3
 mkdir -p "$P/$OTHER" "$P/$NEW.migrating"
