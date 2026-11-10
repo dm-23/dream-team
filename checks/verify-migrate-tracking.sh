@@ -27,7 +27,8 @@ make_project() {
   cat > "$p/.claude/team-manifest.json" <<'EOF'
 {
   "knowledge": {
-    "dir": ".claude/knowledge",
+    "dir": ".dream-team/knowledge",
+    "legacyDir": ".claude/knowledge",
     "budgets": {
       "dir": "not this one"
     }

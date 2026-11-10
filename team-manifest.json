@@ -327,6 +327,7 @@
     "textEncoding": "bash checks/verify-text-encoding.sh",
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
+    "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",
     "knowledgeDir": "bash checks/verify-knowledge-dir.sh",
     "neutralCheck": "bash checks/verify-neutral-check.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
