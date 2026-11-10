@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Reports whether a project's learnings inbox needs /generate-knowledge.
 #
-#   verify-learnings-inbox.sh <knowledge-dir>
+#   verify-learnings-inbox.sh <operative-dir>
 #
-# The inbox is LEARNINGS.md, an index, plus one file per entry under
+# The operative dir (.dream-team-tracking/operative, or the legacy knowledge dir)
+# holds the inbox: LEARNINGS.md, an index, plus one file per entry under
 # learnings/. Three things make it due, each against a limit in
-# knowledge.budgets of the manifest beside the knowledge dir
-# ("$(dirname <knowledge-dir>)/team-manifest.json", the deployed layout):
+# knowledge.budgets of the manifest beside the checks directory
+# ("$(dirname "$0")/../team-manifest.json": the team root, which holds the checks
+# and the manifest in a deployment, wherever the inbox itself lives):
 #
 #   - more index rows than learningsIndexMaxRows. The orchestrator reads the
 #     index whole on every run, so its length is a cost every run pays.
@@ -40,7 +42,7 @@ export LC_ALL=C
 current="${1:?usage: verify-learnings-inbox.sh <knowledge-dir>}"
 [ -d "$current" ] || { echo "FAIL: knowledge dir not found: $current" >&2; exit 2; }
 
-manifest="$(dirname "$current")/team-manifest.json"
+manifest="$(cd "$(dirname "$0")/.." && pwd)/team-manifest.json"
 [ -f "$manifest" ] || { echo "FAIL: manifest not found at $manifest (needed to read knowledge.budgets)" >&2; exit 2; }
 
 tmp="$(mktemp -d)"

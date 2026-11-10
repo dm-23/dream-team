@@ -114,5 +114,73 @@ echo x > "$P/proj/$OLD/PROJECT-OVERVIEW.md"; echo x > "$P/proj/$OLD/LEARNINGS.md
 expect project "$OLD"
 expect operative "$OLD"
 
+# --- runtime checks: they find the manifest beside themselves --------------------
+# The team lives at <proj>/.claude/ and the knowledge at <proj>/.dream-team/
+# knowledge, so no manifest sits beside the knowledge directory.
+INBOX="$ROOT/checks/verify-learnings-inbox.sh"
+INTEGRITY="$ROOT/checks/verify-knowledge-integrity.sh"
+
+make_runtime() {
+  n=$((n + 1))
+  P="$tmp/r$n"
+  mkdir -p "$P/proj/.claude/checks" "$P/proj/.dream-team/knowledge" "$P/proj/.dream-team-tracking/operative/learnings"
+  cp "$INBOX" "$INTEGRITY" "$P/proj/.claude/checks/"
+  cp "$MANIFEST" "$P/proj/.claude/team-manifest.json"
+  OPD="$P/proj/.dream-team-tracking/operative"
+}
+# write_index <dir> <rows>: a LEARNINGS.md with that many index rows.
+write_index() {
+  { printf '# Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n'
+    local i=1
+    while [ "$i" -le "$2" ]; do printf '| 2026-01-01 | t%s | x |\n' "$i"; i=$((i + 1)); done
+  } > "$1/LEARNINGS.md"
+}
+rt_expect() { # <label> <expected-rc> <args...>: run a runtime check from the team dir
+  local label="$1" want="$2" script="$3" rc; shift 3
+  (cd "$P/proj" && bash ".claude/checks/$script" "$@" >"$tmp/out" 2>"$tmp/err"); rc=$?
+  [ "$rc" -eq "$want" ] || fail "$label: exit $rc, expected $want ($(head -c 300 "$tmp/err"))"
+}
+
+case="runtime inbox over the row budget"
+make_runtime
+write_index "$OPD" 31
+rt_expect "31 rows" 1 verify-learnings-inbox.sh "$OPD"
+
+case="runtime inbox within budget"
+make_runtime
+write_index "$OPD" 3
+rt_expect "3 rows" 0 verify-learnings-inbox.sh "$OPD"
+
+case="runtime integrity on an operative pair"
+make_runtime
+write_index "$OPD" 3
+cp -r "$OPD" "$P/backup"
+rt_expect "operative pair" 0 verify-knowledge-integrity.sh "$P/backup" "$OPD"
+
+case="runtime integrity on project files without LEARNINGS.md"
+make_runtime
+K="$P/proj/.dream-team/knowledge"
+for f in PROJECT-OVERVIEW TESTING-CONVENTIONS SEARCH-PLAYBOOK TOOLCHAIN REVIEW-CHECKLIST PROJECT-RULES \
+         BACKEND-ARCHITECTURE FRONTEND-ARCHITECTURE DI-AND-STARTUP CODING-STANDARDS; do
+  printf '# %s\n' "$f" > "$K/$f.md"
+done
+cp -r "$K" "$P/backup"
+rt_expect "project pair" 0 verify-knowledge-integrity.sh "$P/backup" "$K"
+
+case="runtime integrity still fails a file missing from the current dir"
+make_runtime
+K="$P/proj/.dream-team/knowledge"
+printf '# x\n' > "$K/BACKEND-ARCHITECTURE.md"
+cp -r "$K" "$P/backup"
+rm "$K/BACKEND-ARCHITECTURE.md"
+rt_expect "missing file" 1 verify-knowledge-integrity.sh "$P/backup" "$K"
+
+case="runtime integrity still fails an unclassified file"
+make_runtime
+K="$P/proj/.dream-team/knowledge"
+cp -r "$K" "$P/backup"
+printf '# x\n' > "$K/STRAY.md"
+rt_expect "unclassified" 1 verify-knowledge-integrity.sh "$P/backup" "$K"
+
 [ "$status" -eq 0 ] && echo "knowledge dir: ok"
 exit "$status"
