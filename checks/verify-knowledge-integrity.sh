@@ -64,6 +64,14 @@
 # team's own tools, not by fix, so they are read from the manifest and exempt
 # from the file sweep and the directory sweep, by name and nothing wider.
 #
+# A line tools/extract-rules.sh moved out of a "subset" file is not lost. A
+# backup line that contains "— source: learnings " or ends "— source: user"
+# (a trailing CR ignored), and whose text -- the line without that suffix,
+# trailing blanks and its list marker, as the extractor strips it -- equals a
+# "- Rule:", "- Check:", "- Zone:" or "- Exception:" value of a file directly
+# inside <knowledge-dir>/<knowledge.rulesDir>/, is left out of the original
+# before Check 2 compares. Such a line with no matching value is still lost.
+#
 # Check 1: the entries accumulated in the learnings log survive the run. The
 #          invariant is a set equation rather than a presence test: the entries
 #          in the backup -- inline in its LEARNINGS.md plus whatever files its
@@ -256,6 +264,36 @@ for key in rulesDir proposalsDir baselineFile; do
     | tr -d '\r' >> "$tmp/authored-names"
 done
 
+# --- The values of the current rule files -------------------------------------
+# What tools/extract-rules.sh wrote: a backup line whose text is one of them
+# was moved, not lost (see the header). Read as tools/migrate-knowledge.sh
+# reads them.
+rules_name="$(sed -n 's/.*"rulesDir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$tmp/knowledge-block" | tr -d '\r' | head -n 1)"
+: > "$tmp/rulevals"
+if [ -n "$rules_name" ] && [ -d "$current/$rules_name" ]; then
+  for f in "$current/$rules_name"/*.md; do
+    [ -f "$f" ] || continue
+    awk '{ sub(/\r$/, "") } sub(/^- (Rule|Check|Zone|Exception):[ \t]*/, "") { sub(/[ \t]+$/, ""); print }' "$f" >> "$tmp/rulevals"
+  done
+fi
+
+# drop_extracted <file>: the lines of <file> in order, but an authored line
+# whose text is a rule value. The text is cut as the extractor's textof cuts it.
+drop_extracted() {
+  awk '
+    BEGIN { u = "— source: user"; l = "— source: learnings " }
+    FILENAME == ARGV[1] { v[$0] = 1; next }
+    { s = $0; sub(/\r$/, "", s); a = 0
+      i = index(s, l)
+      if (i) { s = substr(s, 1, i - 1); a = 1 }
+      else if (length(s) >= length(u) && substr(s, length(s) - length(u) + 1) == u) { s = substr(s, 1, length(s) - length(u)); a = 1 }
+      if (a) {
+        sub(/[ \t]+$/, "", s); sub(/^[ \t]*([-*+]|[0-9]+\.)([ \t]+|$)/, "", s); sub(/^[ \t]+/, "", s)
+        if (s != "" && (s in v)) next
+      }
+      print }' "$tmp/rulevals" "$1"
+}
+
 # --- Check 1: the learnings entries survive the run --------------------------
 # Splits a learnings log into one file per entry under <outdir>.
 #
@@ -410,10 +448,12 @@ check_split_dir() {
     : > "$tmp/index-sorted"
   fi
   sort -u "$tmp/topic-sorted" "$tmp/index-sorted" > "$tmp/covered-sorted"
+  # A line the extractor moved into a rule file is not missing.
+  drop_extracted "$tmp/origin-sorted" > "$tmp/origin-kept"
 
-  if comm -23 "$tmp/origin-sorted" "$tmp/covered-sorted" | grep -q .; then
+  if comm -23 "$tmp/origin-kept" "$tmp/covered-sorted" | grep -q .; then
     echo "FAIL: $origin has content missing from $name/ and $index_file:" >&2
-    comm -23 "$tmp/origin-sorted" "$tmp/covered-sorted" | sed 's/^/    /' >&2
+    comm -23 "$tmp/origin-kept" "$tmp/covered-sorted" | sed 's/^/    /' >&2
     status=1
   fi
 }
@@ -432,7 +472,9 @@ check_unsplit_subset() {
     return
   fi
 
-  normalize "$origin" > "$tmp/unsplit-origin"
+  # The backup without the lines the extractor moved into rule files.
+  normalize "$origin" > "$tmp/unsplit-backup"
+  drop_extracted "$tmp/unsplit-backup" > "$tmp/unsplit-origin"
   normalize "$index_file" > "$tmp/unsplit-current"
   if ! diff -q "$tmp/unsplit-origin" "$tmp/unsplit-current" >/dev/null 2>&1; then
     echo "FAIL: $cname was not split and differs from its backup copy at $origin:" >&2

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Repo-only test of checks/verify-knowledge-shape.sh and of the unclassified
 # sweep of checks/verify-knowledge-integrity.sh for the entries the manifest
-# names rulesDir, proposalsDir and baselineFile. The fixtures hold authored
+# names rulesDir, proposalsDir and baselineFile, and of how that check treats a
+# line tools/extract-rules.sh moved into a rule file. The fixtures hold authored
 # lines the runtime check must find, so this test never ships.
 #
 #   verify-shape-check.sh
@@ -120,6 +121,47 @@ case "$out" in *"not classified"*) fail "integrity: reported unclassified ($out)
 mkdir -p "$WORK/c/stray"
 out="$(bash "$WORK/root/checks/verify-knowledge-integrity.sh" "$WORK/b" "$WORK/c" 2>&1)"; rc=$?
 [ "$rc" = 1 ] || fail "integrity with a stray dir: exit $rc, wanted 1 ($out)"
+
+# --- the integrity check and the lines the extractor moved -------------------
+# integrity <name> <expected-exit> <backup> <current>
+integrity() {
+  local out rc
+  out="$(bash "$WORK/root/checks/verify-knowledge-integrity.sh" "$3" "$4" 2>&1)"; rc=$?
+  [ "$rc" = "$2" ] || fail "integrity, $1: exit $rc, wanted $2 ($out)"
+}
+B="$WORK/x-backup"; mkdir -p "$B"
+printf '%s\n' '# Backend Architecture' '## Layout' '- src holds the code' \
+  '3. Never call the store from a handler — source: learnings 2026-01-02 store calls' \
+  > "$B/BACKEND-ARCHITECTURE.md"
+printf '%s\n' '# Store calls' '- Kind: rule' '- Rule: Never call the store from a handler' \
+  '- Source: learnings 2026-01-02 store calls' '- Added: 2026-11-11' > "$WORK/store-calls.md"
+
+# Split: the topic holds the rest, the rule file holds the moved line.
+S="$WORK/x-split"; mkdir -p "$S/backend-architecture" "$S/rules"
+printf '%s\n' '# Backend Architecture' '- layout.md — read for the layout' > "$S/BACKEND-ARCHITECTURE.md"
+printf '%s\n' '## Layout' '- src holds the code' > "$S/backend-architecture/layout.md"
+cp "$WORK/store-calls.md" "$S/rules/"
+integrity "split, line extracted" 0 "$B" "$S"
+rm "$S/rules/store-calls.md"
+integrity "split, line with no rule file" 1 "$B" "$S"
+
+# Unsplit: the file is the backup without the moved line.
+U="$WORK/x-unsplit"; mkdir -p "$U/rules"
+printf '%s\n' '# Backend Architecture' '## Layout' '- src holds the code' > "$U/BACKEND-ARCHITECTURE.md"
+cp "$WORK/store-calls.md" "$U/rules/"
+integrity "unsplit, line extracted" 0 "$B" "$U"
+printf '%s\n' '# Store calls' '- Kind: rule' '- Rule: Never call the store from a page' \
+  '- Source: learnings 2026-01-02 store calls' '- Added: 2026-11-11' > "$U/rules/store-calls.md"
+integrity "unsplit, rule value differs" 1 "$B" "$U"
+
+# CRLF: a backup line and a rule file that both end in CR.
+BC="$WORK/x-crlf-backup"; C="$WORK/x-crlf"; mkdir -p "$BC" "$C/rules"
+printf '# Backend Architecture\r\n- src holds the code\r\n- auth/ — auth — source: user\r\n' > "$BC/BACKEND-ARCHITECTURE.md"
+printf '# Backend Architecture\r\n- src holds the code\r\n' > "$C/BACKEND-ARCHITECTURE.md"
+printf '# auth/\r\n- Kind: critical-zone\r\n- Zone: auth/ — auth\r\n- Source: user\r\n- Added: 2026-11-11\r\n' > "$C/rules/auth.md"
+integrity "CRLF, line extracted" 0 "$BC" "$C"
+rm "$C/rules/auth.md"
+integrity "CRLF, line with no rule file" 1 "$BC" "$C"
 
 if [ "$FAILS" -gt 0 ]; then exit 1; fi
 echo "shape check: ok"
