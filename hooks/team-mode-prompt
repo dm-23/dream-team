@@ -82,8 +82,17 @@ fi
 TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
 if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
    && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]+(stop|status|resume)'; then
+  # Where the knowledge lives is the resolver's answer, run from the project root; when it
+  # fails or is missing the hook falls back to the directory it read before it existed.
+  resolve_dir() { # project|operative FALLBACK -> an absolute directory
+    local d
+    if [ -f "$TEAM_ROOT/tools/knowledge-dir.sh" ]; then
+      d="$(cd "$PROJECT_DIR" 2>/dev/null && bash "$TEAM_ROOT/tools/knowledge-dir.sh" "$1" 2>/dev/null)" || d=""
+    fi
+    if [ -n "${d:-}" ]; then printf "%s" "$PROJECT_DIR/$d"; else printf "%s" "$2"; fi
+  }
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then
-    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
+    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$(resolve_dir operative "$TEAM_ROOT/knowledge")" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
       summary="$(printf '%s\n' "$inbox" | head -1 | sed 's/^learnings inbox: //')"
       summary="$(escape_for_json "$summary")"
@@ -93,7 +102,7 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
     fi
   fi
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" ]; then
-    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
+    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$(resolve_dir project "$TEAM_ROOT/knowledge")" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
       written="$(printf '%s\n' "$scaffold" | sed -n 's/^knowledge: scaffold //p' | head -1)"
       written="$(escape_for_json "$written")"

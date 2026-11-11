@@ -19,7 +19,8 @@
 # or with a marker whose state line reads closed (a run that finished and is
 # collecting feedback), it prints nothing, so a developer's own session and
 # their commands after a run closes are never affected. A command
-# whose whole text equals a Command cell of .claude/knowledge/TOOLCHAIN.md (any
+# whose whole text equals a Command cell of TOOLCHAIN.md in the project knowledge
+# directory (.dream-team/knowledge/, or .claude/knowledge/ before the move; any
 # table; the backticks around the whole cell stripped once) is exempt: the
 # knowledge file is the permission. The match is literal, never a prefix.
 #
@@ -33,7 +34,17 @@ set -uo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 MARKER="${PROJECT_DIR}/.dream-team-tracking/.team-mode"
-TOOLCHAIN="${PROJECT_DIR}/.claude/knowledge/TOOLCHAIN.md"
+TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+
+# TOOLCHAIN.md lives in the project knowledge directory, which the resolver names
+# (run from the project root). Without the resolver the hook reads where it did before.
+resolve_toolchain() {
+  local d=""
+  if [ -f "$TEAM_ROOT/tools/knowledge-dir.sh" ]; then
+    d="$(cd "$PROJECT_DIR" 2>/dev/null && bash "$TEAM_ROOT/tools/knowledge-dir.sh" project 2>/dev/null)" || d=""
+  fi
+  if [ -n "$d" ]; then printf "%s" "$PROJECT_DIR/$d/TOOLCHAIN.md"; else printf "%s" "${PROJECT_DIR}/.claude/knowledge/TOOLCHAIN.md"; fi
+}
 
 payload="$(cat 2>/dev/null || true)"
 
@@ -115,6 +126,7 @@ deny_if "$DISCARD_WHY" "$WORKTREE_RE"   # --staged with --worktree or -W still d
 # The exemption: the whole command equals the second cell of a table row in
 # TOOLCHAIN.md, trimmed, with one pair of backticks around the whole cell
 # removed. An escaped pipe \| inside the cell reads as |.
+TOOLCHAIN="$(resolve_toolchain)"
 if [ -f "$TOOLCHAIN" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%$'\r'}"
