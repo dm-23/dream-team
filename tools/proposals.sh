@@ -30,6 +30,11 @@
 #   each submitted entry gets one appended line, in its own line ending,
 #   through tools/inbox.sh append:
 #     [SUBMITTED YYYY-MM-DD] <new branch> as <target file name>
+#   and each skipped one, whose remark the base holds already:
+#     [SUBMITTED YYYY-MM-DD] <base> as <file name in the base>
+#   A failure while marking undoes the run: every entry is put back from the
+#   snapshot taken before the commit, the new branch is deleted, and the exit
+#   is 2, "nothing was submitted".
 #   Prints a "skipped: <name>: already proposed as <file>" line per skipped
 #   remark, then
 #     proposals: <N> remarks committed as <short sha> on <new branch> (base <base>)
@@ -42,10 +47,14 @@
 #
 # status
 #   For each entry (no name: every entry of the inbox) that carries a
-#   [SUBMITTED line, one line "<file name>\t<state>[\t<reason>]": "in force"
+#   [SUBMITTED line, one line "<name>\t<state>[\t<reason>]", <name> being the
+#   inbox name learnings/<file>.md, as tools/inbox.sh takes it: "in force"
 #   when HEAD's tree holds the target under the proposals dir; "closed" when a
-#   commit reachable from HEAD deleted it, the reason being that commit's
-#   first body line naming the target file, when it has one; else "pending".
+#   commit reachable from HEAD and committed at or after the submission
+#   deleted it, the reason being that commit's first body line naming the
+#   target file as a whole word, when it has one; else "pending". The
+#   submission time is the branch name's YYYYMMDD-HHmmss, local time; for a
+#   line naming the base (a remark proposed already), the start of its date.
 #
 # Never contacts a remote and never pushes: no object is fetched lazily in a
 # partial clone (GIT_NO_LAZY_FETCH, and protocol.allow=never for git older
@@ -53,9 +62,10 @@
 #
 # Exit 0 = done (status: every named entry found). 1 = refused: no such
 # branch, no committed knowledge, an entry missing, not *.md or already
-# submitted; status: a named entry missing. 2 = a bad command, name or
-# argument, no repository, no configured git identity, a branch that exists
-# already, or a failed read or write.
+# submitted, or not writable; status: a named entry missing. 2 = a bad
+# command, name or argument, no repository, no configured git identity, a
+# branch that exists already, or a failed read or write (after the commit:
+# rolled back, nothing submitted).
 set -uo pipefail
 export LC_ALL=C
 export GIT_NO_LAZY_FETCH=1 GIT_TERMINAL_PROMPT=0
@@ -134,7 +144,7 @@ if [ "$cmd" = status ]; then
   fi
   missing=0
   for n in ${NAMES[@]+"${NAMES[@]}"}; do
-    f="$OP/$n"; file="${n#learnings/}"
+    f="$OP/$n"
     if [ ! -f "$f" ]; then
       echo "proposals: $n: missing" >&2
       missing=1
@@ -142,27 +152,63 @@ if [ "$cmd" = status ]; then
     fi
     line="$({ tr -d '\r' < "$f"; } 2>/dev/null | grep -E '^[[:space:]]*(- )?\[SUBMITTED ' | tail -n 1)"
     [ -n "$line" ] || continue
+    line="${line#"${line%%\[*}"}"
     target="${line##* as }"
     target="${target%"${target##*[![:space:]]}"}"
     case "$target" in
-      "$line"|''|*/*|*\\*) printf '%s\tpending\tthe [SUBMITTED line names no target file\n' "$file"; continue ;;
+      "$line"|''|*/*|*\\*) printf '%s\tpending\tthe [SUBMITTED line names no target file\n' "$n"; continue ;;
     esac
     path="$PPATH/$target"
     if rgit cat-file -e "HEAD:$path" 2>/dev/null; then
-      printf '%s\tin force\n' "$file"
+      printf '%s\tin force\n' "$n"
       continue
     fi
-    c="$(rgit log -1 --diff-filter=D --format=%h HEAD -- ":(literal)$path" 2>/dev/null | tr -d '\r')"
+    # The submission time: the new branch's stamp, else the start of the
+    # line's date. A deletion before it was of another remark of that name.
+    since=""
+    rest="${line#\[SUBMITTED }"
+    d="${rest%%\]*}"
+    ref="${rest#*\] }"; ref="${ref% as *}"
+    case "$ref" in
+      knowledge/proposals-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9])
+        s="${ref#knowledge/proposals-}"
+        since="${s:0:4}-${s:4:2}-${s:6:2} ${s:9:2}:${s:11:2}:${s:13:2}" ;;
+      *)
+        case "$d" in
+          [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) since="$d 00:00:00" ;;
+        esac ;;
+    esac
+    if [ -z "$since" ]; then
+      printf '%s\tpending\tthe [SUBMITTED line has no date\n' "$n"
+      continue
+    fi
+    # --full-history: the deletion usually lies on the release branch's side
+    # of a merge whose other parent never held the file, which the default
+    # history simplification would prune.
+    c="$(rgit log -1 --full-history --diff-filter=D --since="$since" --format=%h HEAD -- ":(literal)$path" 2>/dev/null | tr -d '\r')"
     if [ -n "$c" ]; then
-      reason="$(rgit log -1 --format=%b "$c" 2>/dev/null | tr -d '\r' | grep -F -- "$target" | head -n 1)"
+      # The first body line naming the target as a whole word: not inside a
+      # longer file name (a.md in aa.md or a.md.bak).
+      reason="$(rgit log -1 --format=%b "$c" 2>/dev/null | tr -d '\r' | awk -v t="$target" '
+        function namech(c) { return c ~ /[A-Za-z0-9_-]/ }
+        {
+          s = $0; off = 0
+          while ((i = index(s, t)) > 0) {
+            b = (off + i > 1) ? substr($0, off + i - 1, 1) : ""
+            a = substr($0, off + i + length(t), 1)
+            a2 = substr($0, off + i + length(t) + 1, 1)
+            if (!namech(b) && b != "." && !namech(a) && !(a == "." && namech(a2))) { print; exit }
+            off += i; s = substr(s, i + 1)
+          }
+        }')"
       if [ -n "$reason" ]; then
-        printf '%s\tclosed\t%s\n' "$file" "$reason"
+        printf '%s\tclosed\t%s\n' "$n" "$reason"
       else
-        printf '%s\tclosed\n' "$file"
+        printf '%s\tclosed\n' "$n"
       fi
       continue
     fi
-    printf '%s\tpending\n' "$file"
+    printf '%s\tpending\n' "$n"
   done
   exit "$missing"
 fi
@@ -208,6 +254,7 @@ for n in "${NAMES[@]}"; do
   elif [ "${n%.md}" = "$n" ]; then echo "  $n: not an entry (*.md)" >> "$TMP/refused"
   elif [ ! -r "$f" ]; then echo "  $n: unreadable" >> "$TMP/refused"
   elif submitted "$f"; then echo "  $n: submitted already (it carries a [SUBMITTED line)" >> "$TMP/refused"
+  elif [ ! -w "$f" ]; then echo "  $n: not writable (it could not be marked submitted)" >> "$TMP/refused"
   fi
 done
 if [ -s "$TMP/refused" ]; then
@@ -228,7 +275,7 @@ fi
 # --- targets ------------------------------------------------------------------------------
 # Each entry's bytes are read once, into a snapshot that is hashed and
 # committed, so the blob is exactly what was compared.
-: > "$TMP/plan"; : > "$TMP/taken"; : > "$TMP/skipped"
+: > "$TMP/plan"; : > "$TMP/taken"; : > "$TMP/skipped"; : > "$TMP/skipmarks"
 i=0
 for n in "${NAMES[@]}"; do
   i=$((i + 1))
@@ -243,6 +290,7 @@ for n in "${NAMES[@]}"; do
       if [ -z "$have" ]; then target="$cand"; break; fi
       if [ "$have" = "$blob" ]; then
         printf 'skipped: %s: already proposed as %s\n' "$n" "$cand" >> "$TMP/skipped"
+        printf '%s\t%s\t%s\t%s\n' "$i" "$n" "$BASE" "$cand" >> "$TMP/skipmarks"
         break
       fi
     fi
@@ -257,17 +305,55 @@ for n in "${NAMES[@]}"; do
 done
 N="$(wc -l < "$TMP/plan" | tr -d ' ')"
 
-W=""; [ "$DRY" = 1 ] && W="would: "
-while IFS= read -r l; do printf '%s%s\n' "$W" "$l"; done < "$TMP/skipped"
-if [ "$N" -eq 0 ]; then
-  printf '%sproposals: nothing to commit; every remark is already proposed in %s\n' "$W" "$BASE"
-  exit 0
-fi
 PUSH="push: git push -u origin $NEWB"
 PR="pull request: $NEWB → $BRANCH; one commit, only files under $PPATH/"
 if [ "$DRY" = 1 ]; then
-  printf 'would: proposals: %s remarks committed on %s (base %s)\n' "$N" "$NEWB" "$BASE"
-  printf 'would: %s\n' "$PUSH" "$PR"
+  while IFS= read -r l; do printf 'would: %s\n' "$l"; done < "$TMP/skipped"
+  if [ "$N" -eq 0 ]; then
+    printf 'would: proposals: nothing to commit; every remark is already proposed in %s\n' "$BASE"
+  else
+    printf 'would: proposals: %s remarks committed on %s (base %s)\n' "$N" "$NEWB" "$BASE"
+    printf 'would: %s\n' "$PUSH" "$PR"
+  fi
+  exit 0
+fi
+
+TAB="$(printf '\t')"
+COMMIT=""
+# restore <failed name>: puts back every entry marked so far, and the one whose
+# mark failed, from the snapshot taken before the commit; deletes the new
+# branch; exit 2. Nothing is left half submitted.
+restore() {
+  local i n bad=""
+  while IFS="$TAB" read -r i n; do
+    cmp -s "$OP/$n" "$TMP/e$i" 2>/dev/null && continue
+    bash "$TEAM_ROOT/tools/inbox.sh" put "$n" - < "$TMP/e$i" >/dev/null 2>&1
+    cmp -s "$OP/$n" "$TMP/e$i" 2>/dev/null || bad="$bad $n"
+  done < "$TMP/touched"
+  if [ -n "$COMMIT" ]; then
+    rgit update-ref -d "refs/heads/$NEWB" "$COMMIT" >/dev/null 2>&1 || bad="$bad branch:$NEWB"
+  fi
+  [ -z "$bad" ] || die "$1 could not be marked submitted, and the rollback failed for:$bad"
+  die "$1 could not be marked submitted; every entry was put back and no branch was left: nothing was submitted"
+}
+# mark: appends each entry's [SUBMITTED line, in the entry's own line ending.
+mark() {
+  local i n label target eol
+  : > "$TMP/touched"
+  while IFS="$TAB" read -r i n label target; do
+    printf '%s\t%s\n' "$i" "$n" >> "$TMP/touched"
+    if has_crlf "$TMP/e$i"; then eol=$'\r\n'; else eol=$'\n'; fi
+    printf '[SUBMITTED %s] %s as %s%s' "$TODAY" "$label" "$target" "$eol" \
+      | bash "$TEAM_ROOT/tools/inbox.sh" append "$n" - >/dev/null 2>&1 \
+      || restore "$n"
+  done < "$TMP/marks"
+}
+
+if [ "$N" -eq 0 ]; then
+  cp "$TMP/skipmarks" "$TMP/marks"
+  mark
+  cat "$TMP/skipped"
+  printf 'proposals: nothing to commit; every remark is already proposed in %s\n' "$BASE"
   exit 0
 fi
 
@@ -279,7 +365,7 @@ MSG="$TMP/message"
   cut -f4 "$TMP/plan"
 } > "$MSG"
 GIT_INDEX_FILE="$IDX" rgit read-tree "$BASESHA" 2>/dev/null || die "the tree of $BASE could not be read"
-while IFS="$(printf '\t')" read -r i n blob target; do
+while IFS="$TAB" read -r i n blob target; do
   w="$(rgit hash-object -w --no-filters --stdin < "$TMP/e$i" 2>/dev/null | tr -d '\r')"
   [ "$w" = "$blob" ] || die "$n could not be written to the object store"
   GIT_INDEX_FILE="$IDX" rgit update-index --add --cacheinfo "100644,$blob,$PPATH/$target" 2>/dev/null \
@@ -288,26 +374,22 @@ done < "$TMP/plan"
 TREE="$(GIT_INDEX_FILE="$IDX" rgit write-tree 2>/dev/null | tr -d '\r')"
 rm -f "$TMP/index" "$TMP/index.lock"
 [ -n "$TREE" ] || die "the tree could not be written"
-COMMIT="$(rgit commit-tree "$TREE" -p "$BASESHA" -F "$(native "$MSG")" 2>/dev/null | tr -d '\r')"
-[ -n "$COMMIT" ] || die "the commit could not be written (is a git identity configured?)"
+C="$(rgit commit-tree "$TREE" -p "$BASESHA" -F "$(native "$MSG")" 2>/dev/null | tr -d '\r')"
+[ -n "$C" ] || die "the commit could not be written (is a git identity configured?)"
 # An empty old value: the ref is created only when it does not exist yet.
-rgit update-ref -m "proposals: $N remarks" "refs/heads/$NEWB" "$COMMIT" "" 2>/dev/null \
-  || die "the branch $NEWB could not be created (it exists already?); nothing was marked"
+rgit update-ref -m "proposals: $N remarks" "refs/heads/$NEWB" "$C" "" 2>/dev/null \
+  || die "the branch $NEWB could not be created (it exists already?); nothing was submitted"
+COMMIT="$C"
 SHORT="$(rgit rev-parse --short "$COMMIT" 2>/dev/null | tr -d '\r')"
 
 # --- marking the entries ------------------------------------------------------------------
-: > "$TMP/unmarked"
-while IFS="$(printf '\t')" read -r i n blob target; do
-  if has_crlf "$TMP/e$i"; then eol=$'\r\n'; else eol=$'\n'; fi
-  printf '[SUBMITTED %s] %s as %s%s' "$TODAY" "$NEWB" "$target" "$eol" \
-    | bash "$TEAM_ROOT/tools/inbox.sh" append "$n" - >/dev/null 2>&1 \
-    || printf '  %s: [SUBMITTED %s] %s as %s\n' "$n" "$TODAY" "$NEWB" "$target" >> "$TMP/unmarked"
-done < "$TMP/plan"
+# Only now that the branch exists: each committed remark names it, each
+# skipped one names the base that holds it already.
+awk -F'\t' -v b="$NEWB" '{ print $1 "\t" $2 "\t" b "\t" $4 }' "$TMP/plan" > "$TMP/marks"
+cat "$TMP/skipmarks" >> "$TMP/marks"
+mark
 
+cat "$TMP/skipped"
 printf 'proposals: %s remarks committed as %s on %s (base %s)\n' "$N" "$SHORT" "$NEWB" "$BASE"
 printf '%s\n' "$PUSH" "$PR"
-if [ -s "$TMP/unmarked" ]; then
-  { echo "proposals: the branch exists, but these entries could not be marked; append the line to each by hand:"; cat "$TMP/unmarked"; } >&2
-  exit 2
-fi
 exit 0

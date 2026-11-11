@@ -197,8 +197,19 @@ run submit --branch rel learnings/2026-11-04-same.md
 rc 0
 has "already proposed"
 no_branch
-same_entry 2026-11-04-same.md
 [ "$(g rev-parse rel | tr -d '\r')" = "$REL" ] || fail "rel moved"
+# The remark is marked submitted against the base that holds it, so it leaves
+# the inbox once the refresh consumes it.
+{ cat "$P.2026-11-04-same.md.before"; printf '[SUBMITTED %s] refs/heads/rel as 2026-11-04-same.md\n' "$TODAY"; } > "$WORK/want-same"
+cmp -s "$OPD/learnings/2026-11-04-same.md" "$WORK/want-same" || fail "the skipped entry: $(cat "$OPD/learnings/2026-11-04-same.md")"
+run status
+rc 0
+[ "$OUT" = "learnings/2026-11-04-same.md${TAB}pending" ] || fail "status before the merge: [$OUT]"
+g merge -q --no-edit rel
+run status
+[ "$OUT" = "learnings/2026-11-04-same.md${TAB}in force" ] || fail "status after the merge: [$OUT]"
+run submit --branch rel learnings/2026-11-04-same.md
+rc 1; has "submitted already"
 
 # --- (d) refusals change nothing ----------------------------------------------
 case="d: refusals"
@@ -286,30 +297,98 @@ rc 0
 BR="$(new_branch)"
 run status
 rc 0
-[ "$OUT" = "2026-11-07-st.md${TAB}pending" ] || fail "status: [$OUT]"
+[ "$OUT" = "learnings/2026-11-07-st.md${TAB}pending" ] || fail "status: [$OUT]"
 run status learnings/2026-11-07-st.md learnings/2026-11-07-plain.md
 rc 0
-[ "$OUT" = "2026-11-07-st.md${TAB}pending" ] || fail "status with names: [$OUT]"
+[ "$OUT" = "learnings/2026-11-07-st.md${TAB}pending" ] || fail "status with names: [$OUT]"
 
 case="f: status in force"
 g checkout -q rel && g merge -q --no-edit "$BR" && g checkout -q work && g merge -q --no-edit rel
 run status
 rc 0
-[ "$OUT" = "2026-11-07-st.md${TAB}in force" ] || fail "status: [$OUT]"
+[ "$OUT" = "learnings/2026-11-07-st.md${TAB}in force" ] || fail "status: [$OUT]"
 
 case="f: status closed"
 g checkout -q rel
 g rm -q "$PD/2026-11-07-st.md"
-printf 'knowledge: refresh\n\nrejected: 2026-11-07-st.md %s duplicate of rule:x\n' "$EM" > "$WORK/msg"
+# Two lines name the file only inside a longer name; the reason is the third.
+printf 'knowledge: refresh\n\nkept: x2026-11-07-st.md as is\nkept: 2026-11-07-st.md.bak as is\nrejected: 2026-11-07-st.md %s duplicate of rule:x\n' "$EM" > "$WORK/msg"
 g commit -q -F "$WORK/msg"
 g checkout -q work && g merge -q --no-edit rel
 run status
 rc 0
-[ "$OUT" = "2026-11-07-st.md${TAB}closed${TAB}rejected: 2026-11-07-st.md $EM duplicate of rule:x" ] || fail "status: [$OUT]"
+[ "$OUT" = "learnings/2026-11-07-st.md${TAB}closed${TAB}rejected: 2026-11-07-st.md $EM duplicate of rule:x" ] || fail "status: [$OUT]"
 
 case="f: status of a missing entry"
 run status learnings/2026-11-07-gone.md
 rc 1
+
+case="f: an earlier remark of the same name, deleted before the submission"
+new_fixture foxtrot2
+entry 2026-11-08-re.md
+OLD="$(date -d '-2 hours' '+%Y-%m-%d %H:%M:%S')"
+g checkout -q rel
+mkdir -p "$P/$PD"
+printf '## [2026-10-01] an older remark\n' > "$P/$PD/2026-11-08-re.md"
+g add -A && GIT_COMMITTER_DATE="$OLD" GIT_AUTHOR_DATE="$OLD" g commit -q -m "an older proposal"
+g rm -q "$PD/2026-11-08-re.md"
+printf 'knowledge: refresh\n\nconsumed: 2026-11-08-re.md\n' > "$WORK/msg"
+GIT_COMMITTER_DATE="$OLD" GIT_AUTHOR_DATE="$OLD" g commit -q -F "$WORK/msg"
+g checkout -q work && g merge -q --no-edit rel
+run submit --branch rel learnings/2026-11-08-re.md
+rc 0
+BR="$(new_branch)"
+IFS= read -r last < <(tail -n 1 "$OPD/learnings/2026-11-08-re.md")
+[ "$last" = "[SUBMITTED $TODAY] $BR as 2026-11-08-re.md" ] || fail "line '$last'"
+run status
+rc 0
+[ "$OUT" = "learnings/2026-11-08-re.md${TAB}pending" ] || fail "status: [$OUT]"
+
+case="f: closed when the work branch never held the remark"
+# The usual flow: the remark is merged into rel and consumed there before the
+# work branch merges rel, so the work branch's own history never holds it.
+new_fixture foxtrot3
+entry 2026-11-08-never.md
+run submit --branch rel learnings/2026-11-08-never.md
+rc 0
+BR="$(new_branch)"
+g checkout -q rel && g merge -q --no-edit "$BR"
+g rm -q "$PD/2026-11-08-never.md"
+printf 'knowledge: refresh\n\nconsumed: 2026-11-08-never.md into rule:y\n' > "$WORK/msg"
+g commit -q -F "$WORK/msg"
+g checkout -q work && g merge -q --no-edit rel
+run status
+rc 0
+[ "$OUT" = "learnings/2026-11-08-never.md${TAB}closed${TAB}consumed: 2026-11-08-never.md into rule:y" ] || fail "status: [$OUT]"
+
+# --- a failure while marking rolls everything back -----------------------------
+# A team copy whose inbox tool fails the second append after writing a byte.
+case="rollback: the second mark fails"
+STUB="$WORK/team-stub"
+mkdir -p "$STUB"
+cp -R "$TEAM/tools" "$TEAM/team-manifest.json" "$STUB/"
+[ -d "$TEAM/checks" ] && cp -R "$TEAM/checks" "$STUB/"
+mv "$STUB/tools/inbox.sh" "$STUB/tools/inbox-real.sh"
+printf '%s\n' '#!/usr/bin/env bash' \
+  'if [ "$1" = append ] && [ "$2" = learnings/2026-11-09-b.md ]; then' \
+  '  printf x | bash "$(dirname "$0")/inbox-real.sh" append "$2" -' \
+  '  exit 2' \
+  'fi' \
+  'exec bash "$(dirname "$0")/inbox-real.sh" "$@"' > "$STUB/tools/inbox.sh"
+new_fixture hotel
+entry 2026-11-09-a.md
+entry 2026-11-09-b.md
+mkdir -p "$P.tmp"
+(cd "$P" && TMPDIR="$P.tmp" bash "$STUB/tools/proposals.sh" submit --branch rel learnings/2026-11-09-a.md learnings/2026-11-09-b.md) > "$P.out" 2> "$P.err"; RC=$?
+OUT="$(cat "$P.out")"; ERR="$(cat "$P.err")"
+rc 2
+has "nothing was submitted"
+no_branch
+same_entry 2026-11-09-a.md
+same_entry 2026-11-09-b.md
+[ -z "$(ls -A "$P.tmp")" ] || fail "temporary files left behind: $(ls -A "$P.tmp")"
+case "$OUT$ERR" in *"$DREAM_TEAM_PROFILE"*|*"pro file"*) fail "the profile path printed: $OUT $ERR";; esac
+
 
 # --- (g) the proposals budget in the drift report -------------------------------
 case="g: the drift report"
