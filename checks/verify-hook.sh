@@ -138,30 +138,21 @@ if command -v powershell.exe >/dev/null 2>&1; then
 fi
 
 # 10. inbox due: only on a /team <task> prompt, only when the check says so
-inbox_project() { # name LEARNINGS-body [new] -> project path with a team root, a manifest and a knowledge dir; "new": the 5.0.0 layout and the resolver
+inbox_project() { # name [new] -> project path with a team root, a manifest and a knowledge dir; "new": the 5.0.0 layout and the resolver
   local p k o; p="$(project "$1")"
   k=".claude/knowledge"; o="$k"
-  [ "${3:-}" != new ] || { k=".dream-team/knowledge"; o=".dream-team-tracking/operative"; }
+  [ "${2:-}" != new ] || { k=".dream-team/knowledge"; o=".dream-team-tracking/operative"; }
   mkdir -p "$p/$k" "$p/$o/learnings" "$p/.claude/checks" "$p/.claude/hooks"
   cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
   cp "$ROOT/checks/verify-learnings-inbox.sh" "$p/.claude/checks/"
   cp "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
-  [ "${3:-}" != new ] || { mkdir -p "$p/.claude/tools"; cp "$ROOT/tools/knowledge-dir.sh" "$p/.claude/tools/"; }
-  printf '%s\n' "$2" > "$p/$o/LEARNINGS.md"
+  [ "${2:-}" != new ] || { mkdir -p "$p/.claude/tools"; cp "$ROOT/tools/knowledge-dir.sh" "$p/.claude/tools/"; }
   printf '%s' "$p"
 }
 run_deployed() { # CASE PROJECT PROMPT: runs the hook from its deployed place
   OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PROJECT_DIR="$2" bash "$2/.claude/hooks/team-mode-prompt")"; RC=$?
 }
-due_body='# Inbox
-
-## Index
-
-| Date | Title | Tags |
-|------|-------|------|
-| 2026-10-01 | A trap | tag |
-'
-p="$(inbox_project inbox-due "$due_body")"
+p="$(inbox_project inbox-due)"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due "$p" '"/team fix the crash"'
 case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
@@ -171,12 +162,12 @@ run_deployed inbox-due-status "$p" '"/team status"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-status "inbox block on /team status: $OUT" ;; esac
 
 # 11. inbox clean: silence
-p="$(inbox_project inbox-clean "$due_body")"
+p="$(inbox_project inbox-clean)"
 run_deployed inbox-clean "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-clean "expected silence: $OUT"
 
 # 12. inbox check cannot read its limits (old manifest): silence, never a false "due"
-p="$(inbox_project inbox-old "$due_body")"
+p="$(inbox_project inbox-old)"
 sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.claude/team-manifest.json"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-old "$p" '"/team fix the crash"'
@@ -188,23 +179,40 @@ run_deployed inbox-old "$p" '"/team fix the crash"'
 entry='## [2026-10-01] A trap
 - **Tags:** tag
 [PROMOTE] PROJECT-RULES.md — do the thing'
-p="$(inbox_project inbox-due-new "$due_body" new)"
+p="$(inbox_project inbox-due-new new)"
 printf '%s\n' "$entry" > "$p/.dream-team-tracking/operative/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due-new "$p" '"/team fix the crash"'
 case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due-new "expected the inbox block: $OUT" ;; esac
 run_deployed inbox-due-new-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-new-plain "inbox block on a plain prompt: $OUT" ;; esac
-p="$(inbox_project inbox-clean-new "$due_body" new)"
+p="$(inbox_project inbox-clean-new new)"
 run_deployed inbox-clean-new "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-clean-new "expected silence: $OUT"
-p="$(inbox_project "inbox due space" "$due_body" new)"
+p="$(inbox_project "inbox due space" new)"
 printf '%s\n' "$entry" > "$p/.dream-team-tracking/operative/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due-space "$p" '"/team fix the crash"'
 case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*) ;; *) fail inbox-due-space "expected the inbox block in a directory with a space: $OUT" ;; esac
 
+# 12a2. the inbox in the profile: an absolute answer from the resolver (a path with a space)
+profile_inbox() { # name entry-or-empty -> deployed project whose profile dir ($TMP/profile root NAME) holds the inbox
+  local p k; p="$(inbox_project "$1" new)"
+  git -C "$p" init -q 2>/dev/null; git -C "$p" remote add origin "https://example.com/acme/profile-case.git"
+  local PROFILE="$TMP/profile root $1"
+  k="$(cd "$p" && bash "$ROOT/tools/knowledge-dir.sh" key)"
+  mkdir -p "$PROFILE/$k/learnings"
+  [ -z "$2" ] || printf '%s\n' "$2" > "$PROFILE/$k/learnings/2026-10-01-a-trap.md"
+  printf '%s' "$p"
+}
+p="$(profile_inbox inbox-profile-due "$entry")"; PROFILE="$TMP/profile root inbox-profile-due"
+OUT="$(printf '{"prompt":"/team fix the crash"}' | DREAM_TEAM_PROFILE="$PROFILE" CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*) ;; *) fail inbox-profile-due "expected the inbox block from the profile: $OUT" ;; esac
+p="$(profile_inbox inbox-profile-clean "")"; PROFILE="$TMP/profile root inbox-profile-clean"
+OUT="$(printf '{"prompt":"/team fix the crash"}' | DREAM_TEAM_PROFILE="$PROFILE" CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/team-mode-prompt")"
+[ -z "$OUT" ] || fail inbox-profile-clean "expected silence: $OUT"
+
 # 12b. scaffold knowledge on a project that has content: only on a /team <task> prompt, only on exit 1
 scaffold_project() { # name [new] -> deployed project with a clean inbox and a scaffold PROJECT-OVERVIEW.md
-  local p k=.claude/knowledge; p="$(inbox_project "$1" "$due_body" "${2:-}")"; [ "${2:-}" != new ] || k=.dream-team/knowledge
+  local p k=.claude/knowledge; p="$(inbox_project "$1" "${2:-}")"; [ "${2:-}" != new ] || k=.dream-team/knowledge
   cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p/.claude/checks/"
   printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-10-28; nothing here is verified against code. Run /generate-knowledge when the code exists.' > "$p/$k/PROJECT-OVERVIEW.md"
   printf '%s' "$p"

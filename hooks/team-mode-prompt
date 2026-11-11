@@ -89,7 +89,11 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
     if [ -f "$TEAM_ROOT/tools/knowledge-dir.sh" ]; then
       d="$(cd "$PROJECT_DIR" 2>/dev/null && bash "$TEAM_ROOT/tools/knowledge-dir.sh" "$1" 2>/dev/null)" || d=""
     fi
-    if [ -n "${d:-}" ]; then printf "%s" "$PROJECT_DIR/$d"; else printf "%s" "$2"; fi
+    case "${d:-}" in
+      "") printf "%s" "$2" ;;
+      /*|[A-Za-z]:/*|[A-Za-z]:\\*) printf "%s" "$d" ;; # absolute: the profile directory
+      *) printf "%s" "$PROJECT_DIR/$d" ;;
+    esac
   }
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then
     inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$(resolve_dir operative "$TEAM_ROOT/knowledge")" 2>/dev/null)"; rc=$?
