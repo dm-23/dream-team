@@ -8,10 +8,34 @@
 #   bash <team-root>/tools/migrate-knowledge.sh [--dry-run] [--first-commit [--from <dir>] | --drop-legacy]
 #                                                           (from the project root)
 #
-# Every mode moves the operative files first. Then, for the project files:
+# Every mode moves the operative files first. Then the inbox moves from
+# operativeDir into the developer's profile, <profile root>/<key>/, which all
+# working copies of the repository share (the profile root and the key as
+# tools/knowledge-dir.sh computes them):
+#   - profileDir empty, or no remote (no key): the inbox stays per copy.
+#   - <profile>/learnings is created and a probe file written and removed
+#     there; on any failure the directories this step created are removed
+#     and the inbox stays per copy (exit 0).
+#   - LEARNINGS.md, learnings/ and review-exceptions.md are backed up to
+#     operativeDir/inbox-backup-<YYYY-MM-DD-HHmm>/.
+#   - The inline entries of an older LEARNINGS.md (each "## [date] title"
+#     body, cut as checks/verify-knowledge-integrity.sh cuts it) become entry
+#     files in learnings/, byte for byte, named <date>-<slug>.md by the rules
+#     of templates/learnings-entry.md (-2, -3 when taken); LEARNINGS.md then
+#     moves to operativeDir/dropped-index-<YYYY-MM-DD-HHmm>.md. An unclosed
+#     fence or an inline heading without a date keeps the inbox per copy.
+#   - Every learnings/*.md moves into the profile: a name already there with
+#     the same bytes drops the source; with other bytes it moves under the
+#     first free -2, -3 ... suffix.
+#   - review-exceptions.md moves, or, when the profile has one, the lines it
+#     lacks (whole line, CR ignored) are appended and the source removed.
+#   - CAPABILITIES.md, the import stamp, the backups and the
+#     legacy-knowledge-* directories stay in operativeDir.
+# Then, for the project files:
 #   default         the committed copy is tracked in this branch: authored
 #                   lines of the private copy that the committed copy lacks
-#                   become inbox entries, once per edition (a stamp in
+#                   become inbox entries (entry files only, written into the
+#                   inbox as the step above left it), once per edition (a stamp in
 #                   capabilitiesDir records it), and the private copy stays
 #                   for branches without knowledge. Nothing tracked: the
 #                   report says what the first commit still needs.
@@ -24,7 +48,8 @@
 #   --drop-legacy   the committed copy is tracked: authored lines the inbox
 #                   does not hold yet become entries, then the private copy is
 #                   backed up under operativeDir, checked, and removed.
-#   --dry-run       prints what a run would do, prefixed "would:"; writes nothing.
+#   --dry-run       prints what a run would do, prefixed "would:"; writes
+#                   nothing, and creates no profile directory.
 #
 # Every refusal is decided before the first write, so a refused run leaves the
 # tree as it found it. Moves are byte-exact (mv); a moved file is never
@@ -96,7 +121,9 @@ STAMP="$CAPS/.legacy-rules-imported"
 STAGE="$DIR.migrating"
 SRCREC="$STAGE/.migrate-source"
 TODAY="$(date +%Y-%m-%d)"
+NOW="$(date +%Y-%m-%d-%H%M)"
 TAB="$(printf '\t')"
+CR=$'\r'
 COMMIT_LINE="project: moved to $DIR: run /generate-knowledge, then commit it alone, one commit and one pull request, no other file"
 
 # --- 1. refusals ---------------------------------------------------------
@@ -178,6 +205,136 @@ fi
 nmoves="$(wc -l < "$TMP/moves" | tr -d ' ')"
 if [ "$nmoves" -gt 0 ]; then ops_line="operative: moved $nmoves entries to $OPS"; else ops_line="operative: nothing to move"; fi
 
+# --- 2b. the profile, planned --------------------------------------------------
+# The profile directory: <profile root>/<key>, by the resolver's rule
+# (tools/knowledge-dir.sh): $DREAM_TEAM_PROFILE, else profileDir with a
+# leading ~ replaced by $HOME; shown through cygpath -m where it exists.
+PROFILE_CFG="$(value_in knowledge profileDir)"
+PDIR="" PSHOW="" KEY="" prof_reason="" pidle=0
+if [ -z "$PROFILE_CFG" ]; then
+  prof_reason="profile disabled"
+elif ! KEY="$(bash "$TEAM_ROOT/tools/knowledge-dir.sh" key 2>/dev/null)" || [ -z "$KEY" ]; then
+  KEY=""; prof_reason="no remote"
+else
+  PROOT="${DREAM_TEAM_PROFILE:-}"
+  [ -n "$PROOT" ] || case "$PROFILE_CFG" in "~"|"~/"*) PROOT="${HOME:-}${PROFILE_CFG#\~}" ;; *) PROOT="$PROFILE_CFG" ;; esac
+  if [ -n "$PROOT" ]; then PDIR="${PROOT%/}/$KEY"; else prof_reason="profile not writable"; fi
+fi
+PSHOW="$PDIR"
+if [ -n "$PDIR" ] && command -v cygpath >/dev/null 2>&1; then PSHOW="$(cygpath -m "$PDIR")"; fi
+
+slug() { # the slug of an entry title (templates/learnings-entry.md)
+  printf '%s' "$1" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C sed 's/[^a-z0-9][^a-z0-9]*/-/g; s/^-//; s/-$//' | cut -c1-60 | sed 's/-$//'
+}
+lookup() { # <file> <name>: the path recorded for <name> in a name<TAB>path file
+  LC_ALL=C awk -F'\t' -v n="$2" '$1 == n { print $2; exit }' "$1"
+}
+
+# profile_plan pending|now: what the step does to the inbox in operativeDir,
+# as it is now or as the operative part above leaves it (pending). Fills
+# $TMP/lifts (split entry, name), $TMP/pmoves (name, name in the profile or
+# empty when the profile holds the same bytes); sets PIDX, PL, PN, PM, PS,
+# PEXC and pidle, or prof_reason when the inbox has to stay per copy.
+profile_plan() {
+  local f src dst h d edate etitle base i cand other nm stem nonl
+  : > "$TMP/inbox"
+  if [ -d "$OPS/learnings" ]; then
+    for f in "$OPS/learnings"/*.md; do
+      [ ! -f "$f" ] || printf '%s\t%s\n' "${f##*/}" "$f" >> "$TMP/inbox"
+    done
+  fi
+  PIDX=""; [ ! -f "$OPS/LEARNINGS.md" ] || PIDX="$OPS/LEARNINGS.md"
+  if [ "$1" = pending ]; then
+    while IFS="$TAB" read -r src dst; do
+      case "$dst" in
+        "$OPS/LEARNINGS.md") PIDX="$src" ;;
+        "$OPS/learnings/"*.md) [ ! -f "$src" ] || printf '%s\t%s\n' "${dst##*/}" "$src" >> "$TMP/inbox" ;;
+      esac
+    done < "$TMP/moves"
+  fi
+  PEXC=0; [ ! -f "$OPS/review-exceptions.md" ] || PEXC=1
+
+  # Step 4, the lift: split_entries of checks/verify-knowledge-integrity.sh,
+  # writing every line as read, so CRs and a missing last newline survive
+  # (BINMODE=3: gawk on Windows otherwise drops the CR of a CRLF line).
+  : > "$TMP/lifts"; PL=0
+  cp "$TMP/inbox" "$TMP/taken"
+  rm -rf "$TMP/split"; mkdir -p "$TMP/split"
+  if [ -n "$PIDX" ]; then
+    nonl=0; [ ! -s "$PIDX" ] || [ "$(tail -c 1 "$PIDX" | wc -l | tr -d ' ')" != 0 ] || nonl=1
+    LC_ALL=C awk -v BINMODE=3 -v out="$TMP/split" -v nonl="$nonl" '
+      { if (have) printf "%s\n", pl > pf; have = 0 }
+      /^```/                 { fence = !fence }
+      !fence && /^## \[/     { if (f != "") close(f); n++; f = sprintf("%s/entry-%04d", out, n) }
+      n > 0                  { pl = $0; pf = f; have = 1 }
+      END                    { if (have) printf "%s%s", pl, (nonl ? "" : "\n") > pf; if (fence) exit 2 }
+    ' "$PIDX"
+    case $? in
+      0) ;;
+      2) prof_reason="LEARNINGS.md ends inside a fenced block; balance its fences and run again"; return ;;
+      *) echo "migrate-knowledge: could not read $PIDX" >&2; exit 2 ;;
+    esac
+    for f in "$TMP/split"/entry-*; do
+      [ -f "$f" ] || continue
+      h=""; IFS= read -r h < "$f"; h="${h%"$CR"}"
+      d="${h#"## ["}"; edate="${d%%"]"*}"; etitle="${d#*"]"}"; etitle="${etitle# }"
+      case "$edate" in
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+        *) prof_reason="an inline entry of LEARNINGS.md has no date in its heading ($h); fix the heading and run again"; return ;;
+      esac
+      base="$edate-$(slug "$etitle")"; i=1
+      while :; do
+        if [ "$i" = 1 ]; then cand="$base.md"; else cand="$base-$i.md"; fi
+        other="$(lookup "$TMP/taken" "$cand")"
+        if [ -z "$other" ]; then
+          printf '%s\t%s\n' "$cand" "$f" >> "$TMP/taken"; printf '%s\t%s\n' "$f" "$cand" >> "$TMP/lifts"
+          PL=$((PL + 1)); break
+        elif cmp -s "$f" "$other"; then
+          break   # the entry file already holds it
+        fi
+        i=$((i + 1))
+      done
+    done
+  fi
+
+  # Step 5, into the profile: the same name with the same bytes is already
+  # there; other bytes move under the first free suffix.
+  : > "$TMP/pmoves"; : > "$TMP/claimed"; PN=0 PM=0 PS=0
+  LC_ALL=C sort "$TMP/taken" > "$TMP/taken.sorted"
+  while IFS="$TAB" read -r nm src; do
+    stem="${nm%.md}"; i=1
+    while :; do
+      if [ "$i" = 1 ]; then cand="$nm"; else cand="$stem-$i.md"; fi
+      if [ -e "$PDIR/learnings/$cand" ]; then other="$PDIR/learnings/$cand"; else other="$(lookup "$TMP/claimed" "$cand")"; fi
+      if [ -z "$other" ]; then
+        printf '%s\t%s\n' "$cand" "$src" >> "$TMP/claimed"; printf '%s\t%s\n' "$nm" "$cand" >> "$TMP/pmoves"
+        if [ "$i" = 1 ]; then PN=$((PN + 1)); else PS=$((PS + 1)); fi
+        break
+      elif cmp -s "$src" "$other"; then
+        printf '%s\t\n' "$nm" >> "$TMP/pmoves"; PM=$((PM + 1)); break
+      fi
+      i=$((i + 1))
+    done
+  done < "$TMP/taken.sorted"
+
+  if [ -e "$PDIR/review-exceptions.md" ] && [ ! -f "$PDIR/review-exceptions.md" ]; then
+    prof_reason="profile not writable"; return
+  fi
+  pidle=0
+  [ -n "$PIDX" ] || [ -s "$TMP/taken" ] || [ "$PEXC" = 1 ] || pidle=1
+}
+prof_line_now() {
+  if [ -n "$prof_reason" ]; then
+    prof_line="operative: per-copy $OPS ($prof_reason)"
+  elif [ "$pidle" = 1 ]; then
+    prof_line="operative: $PSHOW (key $KEY): in place"
+  else
+    prof_line="operative: $PSHOW (key $KEY): moved $PN entries, $PM already there, $PS renamed, $PL lifted from LEARNINGS.md"
+  fi
+}
+[ -n "$prof_reason" ] || profile_plan pending
+prof_line_now
+
 # --- 3. the project part, planned --------------------------------------------
 tracked=0
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -213,11 +370,12 @@ plan_import() {
     { t = index($0, "\t"); line = substr($0, t + 1)
       if (!(line in c) && !(line in seen)) { seen[line] = 1; print } }' "$TMP/committed" "$TMP/cand" > "$TMP/kept"
 
-  # The inbox as it will be after the operative move: its marks (resolved ones
-  # count as present) with the entry file holding each, and an older index
-  # file when one is still there, read only for the numbering below.
+  # The inbox as it will be after the operative move and the profile step
+  # (the profile's entries included): its marks (resolved ones count as
+  # present) with the entry file holding each, and an older index file when
+  # one is still there, read only for the numbering below.
   : > "$TMP/marks"
-  for d in "$OPS/learnings" "$LEGACY/learnings"; do
+  for d in "$OPS/learnings" "$LEGACY/learnings" ${PDIR:+"$PDIR/learnings"}; do
     [ -d "$d" ] || continue
     for f in "$d"/*.md; do
       [ -f "$f" ] || continue
@@ -231,7 +389,7 @@ plan_import() {
   : > "$TMP/index"; [ -z "$IDXSRC" ] || tr -d '\r' < "$IDXSRC" > "$TMP/index"
   # Numbering continues after the highest Migrated rule already present.
   n="$({
-    for d in "$OPS/learnings" "$LEGACY/learnings"; do
+    for d in "$OPS/learnings" "$LEGACY/learnings" ${PDIR:+"$PDIR/learnings"}; do
       [ -d "$d" ] && find "$d" -mindepth 1 -maxdepth 1 -name '*-migrated-rule-*' | sed -n 's/.*-migrated-rule-\([0-9][0-9]*\)[^/]*$/\1/p'
     done
     sed -n 's/^|[^|]*| *Migrated rule \([0-9][0-9]*\) *|.*/\1/p' "$TMP/index"
@@ -389,6 +547,7 @@ esac
 # --- dry run ------------------------------------------------------------------
 if [ "$dry" = 1 ]; then
   echo "would: $ops_line"
+  echo "would: $prof_line"
   echo "would: $proj_line"
   [ -z "$note_line" ] || echo "would: $note_line"
   exit 0
@@ -406,12 +565,82 @@ done < "$TMP/moves"
 [ ! -f "$DIR/${SRCREC##*/}" ] || rm -f -- "$DIR/${SRCREC##*/}"
 echo "$ops_line"
 
-# write_import: the planned entries, one file each; no index row.
+# --- 4b. the profile ------------------------------------------------------------
+# INBOX: where the inbox is once this step is done, and where the import
+# below writes.
+INBOX="$OPS"
+werr() { echo "migrate-knowledge: could not $1 (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
+profile_act() {
+  local p np probe nm dst f IB DI
+  # The probe; on failure the directories this step created go again, deepest first.
+  : > "$TMP/created"; p="$PDIR/learnings"
+  while [ ! -e "$p" ] && [ ! -L "$p" ]; do
+    printf '%s\n' "$p" >> "$TMP/created"
+    np="$(dirname "$p")"; [ "$np" != "$p" ] || break; p="$np"
+  done
+  probe="$PDIR/learnings/.write-probe-$$"
+  if ! { mkdir -p "$PDIR/learnings" && : > "$probe" && rm -f -- "$probe" && [ ! -e "$probe" ]; } 2>/dev/null; then
+    rm -f -- "$probe" 2>/dev/null
+    while IFS= read -r p; do rmdir -- "$p" 2>/dev/null; done < "$TMP/created"
+    prof_reason="profile not writable"; prof_line_now; return
+  fi
+  profile_plan now
+  prof_line_now
+  [ -z "$prof_reason" ] || return
+  INBOX="$PDIR"
+  [ "$pidle" = 0 ] || return
+
+  # Step 3, the backup.
+  IB="$OPS/inbox-backup-$NOW"; [ ! -e "$IB" ] || IB="$IB-$$"
+  mkdir -p "$IB" || werr "create $IB/"
+  for nm in LEARNINGS.md learnings review-exceptions.md; do
+    [ -e "$OPS/$nm" ] || continue
+    { cp -Rp "$OPS/$nm" "$IB/$nm" && diff -r "$OPS/$nm" "$IB/$nm" >/dev/null 2>&1; } || werr "back up $OPS/$nm to $IB/; nothing was moved"
+  done
+  # Step 4, the lift, then the index file goes.
+  while IFS="$TAB" read -r f nm; do
+    { mkdir -p "$OPS/learnings" && cp -- "$f" "$OPS/learnings/$nm"; } || werr "write $OPS/learnings/$nm"
+  done < "$TMP/lifts"
+  if [ -n "$PIDX" ]; then
+    DI="$OPS/dropped-index-$NOW.md"; [ ! -e "$DI" ] || DI="$OPS/dropped-index-$NOW-$$.md"
+    mv -- "$OPS/LEARNINGS.md" "$DI" || werr "move $OPS/LEARNINGS.md to $DI"
+  fi
+  # Step 5, the entry files.
+  while IFS="$TAB" read -r nm dst; do
+    if [ -n "$dst" ]; then
+      mv -- "$OPS/learnings/$nm" "$PDIR/learnings/$dst" || werr "move $OPS/learnings/$nm to $PSHOW/learnings/$dst"
+    else
+      rm -f -- "$OPS/learnings/$nm" || werr "remove $OPS/learnings/$nm (the profile holds the same bytes)"
+    fi
+  done < "$TMP/pmoves"
+  [ ! -d "$OPS/learnings" ] || rmdir "$OPS/learnings" 2>/dev/null
+  # Step 6, review-exceptions.md.
+  if [ "$PEXC" = 1 ]; then
+    f="$PDIR/review-exceptions.md"
+    if [ ! -e "$f" ]; then
+      mv -- "$OPS/review-exceptions.md" "$f" || werr "move $OPS/review-exceptions.md to $PSHOW/"
+    else
+      LC_ALL=C awk -v BINMODE=3 '
+        FILENAME == ARGV[1] { k = $0; sub(/\r$/, "", k); h[k] = 1; next }
+        { k = $0; sub(/\r$/, "", k); if (!(k in h)) { h[k] = 1; print } }' "$f" "$OPS/review-exceptions.md" > "$TMP/exc.add" \
+        || werr "read $OPS/review-exceptions.md"
+      if [ -s "$TMP/exc.add" ]; then
+        if [ -s "$f" ] && [ "$(tail -c 1 "$f" | wc -l | tr -d ' ')" = 0 ]; then printf '\n' >> "$f" || werr "append to $PSHOW/review-exceptions.md"; fi
+        cat "$TMP/exc.add" >> "$f" || werr "append to $PSHOW/review-exceptions.md"
+      fi
+      rm -f -- "$OPS/review-exceptions.md" || werr "remove $OPS/review-exceptions.md"
+    fi
+  fi
+}
+if [ -z "$prof_reason" ]; then profile_act; fi
+echo "$prof_line"
+
+# write_import: the planned entries, one file each into the inbox; no index row.
 write_import() {
   local n rel line mark entry
   while IFS="$TAB" read -r n rel line mark; do
-    mkdir -p "$OPS/learnings" || exit 2
-    entry="$OPS/learnings/$TODAY-migrated-rule-$n.md"
+    mkdir -p "$INBOX/learnings" || exit 2
+    entry="$INBOX/learnings/$TODAY-migrated-rule-$n.md"
     {
       printf '## [%s] Migrated rule %s\n' "$TODAY" "$n"
       printf -- '- **Symptom:** the private knowledge copy (%s/%s) holds an authored line the committed copy (%s/) lacks: %s\n' "$LEGACY" "$rel" "$DIR" "$line"

@@ -4,7 +4,10 @@
 # moving out, the project files waiting or moving to the committed directory,
 # authored lines of a private copy kept as inbox entries, the refusals and
 # that a refusal changes nothing, dry run, reruns, dropping the private copy,
-# and what the resolver prints afterwards.
+# what the resolver prints afterwards, and the inbox moving into the profile
+# (DREAM_TEAM_PROFILE in the temporary directory, never the real one): entries
+# lifted out of an old LEARNINGS.md, two copies of one repository, the
+# fallbacks that keep the inbox per copy.
 #
 #   bash checks/verify-migrate-knowledge.sh    (run from anywhere)
 #
@@ -17,6 +20,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT="$ROOT/tools/migrate-knowledge.sh"
 tmp="$(mktemp -d)" || exit 1
 trap 'rm -rf "$tmp"' EXIT
+# Never the real profile.
+export DREAM_TEAM_PROFILE="$tmp/profile"
 status=0
 case=""
 fail() { echo "FAIL [$case]: $*" >&2; status=1; }
@@ -105,6 +110,7 @@ done
 [ ! -e "$P/$NEW" ] || fail "$NEW was created"
 has "$tmp/out" "operative: moved 3 entries to $OPS"
 has "$tmp/out" "project: waiting for $NEW in the repository; the first knowledge commit is made with --first-commit"
+has "$tmp/out" "operative: per-copy $OPS (no remote)"
 [ ! -e "$P/$CAPS/.legacy-rules-imported" ] || fail "stamp written while nothing is tracked"
 
 # --- (i) dry run on (a) -----------------------------------------------------
@@ -532,6 +538,222 @@ before="$(snap "$P")"; run --first-commit
 expect_rc 1
 has "$tmp/err" "PROJECT-OVERVIEW.md"
 [ "$before" = "$(snap "$P")" ] || fail "a refused resume changed files"
+
+# --- the profile: the inbox moves to <profile root>/<key>/ -------------------------
+# The fixtures above have no remote, so their inbox stays per copy; these set one.
+PROOT="$DREAM_TEAM_PROFILE"
+with_remote() { (cd "$P" && git remote add origin "$1"); }
+key_of() { (cd "$P" && bash .claude/tools/knowledge-dir.sh key); }
+# ops_inbox <name>: a per-copy operative dir as phase 1 left it: an old index
+# of two rows, two entry files, the capabilities file; a copy in $tmp/<name>.ops.
+ops_inbox() {
+  mkdir -p "$P/$OPS/learnings" "$P/$CAPS"
+  printf '# Dream Team Learnings Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n| 2026-10-01 | A | a |\n| 2026-10-02 | B | b |\n' > "$P/$OPS/LEARNINGS.md"
+  printf '## [2026-10-01] A\n- **Tags:** a\n' > "$P/$OPS/learnings/a.md"
+  printf '## [2026-10-02] B\n- **Tags:** b\n' > "$P/$OPS/learnings/b.md"
+  printf '# Capabilities\n\n- shell: bash\n' > "$P/$CAPS/CAPABILITIES.md"
+  rm -rf "$tmp/$1.ops"; cp -R "$P/$OPS" "$tmp/$1.ops"
+}
+inbox_backup() { ls -d "$P/$OPS"/inbox-backup-* 2>/dev/null | head -1; }
+
+case="pm: the inbox moves to the profile"
+new_project pm
+with_remote "https://example.invalid/team/shared.git"
+ops_inbox pm
+K="$(key_of)"; PD="$PROOT/$K"
+[ -n "$K" ] || fail "no key"
+run
+expect_rc 0
+same "$tmp/pm.ops/learnings/a.md" "$PD/learnings/a.md"
+same "$tmp/pm.ops/learnings/b.md" "$PD/learnings/b.md"
+[ ! -e "$P/$OPS/LEARNINGS.md" ] || fail "LEARNINGS.md is still per copy"
+di="$(ls "$P/$OPS"/dropped-index-*.md 2>/dev/null | head -1)"
+if [ -n "$di" ]; then same "$tmp/pm.ops/LEARNINGS.md" "$di"; else fail "no dropped-index file: $(ls "$P/$OPS")"; fi
+same "$tmp/pm.ops/claude/CAPABILITIES.md" "$P/$CAPS/CAPABILITIES.md"
+[ -z "$(ls -A "$P/$OPS/learnings" 2>/dev/null)" ] || fail "entries left per copy: $(ls "$P/$OPS/learnings")"
+[ ! -e "$PD/LEARNINGS.md" ] || fail "an index file in the profile"
+has "$tmp/out" "(key $K): moved 2 entries, 0 already there, 0 renamed, 0 lifted from LEARNINGS.md"
+bk="$(inbox_backup)"
+[ -n "$bk" ] && [ -f "$bk/learnings/a.md" ] && [ -f "$bk/LEARNINGS.md" ] || fail "no inbox backup: $(ls "$P/$OPS")"
+out="$(cd "$P" && bash .claude/tools/knowledge-dir.sh operative)"
+case "$out" in *"/$K") ;; *) fail "resolver printed '$out', expected the profile directory" ;; esac
+
+case="pn: a second copy of the same repository"
+new_project pn
+with_remote "https://example.invalid/team/shared.git"
+mkdir -p "$P/$OPS/learnings"
+printf '## [2026-10-01] A\n- **Tags:** other\n' > "$P/$OPS/learnings/a.md"
+printf '## [2026-10-02] B\n- **Tags:** b\n' > "$P/$OPS/learnings/b.md"
+cp "$P/$OPS/learnings/a.md" "$tmp/pn.a"
+[ "$(key_of)" = "$K" ] || fail "the second copy has another key"
+run
+expect_rc 0
+same "$tmp/pm.ops/learnings/a.md" "$PD/learnings/a.md"
+same "$tmp/pn.a" "$PD/learnings/a-2.md"
+[ "$(ls "$PD/learnings" | LC_ALL=C sort | tr '\n' ' ')" = "a-2.md a.md b.md " ] || fail "the profile holds: $(ls "$PD/learnings")"
+has "$tmp/out" "(key $K): moved 0 entries, 1 already there, 1 renamed, 0 lifted from LEARNINGS.md"
+case="pn: second run"
+before="$(snap "$P")$(snap "$PD")"; run
+expect_rc 0
+has "$tmp/out" "(key $K): in place"
+[ "$before" = "$(snap "$P")$(snap "$PD")" ] || fail "a second run changed files"
+
+case="po: no remote"
+new_project po
+ops_inbox po
+before="$(snap "$P/$OPS")"; pbefore="$(ls -A "$PROOT" 2>/dev/null)"
+run
+expect_rc 0
+has "$tmp/out" "operative: per-copy $OPS (no remote)"
+[ "$before" = "$(snap "$P/$OPS")" ] || fail "per-copy files changed"
+[ "$pbefore" = "$(ls -A "$PROOT" 2>/dev/null)" ] || fail "the profile root changed"
+
+case="pp: the profile cannot be created"
+new_project pp
+with_remote "https://example.invalid/team/pp.git"
+ops_inbox pp
+printf 'a file\n' > "$tmp/pfile"
+before="$(snap "$P/$OPS")"
+(cd "$P" && DREAM_TEAM_PROFILE="$tmp/pfile/profile" bash .claude/tools/migrate-knowledge.sh) > "$tmp/out" 2> "$tmp/err"; rc=$?
+expect_rc 0
+has "$tmp/out" "operative: per-copy $OPS (profile not writable)"
+[ "$before" = "$(snap "$P/$OPS")" ] || fail "per-copy files changed"
+
+case="pp: the directories are made, then the step fails"
+# A stub mkdir that makes the directories and then reports failure: the step
+# removes what it created, and only that.
+mkdir -p "$tmp/stub2" "$tmp/proot2"
+cat > "$tmp/stub2/mkdir" <<'STUB'
+#!/usr/bin/env bash
+/usr/bin/env -i PATH="$REAL_PATH" mkdir "$@" || exit $?
+for a in "$@"; do case "$a" in *"$FAIL_ON") exit 1 ;; esac; done
+exit 0
+STUB
+chmod +x "$tmp/stub2/mkdir"
+(cd "$P" && DREAM_TEAM_PROFILE="$tmp/proot2/deep" REAL_PATH="$PATH" FAIL_ON="/learnings" PATH="$tmp/stub2:$PATH" \
+  bash .claude/tools/migrate-knowledge.sh) > "$tmp/out" 2> "$tmp/err"; rc=$?
+expect_rc 0
+has "$tmp/out" "operative: per-copy $OPS (profile not writable)"
+[ -d "$tmp/proot2" ] || fail "a directory the step did not create was removed"
+[ ! -e "$tmp/proot2/deep" ] || fail "the step left what it created: $(find "$tmp/proot2" 2>&1)"
+[ "$before" = "$(snap "$P/$OPS")" ] || fail "per-copy files changed"
+
+case="pq: inline entries are lifted"
+new_project pq
+with_remote "https://example.invalid/team/pq.git"
+mkdir -p "$P/$OPS"
+{ printf '# Dream Team Learnings Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n| 2026-10-02 | Lifted One | x |\n| 2026-10-03 | Lifted: Two! | y |\n\n'
+  printf '## [2026-10-02] Lifted One\n- **Tags:** x\n\n'
+  printf '## [2026-10-03] Lifted: Two!\r\n- **Tags:** y\r\n\r\n'
+  printf '## [2026-10-02] Lifted One\n- **Tags:** z\n'; } > "$P/$OPS/LEARNINGS.md"
+cp "$P/$OPS/LEARNINGS.md" "$tmp/pq.index"
+K="$(key_of)"; PD="$PROOT/$K"
+run
+expect_rc 0
+has "$tmp/out" "(key $K): moved 3 entries, 0 already there, 0 renamed, 3 lifted from LEARNINGS.md"
+printf '## [2026-10-02] Lifted One\n- **Tags:** x\n\n' > "$tmp/pq.1"
+printf '## [2026-10-03] Lifted: Two!\r\n- **Tags:** y\r\n\r\n' > "$tmp/pq.2"
+printf '## [2026-10-02] Lifted One\n- **Tags:** z\n' > "$tmp/pq.3"
+same "$tmp/pq.1" "$PD/learnings/2026-10-02-lifted-one.md"
+same "$tmp/pq.2" "$PD/learnings/2026-10-03-lifted-two.md"
+same "$tmp/pq.3" "$PD/learnings/2026-10-02-lifted-one-2.md"
+di="$(ls "$P/$OPS"/dropped-index-*.md 2>/dev/null | head -1)"
+if [ -n "$di" ]; then same "$tmp/pq.index" "$di"; else fail "no dropped-index file: $(ls "$P/$OPS")"; fi
+bk="$(inbox_backup)"
+if [ -n "$bk" ]; then
+  (cd "$P" && bash .claude/checks/verify-knowledge-integrity.sh "$bk" "$PD" inbox) > "$tmp/integ" 2>&1 \
+    || fail "integrity check: $(head -c 600 "$tmp/integ")"
+else
+  fail "no inbox backup: $(ls "$P/$OPS")"
+fi
+
+case="pr: review exceptions on both sides"
+new_project pr
+with_remote "https://example.invalid/team/pr.git"
+K="$(key_of)"; PD="$PROOT/$K"
+mkdir -p "$P/$OPS" "$PD"
+printf -- '- only in the profile\n- in both\n' > "$PD/review-exceptions.md"
+printf -- '- in both\r\n- only per copy\r\n' > "$P/$OPS/review-exceptions.md"
+run
+expect_rc 0
+[ ! -e "$P/$OPS/review-exceptions.md" ] || fail "the per-copy file is still there"
+tr -d '\r' < "$PD/review-exceptions.md" | LC_ALL=C sort > "$tmp/exc"
+printf -- '- in both\n- only in the profile\n- only per copy\n' > "$tmp/exc.want"
+same "$tmp/exc.want" "$tmp/exc"
+
+case="ps: dry run on (pm)"
+new_project ps
+with_remote "https://example.invalid/team/ps.git"
+ops_inbox ps
+K="$(key_of)"; PD="$PROOT/$K"
+before="$(snap "$P")"; run --dry-run
+expect_rc 0
+has "$tmp/out" "would: operative: "
+has "$tmp/out" "(key $K): moved 2 entries, 0 already there, 0 renamed, 0 lifted from LEARNINGS.md"
+[ ! -e "$PD" ] || fail "a dry run created the profile directory"
+[ "$before" = "$(snap "$P")" ] || fail "a dry run changed files"
+
+case="ps: dry run with the legacy operative files still to move"
+new_project ps2 operative
+with_remote "https://example.invalid/team/ps2.git"
+K="$(key_of)"; PD="$PROOT/$K"
+run --dry-run
+expect_rc 0
+grep '^would: operative: .*(key ' "$tmp/out" | sed 's/^would: //' > "$tmp/ps2.dry"
+[ ! -e "$PD" ] || fail "a dry run created the profile directory"
+run
+expect_rc 0
+grep '^operative: .*(key ' "$tmp/out" > "$tmp/ps2.real"
+same "$tmp/ps2.dry" "$tmp/ps2.real"
+has "$tmp/ps2.real" "(key $K): moved 1 entries, 0 already there, 0 renamed, 0 lifted from LEARNINGS.md"
+same "$tmp/ps2.orig/learnings/a.md" "$PD/learnings/a.md"
+
+case="pt: authored lines land in the profile"
+new_project pt
+with_remote "https://example.invalid/team/pt.git"
+mkdir -p "$P/$NEW"
+printf '# Project Rules\n\n- Keep the build green.\n' > "$P/$NEW/PROJECT-RULES.md"
+commit_knowledge
+{ printf '# Project Rules\n\n- Keep the build green.\n'
+  printf -- '- Always X %s source: user\n' "$EM"
+  printf -- '- Never Y %s source: learnings 2026-10-01 Foo\n' "$EM"; } > "$P/$OLD/PROJECT-RULES.md"
+K="$(key_of)"; PD="$PROOT/$K"
+run
+expect_rc 0
+has "$tmp/out" "(2 authored lines kept as inbox entries)"
+[ -f "$PD/learnings/$TODAY-migrated-rule-1.md" ] && [ -f "$PD/learnings/$TODAY-migrated-rule-2.md" ] \
+  || fail "entries not in the profile: $(ls "$PD/learnings" 2>&1)"
+[ -z "$(ls -A "$P/$OPS/learnings" 2>/dev/null)" ] || fail "entries left per copy: $(ls "$P/$OPS/learnings")"
+[ -z "$(find "$P/$OPS" "$P/$OLD" "$P/$NEW" "$PD" -name LEARNINGS.md 2>/dev/null)" ] || fail "a LEARNINGS.md was created"
+case="pt: drop legacy, the marks are in the profile"
+printf -- '- Third Z %s source: user\n' "$EM" >> "$P/$OLD/PROJECT-RULES.md"
+run --drop-legacy
+expect_rc 0
+has "$tmp/out" "; 1 authored lines kept as inbox entries)"
+[ "$(ls "$PD/learnings" | grep -c -e '-migrated-rule-')" = 3 ] || fail "expected exactly 3 entries: $(ls "$PD/learnings")"
+[ -f "$PD/learnings/$TODAY-migrated-rule-3.md" ] || fail "the third entry is not numbered 3: $(ls "$PD/learnings")"
+
+case="pu: an open run"
+new_project pu
+with_remote "https://example.invalid/team/pu.git"
+ops_inbox pu
+K="$(key_of)"; PD="$PROOT/$K"
+mkdir -p "$P/.dream-team-tracking"; printf 'context_id=bugfix_x_2026-10-01\nstate=open\n' > "$P/.dream-team-tracking/.team-mode"
+before="$(snap "$P")"; run
+expect_rc 1
+[ "$before" = "$(snap "$P")" ] || fail "a refused run changed files"
+[ ! -e "$PD" ] || fail "a refused run created the profile directory"
+
+case="pv: profile disabled"
+new_project pv
+with_remote "https://example.invalid/team/pv.git"
+ops_inbox pv
+sed -i 's|"profileDir": "~/.dream-team"|"profileDir": ""|' "$P/.claude/team-manifest.json"
+grep -qF '"profileDir": ""' "$P/.claude/team-manifest.json" || fail "the fixture did not empty profileDir"
+before="$(snap "$P/$OPS")"; run
+expect_rc 0
+has "$tmp/out" "operative: per-copy $OPS (profile disabled)"
+[ "$before" = "$(snap "$P/$OPS")" ] || fail "per-copy files changed"
 
 # --- arguments, outside git, source guards -----------------------------------------
 case="usage"
