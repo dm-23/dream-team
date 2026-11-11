@@ -39,8 +39,8 @@
 set -uo pipefail
 export LC_ALL=C
 
-current="${1:?usage: verify-learnings-inbox.sh <knowledge-dir>}"
-[ -d "$current" ] || { echo "FAIL: knowledge dir not found: $current" >&2; exit 2; }
+current="${1:?usage: verify-learnings-inbox.sh <operative-dir>}"
+[ -d "$current" ] || { echo "FAIL: operative dir not found: $current" >&2; exit 2; }
 
 manifest="$(cd "$(dirname "$0")/.." && pwd)/team-manifest.json"
 [ -f "$manifest" ] || { echo "FAIL: manifest not found at $manifest (needed to read knowledge.budgets)" >&2; exit 2; }
