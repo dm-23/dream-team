@@ -1,6 +1,6 @@
 # Learnings entry format
 
-The index in `LEARNINGS.md` names entries; this file defines what an entry is. It is read by the `reviewer` subagent before it writes one and by `/generate-knowledge` when it triages or restructures the inbox. It is never deployed into `.claude/knowledge/`.
+The index in `LEARNINGS.md` names entries; this file defines what an entry is. It is read by the `reviewer` subagent before it writes one and by `/generate-knowledge` when it triages or restructures the inbox. It is never deployed into the knowledge dir.
 
 ## Entry format
 

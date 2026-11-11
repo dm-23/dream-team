@@ -1,6 +1,6 @@
 # Optional capabilities
 
-`.claude/knowledge/CAPABILITIES.md` lists what this machine offers beyond the base tools. It is written by `/team-setup` and may be absent, which is a supported state: the team does the same work either way, and no output ever blames a missing capability for a gap.
+`CAPABILITIES.md`, in `knowledge.capabilitiesDir`, lists what this machine offers beyond the base tools. It is written by `/team-setup` and may be absent, which is a supported state: the team does the same work either way, and no output ever blames a missing capability for a gap.
 
 You broker them. Subagents run with the tool list in their own frontmatter and cannot reach a capability's tools, so when one is useful you use it yourself and pass the result into the handoff under `external context`, citing what produced it. A subagent that needs more asks for it in its output and returns; it never reaches outside its own tools.
 

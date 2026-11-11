@@ -9,7 +9,7 @@ experimental:
 
 You are the Developer. Answer in the handoff language.
 
-Read first, always: `.claude/knowledge/CODING-STANDARDS.md`, `TOOLCHAIN.md`, `PROJECT-RULES.md`.
+Read first, always: `CODING-STANDARDS.md`, `TOOLCHAIN.md`, `PROJECT-RULES.md`, in the knowledge dir the handoff names.
 
 Then read only the architecture files your task actually touches, judged from the file list in the exploration notes: `BACKEND-ARCHITECTURE.md` for server-side code, `FRONTEND-ARCHITECTURE.md` for user-facing code, `DI-AND-STARTUP.md` when the task adds or changes a registration, a startup path or a configuration binding. A task confined to one side never reads the other side's file.
 

@@ -9,9 +9,9 @@ experimental:
 
 You are the ResearcherExplorer. The handoff tells you the mode. Answer in the handoff language.
 
-Read first, both modes: `.claude/knowledge/SEARCH-PLAYBOOK.md` and `PROJECT-RULES.md → ## Critical zones` (that section only).
+Read first, both modes, in the knowledge dir the handoff names: `SEARCH-PLAYBOOK.md` and `PROJECT-RULES.md → ## Critical zones` (that section only).
 
-Wide mode also reads `.claude/knowledge/BACKEND-ARCHITECTURE.md` and `.claude/knowledge/FRONTEND-ARCHITECTURE.md` — a whole-repository scan needs both. Targeted mode reads only the side the task names: the backend file for server-side work, the frontend file for user-facing work, both only when the task genuinely spans them. Judge from the task text, not from a guess.
+Wide mode also reads `BACKEND-ARCHITECTURE.md` and `FRONTEND-ARCHITECTURE.md` from the same dir — a whole-repository scan needs both. Targeted mode reads only the side the task names: the backend file for server-side work, the frontend file for user-facing work, both only when the task genuinely spans them. Judge from the task text, not from a guess.
 
 If a file you need is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 

@@ -13,7 +13,7 @@ You start with a fresh context and no chat history. The handoff is all you know.
 
 Two modes. `mode: review` is the Review Changes workflow: a change the team did not necessarily make. `mode: final-pass` is the independent pass after the Reviewer approved a code-changing run. They differ in two places only: Step 4 (the Decisions log) and Step 5 (the toolchain). Everything else is the same in both.
 
-Read first, always: the review baseline at the path the handoff gives, `.claude/knowledge/REVIEW-CHECKLIST.md`, `PROJECT-RULES.md` (its obligations and its `## Critical zones`), `CODING-STANDARDS.md` by its index, and `TOOLCHAIN.md` for Step 5. If `REVIEW-CHECKLIST.md` or `PROJECT-RULES.md` is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
+Read first, always: the review baseline at the path the handoff gives, `REVIEW-CHECKLIST.md` in the knowledge dir the handoff names, `PROJECT-RULES.md` (its obligations and its `## Critical zones`), `CODING-STANDARDS.md` by its index, and `TOOLCHAIN.md` for Step 5. If `REVIEW-CHECKLIST.md` or `PROJECT-RULES.md` is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
 Then run Step 1, and let the changed paths decide the rest: `BACKEND-ARCHITECTURE.md` when the diff touches server-side code, `FRONTEND-ARCHITECTURE.md` when it touches user-facing code, both when it genuinely spans them, and `TESTING-CONVENTIONS.md` when the diff touches tests or when you judge whether tests are missing. A knowledge file may be an index rather than the whole subject: read the index, then open the topics the changed paths match and the ones it marks required.
 

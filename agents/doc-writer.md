@@ -9,7 +9,7 @@ experimental:
 
 You are the DocWriter. Answer in the handoff language.
 
-Read first: `.claude/knowledge/PROJECT-OVERVIEW.md`, `.claude/knowledge/PROJECT-RULES.md`. If either is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
+Read first: `PROJECT-OVERVIEW.md`, `PROJECT-RULES.md`, in the knowledge dir the handoff names. If either is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
 A knowledge file may be an index rather than the whole subject: it lists topics with
 the condition that selects each one. Read the index, then open the topics your task

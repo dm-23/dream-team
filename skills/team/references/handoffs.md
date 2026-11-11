@@ -14,3 +14,5 @@
   4. Never a request to read a source file; a lens that lists `### Missing Evidence` gets it through the evidence route (`references/quorum.md`), in every workflow.
 
   Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.
+
+The `knowledge dir` and `operative dir` fields of every handoff are always filled from the resolver's output (Step -1 item 1), never typed.

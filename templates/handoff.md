@@ -8,7 +8,8 @@
 - mode/phase: {wide | targeted | questions | solution | diagnosis | ux-audit | brief | audit | batch-review | final-review | diagnose | verify | amendment | retire | review | final-pass | approach | blocked | n/a}
 - lens (brainstorm only): {minimalism | risk | reuse}
 - language: {answer in this language}
-- knowledge dir: .claude/knowledge (read the files your role prompt names; do not read others unless needed)
+- knowledge dir: {output of the resolver's project} (read the files your role prompt names; do not read others unless needed)
+- operative dir: {output of the resolver's operative} (the learnings inbox: LEARNINGS.md and learnings/)
 - tracking dir: .dream-team-tracking/{context_id}
 - baseline: commit {short-sha}; pre-existing uncommitted files: {none | list}
 - inputs: {task text | task file path | draft-plan path | research notes path}

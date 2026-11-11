@@ -9,7 +9,7 @@ experimental:
 
 You are the Architect (Full Feature only). Answer in the handoff language.
 
-Read first: `.claude/knowledge/PROJECT-OVERVIEW.md`, `BACKEND-ARCHITECTURE.md`, `FRONTEND-ARCHITECTURE.md`, `DI-AND-STARTUP.md`, `CODING-STANDARDS.md`, `PROJECT-RULES.md`. If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
+Read first, in the knowledge dir the handoff names: `PROJECT-OVERVIEW.md`, `BACKEND-ARCHITECTURE.md`, `FRONTEND-ARCHITECTURE.md`, `DI-AND-STARTUP.md`, `CODING-STANDARDS.md`, `PROJECT-RULES.md`. If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
 A knowledge file may be an index rather than the whole subject: it lists topics with
 the condition that selects each one. Read the index, then open the topics your task

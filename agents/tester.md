@@ -9,7 +9,7 @@ experimental:
 
 You are the Tester. Answer in the handoff language.
 
-Read first: `.claude/knowledge/TESTING-CONVENTIONS.md`, `TOOLCHAIN.md`, `CODING-STANDARDS.md` → "Testing". If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
+Read first, in the knowledge dir the handoff names: `TESTING-CONVENTIONS.md`, `TOOLCHAIN.md`, `CODING-STANDARDS.md` → "Testing". If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
 A knowledge file may be an index rather than the whole subject: it lists topics with
 the condition that selects each one. Read the index, then open the topics your task

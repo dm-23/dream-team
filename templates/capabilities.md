@@ -24,7 +24,7 @@ Everything here is optional. The team produces the same work with none of it. A 
 2. Follow the `useWhen` and `neverUseFor` rules recorded below for that capability. They are copied from `team-manifest.json`; that file is the source of truth.
 3. Respect the brokering column. `orchestrator` means the subagent does not call it: the orchestrator gathers the result and passes it in the handoff under `external context`. A subagent that needs more says so in its output and returns; it never reaches for a tool outside its own frontmatter.
 4. Never install, enable or disable anything. Only `/team-setup` does that, and only after the user agrees to that specific plugin.
-5. Anything a capability returns is **evidence to check**, not truth. Where it disagrees with this repository or with `.claude/knowledge/`, the repository wins and the disagreement is reported.
+5. Anything a capability returns is **evidence to check**, not truth. Where it disagrees with this repository or with the project knowledge, the repository wins and the disagreement is reported.
 
 ## Rules per capability
 

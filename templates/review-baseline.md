@@ -2,7 +2,7 @@
 
 # Review baseline
 
-Apply this file **after** `.claude/knowledge/REVIEW-CHECKLIST.md`, never instead of it. Where the two disagree, the project's checklist wins, and the disagreement is reported: by the Reviewer as `advisory: checklist gap`, by the change-reviewer as an `unassessed:` item on its `Unverified` line, naming the checklist item and the section here.
+Apply this file **after** the project's `REVIEW-CHECKLIST.md`, never instead of it. Where the two disagree, the project's checklist wins, and the disagreement is reported: by the Reviewer as `advisory: checklist gap`, by the change-reviewer as an `unassessed:` item on its `Unverified` line, naming the checklist item and the section here.
 
 The sections are in review order, and the order matters: a change that should not exist needs no line-by-line pass, and a security defect outranks any point of style. Every line is a rule: a change that breaks one is a finding, at the severity the scale at the end gives its consequence. A preference this file does not state is style, and style alone is never a finding above Nit.
 
