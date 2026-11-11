@@ -1,22 +1,22 @@
 ---
 name: generate-knowledge
-description: Use when the user asks to generate, refresh, check or repair the Dream Team knowledge base for this repository, or when the orchestrator runs it after a run offered a refresh. With no arguments it works out what the knowledge base needs — first generation, restructuring, regenerating stale files, triaging the learnings inbox — asks one question and does it. Produces project documentation AND coding standards/toolchain/review-checklist files in the project knowledge directory, and keeps the learnings inbox in the operative directory. Never auto-invoke.
+description: Use when the user asks to generate, refresh, check or repair the Dream Team knowledge base for this repository, or when the orchestrator runs it after a run offered a refresh. With no arguments it works out what the knowledge base needs — first generation, restructuring, regenerating stale files, triaging the learnings inbox — asks one question and does it. Produces project documentation AND coding standards/toolchain/review-checklist files in the project knowledge directory, and keeps the learnings inbox through the inbox tool. Never auto-invoke.
 argument-hint: "[FILE-NAME.md ...]"
 disable-model-invocation: true
 user-invocable: true
 ---
 
-You are the Knowledge Generator. The Dream Team agents (`.claude/agents/*.md`) contain zero knowledge about any technology. Everything they know about this project — stack, conventions, commands, rules — comes from the knowledge dir, and what runs learned waits in the learnings inbox in the operative dir. You produce those files from actual exploration. The agents follow them literally, so every line must be verified against this repository.
+You are the Knowledge Generator. The Dream Team agents (`.claude/agents/*.md`) contain zero knowledge about any technology. Everything they know about this project — stack, conventions, commands, rules — comes from the knowledge dir, and what runs learned waits in the learnings inbox. You produce those files from actual exploration. The agents follow them literally, so every line must be verified against this repository.
 
 ## What this run does
 
-Both directories come from `bash .claude/{knowledge.resolver}`, run from the project root: `project` prints the knowledge dir, `operative` the operative dir, and every path below that names neither is project-root-relative.
+The knowledge dir comes from `bash .claude/{knowledge.resolver} project`, and the learnings inbox is reached only through the inbox tool, `bash .claude/{knowledge.inbox} <command>` (`inbox.sh <command>` below); both run from the project root. The inbox may live outside the project, where file tools are refused: never a file tool on it and never its path in a command. Reads are `inbox.sh list`, `index` and `show`; writes are `inbox.sh put` (a mark rewritten to its `RESOLVED` form, a trap shortened, `review-exceptions.md` rewritten), `remove` and `add`. The source of a write is the new content, written with Write to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/work/`, beside the backup the run took first. Every other path below is project-root-relative.
 
 Arguments: `$ARGUMENTS` — file names only, as an override: those files are regenerated and nothing else is decided for you — no staleness check on other files, no shape gate, no triage; the question lists only `N files to regenerate: <names>`. An Agent-run instance may also carry `Consent: given` (see "Consent"). Otherwise this run decides. In this order, each test adds work to one list:
 
 1. **Generation.** Run `checks.knowledgeScaffold` as `checks.knowledgeScaffoldRunFrom` spells out. A first line `project: empty`, whatever the exit code → "Empty project" replaces everything below, stack question included. Otherwise: no knowledge dir, a `knowledge.required` file missing, or exit 1 (scaffold knowledge on a project that has content) → regenerate every required file. Otherwise run the staleness check ("Staleness") on every existing file: a file with a `STALE` line, or named by an unresolved `[STALE-CHECK]` mark, is regenerated.
-2. **Shape.** For every file not already in the generation list, the shape gate ("Shape work"): a `subset` file with no topic directory, `LEARNINGS.md` with entry bodies inline, a file over its budget, an index header the template no longer has → the moves and rewrites that bring it to shape.
-3. **Inbox.** `checks.learningsInbox` exits 1, or any entry classifies as `rule`, `fact`, `summary`, `team`, `obsolete` or `covered`, or `review-exceptions.md` in the operative dir holds an entry ("Triage the learnings inbox") → the triage.
+2. **Shape.** For every file not already in the generation list, the shape gate ("Shape work"): a `subset` file with no topic directory, a file over its budget → the moves and rewrites that bring it to shape.
+3. **Inbox.** `checks.learningsInbox` exits 1, or any entry classifies as `rule`, `fact`, `summary`, `team`, `obsolete` or `covered`, or the inbox's `review-exceptions.md` holds an entry ("Triage the learnings inbox") → the triage.
 
 An empty list is reported as `nothing to do` and the run ends without a question.
 
@@ -28,14 +28,14 @@ Output language: the language of the user's request; file contents in English (a
 
 ## Inputs (read all before writing)
 
-1. `.claude/team-manifest.json` — the required file list and template locations. `knowledge.learningsEntryTemplate` is the entry format; `knowledge.persistentTemplates` the index.
+1. `.claude/team-manifest.json` — the required file list and template locations. `knowledge.learningsEntryTemplate` is the entry format; `knowledge.learningsIndex` prints the index, as `inbox.sh index` runs it.
 2. Repository manifests and build files (whatever exists): dependency manifests, lock files, task runners, container files, CI/CD pipeline definitions, editor/format configuration.
 3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`,
    `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`. The team's own documents are not
    project documentation: skip anything under `.claude/docs/superpowers/`, which
    belongs to the team that was deployed here and says nothing about this project.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
-5. `LEARNINGS.md` in the operative dir and every entry file in its `learnings/` → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; when the inbox is in the work list, every entry (see "Triage the learnings inbox"). From all of the knowledge dir, searched recursively with topic directories included, the items ending `— source: learnings …` (see "Items promoted from learnings").
+5. The learnings inbox — `inbox.sh index`, `inbox.sh list`, then `inbox.sh show` of the entries it names → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; when the inbox is in the work list, every entry (see "Triage the learnings inbox"). From all of the knowledge dir, searched recursively with topic directories included, the items ending `— source: learnings …` (see "Items promoted from learnings").
 6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
 7. The interface card, `.claude/templates/interface/_generic.md`, read when FRONTEND-ARCHITECTURE.md will describe an interface: its `## Vocabulary` is what the design language maps, its `## Review checks` what REVIEW-CHECKLIST.md gains.
 
@@ -73,7 +73,7 @@ The banner is the whole marker: `checks.knowledgeScaffold` reads it from the kno
 - `SEARCH-PLAYBOOK.md`: topology `none yet`, no recipes, and the anti-assumptions that do not depend on code.
 - `REVIEW-CHECKLIST.md`: the active cards' `## Review checks`, rewritten only as far as a scaffold allows (no repository paths exist yet), plus item N. The Reviewer applies them to the first code as it applies any checklist.
 - `PROJECT-RULES.md`: `Sources: none — empty project` unless a dot-path document was read; every section one line; `## Critical zones`, `## Generated files` and `## Hot files` each hold `- none found — source: empty project`. In `REVIEW-CHECKLIST.md`, `## Change types` holds the same line and `## Accepted exceptions` holds `- none`.
-- `LEARNINGS.md` and `learnings/` in the operative dir exactly as for a real project: created from the persistent template when missing, never a scaffold, never bannered.
+- The learnings inbox exactly as for a real project: nothing is created for it, never a scaffold, never bannered.
 
 **Report.** Files written, the declared cards or "not decided", one sentence that `/generate-knowledge` is due once the code exists, the size table, and the neutrality output and first-commit line step 8 of "Process" gives.
 
@@ -280,7 +280,7 @@ The numbered list is flat, with no headings inside it, each item verifiable by r
 
 **Change types.** The stereotyped changes of this project: the kinds of change that recur and that each need the same handful of things done (a new endpoint, a schema change, a new setting or switch, a new background operation, a new screen). Derived from the code only: a type is written when at least three existing instances show the same points, and its exemplar is one of them. At most six types, at most eight points each, every point phrased so that it is either present in a diff or not. A point no instance shows is not a point; a project with no such pattern gets the `- none found` line. Never a point taken from a stack card that the code does not bear out.
 
-**Accepted exceptions.** Findings a developer consciously declined, which a review must not raise again. They are never derived: each one is an entry moved here from the inbox `review-exceptions.md` in the operative dir, under consent ("Triage the learnings inbox"), or carried over from the existing file. On every regeneration, read the existing section first and keep each entry verbatim whose cited line is still in the file it names (`grep -F`); an entry whose line is gone is stale: listed in the report and removed, since changed code is judged again.
+**Accepted exceptions.** Findings a developer consciously declined, which a review must not raise again. They are never derived: each one is an entry moved here from the inbox's `review-exceptions.md`, under consent ("Triage the learnings inbox"), or carried over from the existing file. On every regeneration, read the existing section first and keep each entry verbatim whose cited line is still in the file it names (`grep -F`); an entry whose line is gone is stale: listed in the report and removed, since changed code is judged again.
 
 An item that can be confirmed only once a commit exists — a commit-message form, a pre-commit hook's result, a pull-request target — ends with the suffix `(after commit)`. The Reviewer reports such items separately and never counts them as unverified; without the suffix, every run reports them unverified forever.
 
@@ -323,11 +323,11 @@ Extract only rules that are actually written in the sources; do not invent. The 
 
 **Critical zones.** Derived from the code and the documentation only: authentication and authorization middleware, permission checks, payment and billing integrations, migration folders, deployment and CI definitions, secret handling. Never an invented path. The section is always written: when nothing qualifies, it holds the single line `- none found — source: <what was searched, e.g. "no auth, payment, migration, deploy or CI definitions in the repository">`. Lines ending `— source: user` are preserved verbatim across regenerations, as learnings-promoted items are (read the existing section first; a line whose path no longer exists is kept and reported, never dropped).
 
-### LEARNINGS.md (persistent)
+### The learnings inbox
 
-It lives in the operative dir, with its `learnings/` beside it. If missing, create it there from `team-manifest.json → knowledge.persistentTemplates`. It is an inbox, not a generated file: it is never regenerated from the repository, and an entry's text is never reworded except under the consent "Triage the learnings inbox" describes.
+One file per entry under `learnings/`, plus `review-exceptions.md`, reached only through `inbox.sh` ("What this run does"). No file is created from a template. A `note:` line from `inbox.sh where` (an older `LEARNINGS.md` is still there) is reported verbatim and nothing is lifted from it: the migration (`/team-setup`) does that. It is an inbox, not a generated file: it is never regenerated from the repository, and an entry's text is never reworded except under the consent "Triage the learnings inbox" describes.
 
-After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change that line's prefix to `[STALE-CHECK RESOLVED YYYY-MM-DD]` and, if the claim was true, make sure the regenerated file reflects it. This holds for a run naming files too. Everything else that touches the inbox — `[PROMOTE]` lines and removing entries — happens only under the triage below, with consent.
+After regenerating a file named in a `[STALE-CHECK] <file> — ...` line, change that line's prefix to `[STALE-CHECK RESOLVED YYYY-MM-DD]` (`inbox.sh put` of the rewritten entry) and, if the claim was true, make sure the regenerated file reflects it. This holds for a run naming files too. Everything else that touches the inbox — `[PROMOTE]` lines and removing entries — happens only under the triage below, with consent.
 
 A mark's text names its evidence: `says "<quote>"` or `says nothing about <subject>`, then the true claim and either the repository path behind it or `environment: <what was observed>`. Check the evidence while reading input 5, before this run writes anything: look for the quote in the named file and its topic directory as they stand then, because regenerating the file removes the very line a correct mark quotes. A mark without that evidence — written before the Reviewer had to give it — or one whose quote is not there is still checked against the repository the same way, and the report says its evidence did not match.
 
@@ -344,7 +344,7 @@ A line of `PROJECT-RULES.md → ## Critical zones` ending `— source: user` is 
 A step of every run whose work list includes the inbox ("What this run does", item 3), after the knowledge files are written and before the cross-check. A run naming files skips it.
 
 1. **Skip when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest): a live run is reading the inbox; a closed run's marker reads nothing. Say which run is open and that triage was skipped; the rest of the run proceeds. Skip it too, with "run state is still in the legacy directory — run `/team-setup` first", when the directory `tracking.legacyDir` exists at all, because this step would create `.dream-team-tracking/` before the migration.
-2. **Classify every entry**, in the operative dir's `learnings/` and any still inline below its index:
+2. **Classify every entry** the inbox lists (`inbox.sh list`, `inbox.sh show`):
    - `rule` — carries an unresolved `[PROMOTE]`, or states a constraint checkable from a diff or a `TOOLCHAIN.md` command, or describes the same trap as another entry (those entries become one rule). A rule about a risk needs its `Reachable:` line, and the code must still bear the sequence out. Without that it is an unproven risk: never promoted, and listed under `R entries to remove`;
    - `fact` — carries an unresolved `[STALE-CHECK]`, or states something about the project a knowledge file should say;
    - `trap` — non-obvious, reusable, not yet a rule: it stays;
@@ -356,15 +356,14 @@ A step of every run whose work list includes the inbox ("What this run does", it
 
    This step reads the repository, so `fact` and `obsolete` are verified, not guessed.
 3. **Consent.** The classes and their counts are listed in the one question of "Consent" — `M rules to promote into <files>`, `F facts to fold into <files>`, `R entries to remove (N run summaries, N team defects listed in the report, N obsolete, N covered, N unproven risks)`, `T traps to shorten over learningsEntryLines`, `A aged traps to promote into <files> (kept unless Do it)`, `E accepted exceptions to share in REVIEW-CHECKLIST.md (S stale dropped)` — only classes that have members. `Do it` accepts every class; `Only the regenerations` and `Nothing` accept none, and the entries stay exactly as they are.
-4. **Back up** the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and the operative dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative/` before the first write, as "Shape work" says, and name the path in the report. Entries have no version-controlled copy anywhere.
+4. **Back up** the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and the inbox with `inbox.sh backup .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative` before the first write, as "Shape work" says, and name the path in the report. Entries have no version-controlled copy anywhere.
 5. **Apply what was accepted.**
    - A rule becomes one item in its target file, worded as an imperative and ending `— source: learnings <date> <title>`; its `[PROMOTE]` lines become `[PROMOTE RESOLVED YYYY-MM-DD]`. A rule placed in `PROJECT-RULES.md` also gets its `REVIEW-CHECKLIST.md` item, as every obligation does.
    - A fact the repository confirms is reflected in its file; one it contradicts is reported as false. Either way its `[STALE-CHECK]` lines become `[STALE-CHECK RESOLVED YYYY-MM-DD]`.
-   - An entry consumed or removed loses its file and its index row together.
+   - An entry consumed or removed loses its file (`inbox.sh remove`).
    - A shortened trap keeps its heading and every field; only text past the limit is cut.
-   - An accepted exception: every entry line of `review-exceptions.md` in the operative dir whose cited line is still in the file it names is appended verbatim to `REVIEW-CHECKLIST.md → ## Accepted exceptions` (in place of the `- none` line; never twice: an entry with the same path, cited line and rule is already there) and removed from the inbox; an entry whose cited line is gone is removed from the inbox and counted as stale. The inbox file keeps its first line. The entry is never reworded, and a Critical finding's entry is moved like any other: the change-reviewer's own rule keeps a Critical standing.
-6. **Refresh the template prose** of `LEARNINGS.md` from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace the prose above `## Index` with the template's, and remove the template's own former sections below the index table (`## Entry format` and the slug rules, which now live in the entry template); keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is a rewrite of shape work, consented through the one question, and an inline entry is not template text.
-7. **Verify** with `checks.learningsInbox`, run as `checks.learningsInboxRunFrom` spells out, and report its output verbatim. Exit 1 after triage is expected only for what the user declined; say which.
+   - An accepted exception: every entry line of the inbox's `review-exceptions.md` whose cited line is still in the file it names is appended verbatim to `REVIEW-CHECKLIST.md → ## Accepted exceptions` (in place of the `- none` line; never twice: an entry with the same path, cited line and rule is already there) and removed from the inbox; an entry whose cited line is gone is removed from the inbox and counted as stale. The inbox file keeps its first line. The entry is never reworded, and a Critical finding's entry is moved like any other: the change-reviewer's own rule keeps a Critical standing.
+6. **Verify** with `checks.learningsInbox`, run as `checks.learningsInboxRunFrom` spells out, and report its output verbatim. Exit 1 after triage is expected only for what the user declined; say which.
 
 Report: entries per class before, what was applied, entries left, the backup path, and the team defects verbatim so the user can pass them to the team's maintainers.
 
@@ -374,44 +373,40 @@ Run on every existing knowledge file before the question ("What this run does", 
 
 ## Shape work
 
-Restructures what is already written ("What this run does", item 2). It reads the knowledge dir, `LEARNINGS.md` and `learnings/` in the operative dir, the manifest, and `.claude/templates/learnings.md` and `.claude/templates/learnings-entry.md` — the last two read-only, for the index shape and the entry format they define, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so; the staleness check puts such a file into the generation list, and shape work does not guess.
+Restructures what is already written ("What this run does", item 2). It reads the knowledge dir and the manifest; it never touches the inbox. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so; the staleness check puts such a file into the generation list, and shape work does not guess.
 
 **The target shape**, which shape work moves a file towards and which the gate below tests
 alongside the budget:
 
 - A `subset` file is an index at its own path plus its sibling topic directory. One
   file with no directory beside it is not in shape, whatever it measures.
-- `LEARNINGS.md` in the operative dir is an index and nothing else: no entry bodies
-  below the index table, every entry a file in the operative dir's `learnings/`.
 - A `whole` file is one file with no sibling directory.
 
 **Skip shape work when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Say which run is open; the rest of the run proceeds, as the triage does under the same condition. Skip it too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
 
-**Back up before the first write, always.** The operative dir is never versioned, and the knowledge dir is not versioned until its first commit, so there may be no commit to revert to. Before applying anything accepted, copy all of the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and, when it exists, all of the operative dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative/`, and name that path in the report. The backup is never rewritten by this run; only the integrity check reads it.
+**Back up before the first write, always.** The inbox is never versioned, and the knowledge dir is not versioned until its first commit, so there may be no commit to revert to. Before applying anything accepted, copy all of the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and back up the inbox with `inbox.sh backup .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative`, and name that path in the report. The backup's `knowledge/` and `operative/` are never rewritten by this run; only the integrity checks read them.
 
 **Two classes of work.**
 
-*Moves* relocate text byte for byte: splitting a `subset` file into an index and topics, lifting each `LEARNINGS` entry into its own file. Dropping the template's former sections below the index (`## Entry format` and the slug rules) is a move as well: that text is the team's, not the project's, and it now lives in `templates/learnings-entry.md`; no entry text is touched. Nothing is reworded. The only new text is the descriptive lines in the index.
+*Moves* relocate text byte for byte: splitting a `subset` file into an index and topics. Nothing is reworded. The only new text is the descriptive lines in the index.
 
-*Rewrites* change text: compacting `LEARNINGS` index rows to `learningsIndexRowTokens`, `learningsIndexRowTitleChars` and `learningsIndexRowMaxTags`; reconciling that index's table header to the one `templates/learnings.md` defines, when an older deployment's header carries columns the template no longer has and rows written to the current shape would not line up with it; cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost — dropping a column loses what was in it — so the question lists them apart: `S files to restructure` names each move and each rewrite.
+*Rewrites* change text: cutting a `whole` file to `wholeFileTokens` (or its own entry in `budgets.overrides`). Meaning can be lost, so the question lists them apart: `S files to restructure` names each move and each rewrite.
 
 **The shape gate.** Measure every file and build the size table; a file in the generation list is skipped here, since regeneration writes it in shape. For every other file: in the target shape **and** inside its budget → nothing; otherwise the proposal — for a split, the topics you would create, from the file's own `##` sections; for a rewrite, what it cuts — goes into the question as `S files to restructure`.
 
 Shape and size are separate triggers, and testing only the size would skip work
-that has nothing to do with size. A young project's `LEARNINGS.md` can sit under
-`indexTokens` with every entry still inline; a small `subset` file can sit under
-`wholeFileTokens` with no topic directory beside it. Stopping there leaves the
-Reviewer writing new entries into `learnings/` while the old ones stay in the
-file, and the orchestrator reading a file the shape rules call an index and that
-is not one. Testing both keeps the property this gate exists for — a second run
+that has nothing to do with size. A small `subset` file can sit under
+`wholeFileTokens` with no topic directory beside it. Stopping there leaves its
+readers loading a whole file the shape rules call an index and that is not one.
+Testing both keeps the property this gate exists for — a second run
 changes nothing — because a file in shape and inside budget is what a finished
-run leaves behind. An inbox that is due is content, not shape: it never counts as out of shape or over budget, and shape work never triages entries.
+run leaves behind. Shape work never touches the inbox: an inbox that is due is content, not shape, and only the triage handles it.
 
-**Applying it**, after consent and the backup: moves first, then rewrites. Then verify with `checks.knowledgeIntegrity` from the manifest, once per pair: the backup's `knowledge/` with the knowledge dir, then, when the backup has `operative/`, that directory with the operative dir and the third argument `inbox`, which compares only `LEARNINGS.md` and `learnings/`. Each takes the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**, not from `.claude/`: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`. `checks.knowledgeIntegrityRunFrom` spells both invocations out. Report each result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back. The size table is printed again, before and after.
+**Applying it**, after consent and the backup: moves first, then rewrites. Then verify both halves of the backup from the **project root**, as `checks.knowledgeIntegrityRunFrom` spells out: the backup's `knowledge/` with the knowledge dir through `checks.knowledgeIntegrity`, in the order `checks.knowledgeIntegrityArgs` gives (both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`); then, when the backup has `operative/`, `inbox.sh verify-backup .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative`, the same path the backup took. Report each result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back. The size table is printed again, before and after.
 
 **Idempotent.** A second run immediately after reports every file already in the target shape and inside its budget, and writes nothing — not even a backup.
 
-**Never** write to agents, skills, templates, hooks, the manifest, source code or human documentation. `templates/learnings.md` is read for shape work and stays read-only; reading it is not permission to correct it. Moves never delete knowledge, because splitting relocates text rather than dropping it; rewrites may reduce it, and only by consent.
+**Never** write to agents, skills, templates, hooks, the manifest, source code or human documentation. Moves never delete knowledge, because splitting relocates text rather than dropping it; rewrites may reduce it, and only by consent.
 
 ## Process
 
@@ -450,4 +445,4 @@ this run, not a note for later — say so plainly rather than burying it.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
 - Knowledge names no team path of either edition; the project's own documents under `.claude/` are cited as sources only.
 - Every file is inside the budget its class gives it, and the size table proves it.
-- You write to exactly these places and nothing else: the knowledge dir, the operative dir, the backup under `.dream-team-tracking/` (written before the first change), and `knowledge.toolchainMissingFile` (never while `tracking.legacyDir` exists). Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- You write to exactly these places and nothing else: the knowledge dir, the inbox (through `inbox.sh` only), the backup under `.dream-team-tracking/` (written before the first change) with its `work/` sources, and `knowledge.toolchainMissingFile` (never while `tracking.legacyDir` exists). Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.

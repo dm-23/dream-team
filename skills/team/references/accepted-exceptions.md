@@ -10,7 +10,7 @@ Only a finding the developer declined in their own words or by their own choice 
 
 ## The line
 
-Read the finding in full in its findings file. Append one line to `<operative dir>/review-exceptions.md` with Edit, creating the file with Write when it is missing (first line `# Review exceptions — an inbox; /generate-knowledge moves live entries into REVIEW-CHECKLIST.md`):
+Read the finding in full in its findings file. Write the one line below into a file in the run's tracking directory, then add it to the inbox with `bash .claude/tools/inbox.sh append review-exceptions.md <that file>`, never by a path. The tool creates `review-exceptions.md` when it is missing; the first time, write the file's first line above the entry, `# Review exceptions — an inbox; /generate-knowledge moves live entries into REVIEW-CHECKLIST.md` (`bash .claude/tools/inbox.sh show review-exceptions.md` prints `(missing)` after the name when it is):
 
 ```
 - <path> · "<the line of code the finding cites, verbatim, trimmed>" · <the finding's Section value> — accepted YYYY-MM-DD: "<the developer's words, or the option chosen>" (<context_id> F-<n>)

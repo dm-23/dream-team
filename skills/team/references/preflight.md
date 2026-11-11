@@ -4,9 +4,9 @@ The orchestrator runs this at Step -1, in this order.
 
 ## Directories
 
-Run `bash .claude/{knowledge.resolver} project` and `… operative` from the project root: the knowledge dir and the operative dir of this run, written into every handoff.
+Run `bash .claude/{knowledge.resolver} project` from the project root: the knowledge dir of this run, written into every handoff.
 
-If `LEARNINGS.md` is missing from the operative dir, create it there from `knowledge.persistentTemplates`.
+Run `bash .claude/tools/inbox.sh where` once, from the project root. Its second line goes to status.md → "Process notes" as `Learnings inbox: <line>` once status.md exists (Step 0; a resumed run that already has the line gets no second one). A `note:` line it prints is said once, as `learnings-check.md` says. Its first line, the inbox's directory, is never written into a handoff, a file or a command: every reader reaches the inbox through the tool. Nothing is created here; `inbox.sh add` creates `learnings/` with the first entry.
 
 ## Required files
 
@@ -27,3 +27,4 @@ Read `CAPABILITIES.md` from `knowledge.capabilitiesDir` if it exists; when it do
 ## Tools you may run
 
 - The resolver (`knowledge.resolver`), run from the project root.
+- The inbox tool (`knowledge.inbox`), `bash .claude/tools/inbox.sh`, run from the project root: `where` here, `index`, `show` and `check` in `learnings-check.md`, `show` and `append` in `accepted-exceptions.md`.

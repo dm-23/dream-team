@@ -15,4 +15,4 @@
 
   Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.
 
-The `knowledge dir` and `operative dir` fields of every handoff are always filled from the resolver's output (Step -1 item 1), never typed.
+The `knowledge dir` field of every handoff is always filled from the resolver's output (Step -1 item 1), never typed; the `learnings inbox` field is copied as the template gives it.

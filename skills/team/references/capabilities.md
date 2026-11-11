@@ -14,6 +14,6 @@ Where each one fits, when present:
 | Capability | Where you use it |
 |------------|------------------|
 | `library-docs` | Before design and before implementation, when a task turns on a third-party library whose current API is not visible in this repository. Attach what you find to the Brainstorm, Architect or Developer handoff. |
-| `session-memory` | At preflight, alongside the learnings check, to recall standing preferences and earlier conclusions. Never write team learnings there — that is LEARNINGS.md's job, and the Reviewer's. |
+| `session-memory` | At preflight, alongside the learnings check, to recall standing preferences and earlier conclusions. Never write team learnings there — that is the learnings inbox's job, and the Reviewer's. |
 | `instructions-maintenance` | At the docs-sync step, to propose an update to the project instruction file when the run changed a documented rule or created an obligation. The user approves the diff; you never apply one silently. |
 | `browser-control` | When a run changed something a person sees, to gather rendered evidence for the Designer, Tester or Reviewer handoff (`design.md` says when the Designer needs it). Ask before starting a server or opening a page. Evidence never replaces a test. |

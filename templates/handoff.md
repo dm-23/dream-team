@@ -9,7 +9,7 @@
 - lens (brainstorm only): {minimalism | risk | reuse}
 - language: {answer in this language}
 - knowledge dir: {output of the resolver's project} (read the files your role prompt names; do not read others unless needed)
-- operative dir: {output of the resolver's operative} (the learnings inbox: LEARNINGS.md and learnings/)
+- learnings inbox: only through bash .claude/tools/inbox.sh (index, show, add, append); never by a path — it may live outside the project, where file tools are refused
 - tracking dir: .dream-team-tracking/{context_id}
 - baseline: commit {short-sha}; pre-existing uncommitted files: {none | list}
 - inputs: {task text | task file path | draft-plan path | research notes path}

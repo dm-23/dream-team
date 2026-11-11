@@ -27,21 +27,19 @@ An entry is written only when a run taught something a later run needs: a trap, 
 
 ## Where an entry lives
 
-Entries do not live in `LEARNINGS.md`. Each one is a file in `learnings/`, named
+Each entry is a file in the inbox's `learnings/`, named
 `YYYY-MM-DD-{slug}.md`, holding exactly the entry and nothing else — no frontmatter,
 no wrapper. The file's whole content is the entry, because that is what makes a
 migration verifiable byte for byte.
 
-`{slug}` is derived from the row's title by a fixed transform, so that whoever writes
-the entry and whoever later looks it up compute the same path from the same row:
+`{slug}` is derived from the entry's title by a fixed transform:
 
 1. lower-case the title;
 2. replace every run of characters that are not letters or digits with one hyphen;
 3. drop a leading or trailing hyphen;
 4. cut to 60 characters, then drop a trailing hyphen again.
 
-If that file already exists — the same title on the same date — append `-2`, then
-`-3`, and so on. A reader that computes the path and finds nothing tries those
-suffixes before concluding the entry is missing. It does not list `YYYY-MM-DD-*` and
-guess: a date carries as many entries as that day produced, and guessing picks the
-wrong one silently.
+The entry reaches the inbox through `bash .claude/tools/inbox.sh add`, never by a path:
+a name already taken — the same title on the same date — gets the first free `-2`,
+`-3` and so on, and the tool prints the name it gave. A reader finds an entry by the
+`File` cell of its index row, never by computing the path or listing `YYYY-MM-DD-*`.
