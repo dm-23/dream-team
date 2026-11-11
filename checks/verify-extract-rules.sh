@@ -193,16 +193,51 @@ file_is "$K/rules/wrapped-errors.md" "# Wrapped errors\n- Kind: rule\n- Rule: Wr
 file_is "$K/coding-standards/errors.md" "# Errors\n\n- Keep.\n"
 shape_ok
 
-# --- (j) one suffix in two non-checklist files: the first found is Rule: -----------------
-case="j: first found is the rule"
+# --- (j) one suffix in several non-checklist files ------------------------------------------
+# The first found is Rule:; the same wording again goes silently; other
+# wording gets a file of its own.
+case="j: every wording kept"
 mk
 printf '# Project Rules\n\n- From rules %s source: learnings 2026-10-05 Twice\n' "$EM" > "$K/PROJECT-RULES.md"
 printf '# Coding standards\n\n- From standards %s source: learnings 2026-10-05 Twice\n' "$EM" > "$K/CODING-STANDARDS.md"
+printf '# DI and startup\n\n- From standards %s source: learnings 2026-10-05 Twice\n- Keep.\n' "$EM" > "$K/DI-AND-STARTUP.md"
+run "$K"
+expect_rc 0
+out_is "rules: extracted 2 (2 rules, 0 critical zones, 0 exceptions) into $K/rules"
+file_is "$K/rules/twice.md" "# Twice\n- Kind: rule\n- Rule: From standards\n- Belongs with: CODING-STANDARDS.md\n- Source: learnings 2026-10-05 Twice\n- Added: $TODAY\n"
+file_is "$K/rules/twice-2.md" "# Twice\n- Kind: rule\n- Rule: From rules\n- Belongs with: PROJECT-RULES.md\n- Source: learnings 2026-10-05 Twice\n- Added: $TODAY\n"
+file_is "$K/DI-AND-STARTUP.md" "# DI and startup\n\n- Keep.\n"
+[ "$(ls "$K/rules" | wc -l | tr -d ' ')" = 2 ] || fail "expected two rule files: $(ls "$K/rules")"
+shape_ok
+
+# --- (k) two checklist lines on one suffix ------------------------------------------------
+case="k: two checklist wordings"
+mk
+printf '# Project Rules\n\n- Never cache tokens on disk %s source: learnings 2026-10-05 Tokens\n' "$EM" > "$K/PROJECT-RULES.md"
+printf '# Coding standards\n\n- Store tokens only in memory, and clear them on logout %s source: learnings 2026-10-05 Tokens\n' "$EM" > "$K/CODING-STANDARDS.md"
+printf '# Review checklist\n\n1. Tokens are kept in memory only %s source: learnings 2026-10-05 Tokens\n2. Logout clears the token %s source: learnings 2026-10-05 Tokens\n3. Tokens are kept in memory only %s source: learnings 2026-10-05 Tokens\n4. Other.\n' "$EM" "$EM" "$EM" > "$K/REVIEW-CHECKLIST.md"
+run "$K"
+expect_rc 0
+out_is "rules: extracted 3 (3 rules, 0 critical zones, 0 exceptions) into $K/rules"
+file_is "$K/rules/tokens.md" "# Tokens\n- Kind: rule\n- Rule: Store tokens only in memory, and clear them on logout\n- Check: Tokens are kept in memory only\n- Belongs with: CODING-STANDARDS.md\n- Source: learnings 2026-10-05 Tokens\n- Added: $TODAY\n"
+file_is "$K/rules/tokens-2.md" "# Tokens\n- Kind: rule\n- Rule: Never cache tokens on disk\n- Belongs with: PROJECT-RULES.md\n- Source: learnings 2026-10-05 Tokens\n- Added: $TODAY\n"
+file_is "$K/rules/tokens-3.md" "# Tokens\n- Kind: rule\n- Rule: Logout clears the token\n- Check: Logout clears the token\n- Belongs with: REVIEW-CHECKLIST.md\n- Source: learnings 2026-10-05 Tokens\n- Added: $TODAY\n"
+file_is "$K/REVIEW-CHECKLIST.md" "# Review checklist\n\n4. Other.\n"
+[ "$(ls "$K/rules" | wc -l | tr -d ' ')" = 3 ] || fail "expected three rule files: $(ls "$K/rules")"
+shape_ok
+
+# --- (l) a line with no text stays -----------------------------------------------------------
+case="l: empty text stays"
+mk
+printf '# Project Rules\n\n- %s source: user\n-  %s source: learnings 2026-10-06 Empty\n3. %s source: user\n- Real %s source: user\n' "$EM" "$EM" "$EM" "$EM" > "$K/PROJECT-RULES.md"
 run "$K"
 expect_rc 0
 out_is "rules: extracted 1 (1 rules, 0 critical zones, 0 exceptions) into $K/rules"
-file_is "$K/rules/twice.md" "# Twice\n- Kind: rule\n- Rule: From standards\n- Belongs with: CODING-STANDARDS.md\n- Source: learnings 2026-10-05 Twice\n- Added: $TODAY\n"
-shape_ok
+file_is "$K/PROJECT-RULES.md" "# Project Rules\n\n- $EM source: user\n-  $EM source: learnings 2026-10-06 Empty\n3. $EM source: user\n"
+grep -qxF -- "- Rule: Real" "$K/rules/real.md" 2>/dev/null || fail "real.md: $(ls "$K/rules")"
+bash "$SHAPE" "$K" > "$tmp/shape" 2>&1; src=$?
+[ "$src" = 1 ] || fail "shape check exit $src, expected 1: $(cat "$tmp/shape")"
+[ "$(grep -c 'authored line in a generated file' "$tmp/shape")" = 3 ] || fail "shape check should list the three lines: $(cat "$tmp/shape")"
 
 # --- unreadable directory, usage ------------------------------------------------------------
 case="unreadable directory"

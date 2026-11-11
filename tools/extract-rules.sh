@@ -10,19 +10,25 @@
 # that contains "— source: learnings " or ends "— source: user" (a trailing
 # CR ignored), or, in REVIEW-CHECKLIST.md, any "- " line under
 # "## Accepted exceptions" other than "- none". Its text is the line without
-# the list marker ("- ", "<n>. "), the trailing CR and the source suffix.
+# the list marker ("- ", "<n>. "), the trailing CR and the source suffix. A
+# line whose text is empty is left where it is, unextracted (the shape check,
+# checks/verify-knowledge-shape.sh, still reports it).
 #
 #   "— source: user" under "## Critical zones"  kind critical-zone, Zone: the
 #                     text, title the text before " — ".
 #   "— source: user" elsewhere                  kind rule, Rule: the text,
 #                     title its first 60 characters.
 #   "— source: learnings <date> <title>"        kind rule, title <title>.
-#                     Every line with the same suffix (date and title) makes
-#                     one file. A line from a file other than
-#                     REVIEW-CHECKLIST.md is Rule:; when several are, the first
-#                     one found is Rule: and the others are removed with it.
-#                     The REVIEW-CHECKLIST.md line is Check:. With only a
-#                     checklist line, Rule: and Check: both carry it.
+#                     The lines with the same suffix (date and title) make
+#                     one file: the first line found in a file other than
+#                     REVIEW-CHECKLIST.md is Rule:, the first checklist line
+#                     is Check:; with only checklist lines, Rule: and Check:
+#                     both carry the first. A further line whose text equals
+#                     a Rule: (a checklist line: a Check:) already kept for
+#                     the suffix is removed with them; a further line with
+#                     other wording gets a file of its own, with the same
+#                     Source: and its own Belongs with: (a checklist line:
+#                     Rule: and Check: both carry it), so no wording is lost.
 #   an accepted exception                       kind exception, Exception: the
 #                     text, title "exception <path>" (the text before " · ").
 #
@@ -100,7 +106,7 @@ if [ "${#FILES[@]}" -gt 0 ]; then
       return (top in idx) ? idx[top] : p
     }
     function textof(s) {
-      sub(/[ \t]+$/, "", s); sub(/^[ \t]*([-*+]|[0-9]+\.)[ \t]+/, "", s); sub(/^[ \t]+/, "", s)
+      sub(/[ \t]+$/, "", s); sub(/^[ \t]*([-*+]|[0-9]+\.)([ \t]+|$)/, "", s); sub(/^[ \t]+/, "", s)
       return s
     }
     function del(ln) { print rel US ln > dels }
@@ -145,6 +151,7 @@ if [ "${#FILES[@]}" -gt 0 ]; then
       if (i > 0) {
         key = substr(line, i + length(mid)); sub(/[ \t]+$/, "", key)
         text = textof(substr(line, 1, i - 1))
+        if (text == "") next   # nothing to keep: the line stays where it is
         if (!(key in G)) {
           title = key
           if (key ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] /) { title = substr(key, 12); sub(/^[ \t]+/, "", title) }
@@ -152,13 +159,21 @@ if [ "${#FILES[@]}" -gt 0 ]; then
           G[key] = newrec("rule", title); S[G[key]] = "learnings " key
         }
         r = G[key]
-        if (ischeck) { if (!(r in C)) { C[r] = text; CH[r] = home } }
-        else if (!(r in RU)) { RU[r] = text; B[r] = home }
+        if (ischeck) {
+          if (!(r in C)) { C[r] = text; CH[r] = home }
+          else if (!((key, text) in SC)) { x = newrec("rule", T[r]); RU[x] = text; C[x] = text; B[x] = home; S[x] = S[r] }
+          SC[key, text] = 1
+        } else {
+          if (!(r in RU)) { RU[r] = text; B[r] = home }
+          else if (!((key, text) in SR)) { x = newrec("rule", T[r]); RU[x] = text; B[x] = home; S[x] = S[r] }
+          SR[key, text] = 1
+        }
         del(FNR)
         next
       }
       if (length(line) >= length(tail) && substr(line, length(line) - length(tail) + 1) == tail) {
         text = textof(substr(line, 1, length(line) - length(tail)))
+        if (text == "") next   # nothing to keep: the line stays where it is
         if (sec == "## Critical zones") {
           p = index(text, " — "); title = p ? substr(text, 1, p - 1) : text
           r = newrec("critical-zone", title); Z[r] = text
