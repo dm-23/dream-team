@@ -336,7 +336,7 @@
     "frontmatter": "bash checks/verify-frontmatter.sh",
     "scaffoldCheck": "bash checks/verify-scaffold-check.sh",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
-    "knowledgeIntegrityArgs": "<backup-dir> <dir> [inbox], in that order, once per pair: the backup's knowledge/ with the resolver's project dir, its operative/ with the resolver's operative dir and the third argument inbox, which compares only LEARNINGS.md and learnings/, ignores every other entry, and passes when both directories are absent; exit 0 means every guarantee held",
+    "knowledgeIntegrityArgs": "<backup-dir> <dir> [inbox], in that order, once per pair: the backup's knowledge/ with the resolver's project dir; its operative/ only through inbox.sh verify-backup <backup-dir>/operative, which passes the inbox itself and the third argument inbox, never a path a role types; inbox compares only LEARNINGS.md and learnings/, ignores every other entry, and passes when both directories are absent; exit 0 means every guarantee held",
     "knowledgeIntegrityRunFrom": "the project root, not .claude/: the path arguments are project-root-relative, so prefix each script path with .claude/; one run per pair — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp>/knowledge \"$(bash .claude/tools/knowledge-dir.sh project)\", then, only when the backup has operative/, bash .claude/tools/inbox.sh verify-backup .dream-team-tracking/knowledge-backup-<stamp>/operative",
     "learningsInbox": "bash checks/verify-learnings-inbox.sh",
     "learningsInboxArgs": "<operative-dir>; exit 0 = inbox clean, 1 = /generate-knowledge is due, 2 = could not read what it needs",

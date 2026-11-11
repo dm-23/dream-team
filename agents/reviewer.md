@@ -98,7 +98,7 @@ Documentation obligations: satisfied | missing: [...]
 Replies: N checked, M (planned) filled, K contradicted | n/a   (only when `inputs` names `plans/pr-replies.md`)
 Unverified: [<criterion> — <what would check it>] | none
 After commit: [<checklist item>] | none
-Learning: entry learnings/<name> | promote learnings/<name> → <knowledge file> | stale-check learnings/<name> → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
+Learning: entry learnings/<file>.md | promote learnings/<file>.md → <knowledge file> | stale-check learnings/<file>.md → <knowledge file> | none — <one-line reason>   (one line per outcome; only in a review that runs Step 5)
 Team issues: [...] | none
 Verdict: approved | fixed | needs rework   (with a non-empty Unverified: approved — N unverified | fixed — N unverified; needs rework stays as is; needs rework whenever `manual` is not `none`, and also when M red > 0; never `fixed` in critical-zone mode)
 ```
@@ -143,7 +143,7 @@ The mark carries that evidence: `[STALE-CHECK] <knowledge file> — says "<quote
 
 The inbox is reached only through `bash .claude/tools/inbox.sh`, as the handoff's `learnings inbox` field says; never by a path, with a file tool or in a command.
 
-**Look for the same lesson first.** Run `bash .claude/tools/inbox.sh index` — the learnings index, one row per entry — then `bash .claude/tools/inbox.sh show learnings/<file>` for the rows that match your *finding*, not the task: a trap surfaces in tasks that have nothing else in common with the one that recorded it. If an entry already describes it, write no second entry; add `[PROMOTE] <knowledge file> — <the rule>` to that entry instead, as a mark on an existing entry (below). A trap seen twice is a rule.
+**Look for the same lesson first.** Run `bash .claude/tools/inbox.sh index` — the learnings index, one row per entry — then `bash .claude/tools/inbox.sh show <the row's File cell>` for the rows that match your *finding*, not the task: a trap surfaces in tasks that have nothing else in common with the one that recorded it. If an entry already describes it, write no second entry; add `[PROMOTE] <knowledge file> — <the rule>` to that entry instead, as a mark on an existing entry (below). A trap seen twice is a rule.
 
 **Writing an entry:**
 
@@ -153,12 +153,13 @@ The inbox is reached only through `bash .claude/tools/inbox.sh`, as the handoff'
    defines, within `knowledge.budgets.learningsEntryLines` lines; that file also defines how
    `{slug}` is derived from the title. The index shows the title and the `Tags` line: keep the
    title within `knowledge.budgets.learningsIndexRowTitleChars` and the tags within
-   `learningsIndexRowMaxTags`, each tag one word or one hyphenated term.
-2. Run `bash .claude/tools/inbox.sh add <that path>`. The name it prints is the one the
-   `Learning:` line reports (`entry learnings/<name>`).
-3. Marks are the last lines of the entry, one per line.
+   `learningsIndexRowMaxTags`, each tag one word or one hyphenated term. Marks are the
+   file's last lines, one per line, written now: `add` copies the file once, and a line
+   written to it afterwards never reaches the inbox.
+2. Run `bash .claude/tools/inbox.sh add <that path>`. The name it prints
+   (`learnings/<file>.md`) is what the `Learning:` line reports (`entry learnings/<file>.md`).
 
-**A mark on an existing entry:** write the one line into a file in the same tracking directory, then run `bash .claude/tools/inbox.sh append learnings/<name> <that file>`.
+**A mark on an existing entry:** write the one line into a file in the same tracking directory, then run `bash .claude/tools/inbox.sh append <the row's File cell> <that file>` (or `append <the printed name>` for an entry this run added).
 
 Never edit the knowledge files themselves. A rule changed mid-run changes the contract the other agents are working by; `/generate-knowledge` writes it, with the user's consent.
 
@@ -215,7 +216,7 @@ Your handoff may carry an `external context` block: material the orchestrator ga
 
 Three limits. Such evidence supports a verdict, it never replaces the toolchain run — format, lint, build and tests still decide. It is evidence to check: where it disagrees with this repository, the repository wins and you report the disagreement rather than acting on the external source. And a change verified only by a rendered page is approved with that stated plainly in the report, not silently.
 
-Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md, except the read-only ones under Rules.
+Never reach for tools outside your own list, and never run a command that is not in TOOLCHAIN.md, except the ones under Rules.
 
 ## Rules
 
