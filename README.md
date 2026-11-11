@@ -110,14 +110,14 @@ This split is the whole design. Layer one carries process and roles. Layer three
 4. Run `/generate-knowledge`. It writes the files in the new place, takes the machine-specific section out of `TOOLCHAIN.md`, and removes any team path from the text.
 5. Commit `.dream-team/knowledge/` alone, in a commit that touches nothing else, and push.
 
-Everyone else then updates the team on a branch that already has the knowledge. Their `/team-setup` keeps only their operative part and the committed knowledge always wins; setup never edits it. The first time it sees the committed directory, it turns the lines you authored in your private copy that the committed knowledge does not already hold into learnings inbox entries, once, so no accumulated rule is lost.
+Everyone else then updates the team on a branch that already has the knowledge. Their `/team-setup` keeps only their operative part and the committed knowledge always wins; setup never edits it. The first time it sees the committed directory, it turns the lines you authored in your private copy that the committed knowledge does not already hold into learnings inbox entries, once, so no accumulated rule is lost. A developer who ran `/team-setup` before the knowledge reached their branch runs it once more after it lands: that pass is the one that imports their private copy's authored rules into the inbox.
 
 **The private copy stays.** The migration never removes the private copy. It keeps serving the branches that have no committed knowledge yet, such as an old fix branch. When you no longer work on such a branch, run `bash .claude/tools/migrate-knowledge.sh --drop-legacy`: it imports any authored lines the inbox does not hold, backs the private copy up under `.dream-team-tracking/operative/`, and removes it.
 
 **Merging an older release branch into a newer one.** When release branches are merged forward (older into newer), the newer branch's `.dream-team/knowledge/` is kept whole: nothing that the older branch changed there is wanted, because the newer branch has its own knowledge and text about the older branch does not belong in it. Run this during the merge, from the project root:
 
 ```bash
-git merge --no-commit <older-branch>
+git merge --no-ff --no-commit <older-branch>
 git rm -rfq --ignore-unmatch .dream-team/knowledge && git checkout HEAD -- .dream-team/knowledge
 git commit
 ```
