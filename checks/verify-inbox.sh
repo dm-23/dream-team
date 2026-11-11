@@ -193,6 +193,47 @@ done
 after="$(snapshot "$DREAM_TEAM_PROFILE")"
 [ "$before" = "$after" ] || fail "a refused command wrote into the profile"
 
+# no_path: the profile path appears in neither output stream.
+no_path() {
+  local p
+  for p in "$OPD_SHOWN" "$DREAM_TEAM_PROFILE" "my profile"; do
+    if grep -qF "$p" "$tmp/out" "$tmp/err"; then
+      fail "the profile path appears in the output: $(cat "$tmp/err")"; return
+    fi
+  done
+}
+
+case="append to a read-only entry"
+printf '## [2026-11-04] Read only\n' > "$OPD/learnings/2026-11-04-ro.md"
+chmod a-w "$OPD/learnings/2026-11-04-ro.md"
+if [ -w "$OPD/learnings/2026-11-04-ro.md" ]; then
+  echo "skip [$case] the file stays writable here"
+else
+  run_in "$tmp/promote" append learnings/2026-11-04-ro.md -
+  expect_rc 2
+  no_path
+fi
+chmod u+w "$OPD/learnings/2026-11-04-ro.md"
+rm -f "$OPD/learnings/2026-11-04-ro.md"
+
+case="append to review-exceptions.md that is a directory"
+mv "$OPD/review-exceptions.md" "$tmp/exc.saved"
+mkdir "$OPD/review-exceptions.md"
+run_in "$tmp/promote" append review-exceptions.md -
+expect_rc 2
+no_path
+[ -z "$(ls -A "$OPD/review-exceptions.md")" ] || fail "something was written into the directory"
+rmdir "$OPD/review-exceptions.md"; mv "$tmp/exc.saved" "$OPD/review-exceptions.md"
+
+case="put onto a name that is a directory"
+mkdir "$OPD/learnings/2026-11-05-dir.md"
+run put learnings/2026-11-05-dir.md .dream-team-tracking/run/new.md
+expect_rc 2
+no_path
+[ -z "$(ls -A "$OPD/learnings/2026-11-05-dir.md")" ] || fail "put wrote into the directory"
+ls -A "$OPD/learnings" | grep -q '^\.inbox-put-' && fail "put left a staged file"
+rmdir "$OPD/learnings/2026-11-05-dir.md"
+
 case="learnings/ cannot be created"
 P4="$tmp/proj4"
 repo "$P4" "https://github.com/Org/Blocked-Repo.git"

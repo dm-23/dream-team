@@ -141,9 +141,9 @@ run_hidden() {
 }
 
 # The last byte of a file, as two hex digits, or nothing for an empty file.
-last_byte() { tail -c 1 "$1" | od -An -tx1 | tr -d ' \n'; }
+last_byte() { tail -c 1 "$1" 2>/dev/null | od -An -tx1 | tr -d ' \n'; }
 # Whether a file holds a CR directly before an LF.
-has_crlf() { od -An -v -tx1 "$1" | tr '\n' ' ' | tr -s ' ' | grep -q ' 0d 0a'; }
+has_crlf() { od -An -v -tx1 "$1" 2>/dev/null | tr '\n' ' ' | tr -s ' ' | grep -q ' 0d 0a'; }
 
 # --- commands -------------------------------------------------------------------
 
@@ -222,7 +222,7 @@ case "$cmd" in
     for n in "$@"; do
       if [ -f "$OP/$n" ]; then
         printf '==> %s <==\n' "$n"
-        cat "$OP/$n" || exit 2
+        { cat "$OP/$n"; } 2>/dev/null || die "$n could not be read"
         b="$(last_byte "$OP/$n")"
         [ -z "$b" ] || [ "$b" = "0a" ] || printf '\n'
       else
@@ -249,10 +249,16 @@ case "$cmd" in
     base="${name%.md}"
     try="$name"; i=1
     while :; do
-      # noclobber: two copies adding the same name never write one file.
-      if ( set -C; cat "$SRC" > "$OP/$try" ) 2>/dev/null; then
-        printf '%s\n' "$try"
-        exit 0
+      # noclobber: two copies adding the same name never write one file. The
+      # name is claimed empty first, so a failed copy is told apart from a
+      # taken name: it removes its own file and stops.
+      if ( set -C; : > "$OP/$try" ) 2>/dev/null; then
+        if { cat "$SRC" > "$OP/$try"; } 2>/dev/null; then
+          printf '%s\n' "$try"
+          exit 0
+        fi
+        rm -f "$OP/$try" 2>/dev/null
+        die "$try could not be written"
       fi
       [ -e "$OP/$try" ] || die "$try could not be written"
       i=$((i + 1))
@@ -266,22 +272,26 @@ case "$cmd" in
     check_name "$1"
     check_source "$2"
     target="$OP/$1"
+    # Every redirect below is wrapped in { ...; } 2>/dev/null: bash's own
+    # message for a failed redirect names the full path.
+    if [ -e "$target" ] && [ ! -f "$target" ]; then
+      die "$1 is not a file"
+    fi
     if [ ! -f "$target" ]; then
       if [ "$1" != "review-exceptions.md" ]; then
         echo "inbox: $1: missing" >&2
         exit 1
       fi
       mkdir -p "$OP" 2>/dev/null || die "the operative dir could not be created"
-      cat "$SRC" > "$target" || die "$1 could not be written"
+      { cat "$SRC" > "$target"; } 2>/dev/null || die "$1 could not be written"
       exit 0
     fi
     b="$(last_byte "$target")"
     if [ -n "$b" ] && [ "$b" != "0a" ]; then
-      if has_crlf "$target"; then printf '\r\n' >> "$target" || die "$1 could not be written"
-      else printf '\n' >> "$target" || die "$1 could not be written"
-      fi
+      if has_crlf "$target"; then eol='\r\n'; else eol='\n'; fi
+      { printf '%b' "$eol" >> "$target"; } 2>/dev/null || die "$1 could not be written"
     fi
-    cat "$SRC" >> "$target" || die "$1 could not be written"
+    { cat "$SRC" >> "$target"; } 2>/dev/null || die "$1 could not be written"
     exit 0
     ;;
 
@@ -291,10 +301,13 @@ case "$cmd" in
     check_source "$2"
     dir="$OP"
     case "$1" in learnings/*) dir="$OP/learnings" ;; esac
+    if [ -e "$OP/$1" ] && [ ! -f "$OP/$1" ]; then
+      die "$1 is not a file"
+    fi
     mkdir -p "$dir" 2>/dev/null && [ -d "$dir" ] || die "the directory for $1 could not be created"
     staged="$dir/.inbox-put-$$"
-    if ! cat "$SRC" > "$staged" 2>/dev/null; then rm -f "$staged"; die "$1 could not be written"; fi
-    if ! mv -f "$staged" "$OP/$1" 2>/dev/null; then rm -f "$staged"; die "$1 could not be written"; fi
+    if ! { cat "$SRC" > "$staged"; } 2>/dev/null; then rm -f "$staged" 2>/dev/null; die "$1 could not be written"; fi
+    if ! mv -f "$staged" "$OP/$1" 2>/dev/null; then rm -f "$staged" 2>/dev/null; die "$1 could not be written"; fi
     exit 0
     ;;
 
@@ -304,7 +317,7 @@ case "$cmd" in
     missing=0
     for n in "$@"; do
       if [ -f "$OP/$n" ]; then
-        rm -f "$OP/$n" || die "$n could not be removed"
+        rm -f "$OP/$n" 2>/dev/null || die "$n could not be removed"
       else
         echo "inbox: $n: missing" >&2
         missing=1
