@@ -1,6 +1,6 @@
 ---
 name: generate-knowledge
-description: Use when the user asks to generate, refresh, check or repair the Dream Team knowledge base for this repository, or when the orchestrator runs it after a run offered a refresh. With no arguments it works out what the knowledge base needs — first generation, restructuring, regenerating stale files, triaging the learnings inbox — asks one question and does it. Produces project documentation AND coding standards/toolchain/review-checklist files under .claude/knowledge/. Never auto-invoke.
+description: Use when the user asks to generate, refresh, check or repair the Dream Team knowledge base for this repository, or when the orchestrator runs it after a run offered a refresh. With no arguments it works out what the knowledge base needs — first generation, restructuring, regenerating stale files, triaging the learnings inbox — asks one question and does it. Produces project documentation AND coding standards/toolchain/review-checklist files in the project knowledge directory, and keeps the learnings inbox in the operative directory. Never auto-invoke.
 argument-hint: "[FILE-NAME.md ...]"
 disable-model-invocation: true
 user-invocable: true
@@ -120,7 +120,7 @@ contradict its class. The cuts that work:
 - Do not restate what another knowledge file says; link to it.
 - Record a decision once, without the search that produced it.
 
-## Files to generate (all in the knowledge dir)
+## Files to generate (all in the knowledge dir unless a section says otherwise)
 
 ### PROJECT-OVERVIEW.md
 
@@ -221,7 +221,7 @@ All commands run from: `<directory>`. Agents may run ONLY commands listed here; 
 
 Procedure: take candidates from CI/pipeline files first, then task runners/README, then the active stack card's `## Toolchain`. Execute the cheap read-only ones (format check, lint, build, test) if the user has not forbidden it; mark `Verified: yes` only after a real run. Mark "Cost: cheap" only when measured under about one minute.
 
-Tools missing on this machine are written to `knowledge.toolchainMissingFile`, one line each, `- <tool> — <install command>`, rewritten whole by every run that measured them; nothing about this machine goes into `TOOLCHAIN.md`.
+Tools missing on this machine are written to `knowledge.toolchainMissingFile`, one line each, `- <tool> — <install command>`. A run that measured them rewrites the file whole, and writes it even when nothing is missing, as the one line `none`; the lines the orchestrator appended when a command failed for an absent tool are replaced by the new measurement. While the directory `tracking.legacyDir` exists, nothing is written there: run state is still in the legacy directory. Nothing about this machine goes into `TOOLCHAIN.md`.
 
 **Where a command may write.** Only to the repository paths its purpose names, and to standard output. Feed a tool its input through a pipe or standard input instead of staging a copy. When a tool can only write a file, the command writes it under `<scratch>`. Never name a fixed temporary path such as `/tmp/...`, `%TEMP%` or `$TMP`: it is shared between runs, it means different things in different shells, and the agent's environment may forbid writing there.
 
@@ -341,7 +341,7 @@ Report: entries per class before, what was applied, entries left, the backup pat
 
 ## Staleness
 
-Run on every existing knowledge file before the question ("What this run does", item 1); a file with a `STALE` line joins the generation list. For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. In `PROJECT-RULES.md` also verify that every path under `Critical zones` still exists (`STALE: critical zone path missing: <path>`), `— source: user` lines included, and that the section itself exists (`STALE: Critical zones section missing — run /generate-knowledge PROJECT-RULES.md`); a section holding only the `- none found` line is present. A file whose first line is the banner of "Empty project" is a scaffold: it names no path and no command, so those checks are skipped for it, and its line reads `SCAFFOLD (empty project, YYYY-MM-DD)` while `checks.knowledgeScaffold` exits 3, or `STALE: scaffold — the project now has content, run /generate-knowledge` when it exits 1. Whatever its kind, every file passes `checks.knowledgeNeutral`, run as `checks.knowledgeNeutralRunFrom` spells out; a listed line is `STALE: names a team path: <match>` for the file it names. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Nothing is written before the question.
+Run on every existing knowledge file before the question ("What this run does", item 1); a file with a `STALE` line joins the generation list. For each existing knowledge file: verify every path it names exists, every command in TOOLCHAIN.md still appears in CI/manifests (a row marked `derived here`: its tool is still present), no command names a fixed temporary path, every machine-readable document in `PROJECT-RULES.md → Documents to keep in sync` has its `Validate` row, every count or "current highest version/number" claim is in the measured form and, when re-measured with its own command, still holds (a bare count is reported `STALE: measured form missing` whatever its value), and every unresolved `[STALE-CHECK]` claim. In `PROJECT-RULES.md` also verify that every path under `Critical zones` still exists (`STALE: critical zone path missing: <path>`), `— source: user` lines included, and that the section itself exists (`STALE: Critical zones section missing — run /generate-knowledge PROJECT-RULES.md`); a section holding only the `- none found` line is present. A file whose first line is the banner of "Empty project" is a scaffold: it names no path and no command, so those checks are skipped for it, and its line reads `SCAFFOLD (empty project, YYYY-MM-DD)` while `checks.knowledgeScaffold` exits 3, or `STALE: scaffold — the project now has content, run /generate-knowledge` when it exits 1. Whatever a file's kind, run `checks.knowledgeNeutral` as `checks.knowledgeNeutralRunFrom` spells out: a line it lists in a `knowledge.required` file or that file's topic directory is `STALE: names a team path: <match>` for that file; a line it lists in any other file (`LEARNINGS.md`, `learnings/` or `CAPABILITIES.md`, while the knowledge dir is still the legacy directory) is reported verbatim and never queues anything for regeneration. Print a report: `file — OK | STALE: reasons`. Run `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out and add its output to the report. Nothing is written before the question.
 
 ## Shape work
 
@@ -358,7 +358,7 @@ alongside the budget:
 
 **Skip shape work when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Say which run is open; the rest of the run proceeds, as the triage does under the same condition. Skip it too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
 
-**Back up before the first write, always.** The operative dir is never versioned, and the knowledge dir is not versioned until its first commit, so there may be no commit to revert to. Before applying anything accepted, copy all of the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and all of the operative dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative/`, and name that path in the report. The backup is written once and never read back by this run.
+**Back up before the first write, always.** The operative dir is never versioned, and the knowledge dir is not versioned until its first commit, so there may be no commit to revert to. Before applying anything accepted, copy all of the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and, when it exists, all of the operative dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative/`, and name that path in the report. The backup is never rewritten by this run; only the integrity check reads it.
 
 **Two classes of work.**
 
@@ -378,7 +378,7 @@ is not one. Testing both keeps the property this gate exists for — a second ru
 changes nothing — because a file in shape and inside budget is what a finished
 run leaves behind. An inbox that is due is content, not shape: it never counts as out of shape or over budget, and shape work never triages entries.
 
-**Applying it**, after consent and the backup: moves first, then rewrites. Then verify with `checks.knowledgeIntegrity` from the manifest, once per pair: the backup's `knowledge/` with the knowledge dir, then the backup's `operative/` with the operative dir, each in the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**, not from `.claude/`: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`. `checks.knowledgeIntegrityRunFrom` spells both invocations out. Report each result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back. The size table is printed again, before and after.
+**Applying it**, after consent and the backup: moves first, then rewrites. Then verify with `checks.knowledgeIntegrity` from the manifest, once per pair: the backup's `knowledge/` with the knowledge dir, then, when the backup has `operative/`, that directory with the operative dir and the third argument `inbox`, which compares only `LEARNINGS.md` and `learnings/`. Each takes the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**, not from `.claude/`: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`. `checks.knowledgeIntegrityRunFrom` spells both invocations out. Report each result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back. The size table is printed again, before and after.
 
 **Idempotent.** A second run immediately after reports every file already in the target shape and inside its budget, and writes nothing — not even a backup.
 
@@ -397,10 +397,12 @@ run leaves behind. An inbox that is due is content, not shape: it never counts a
     `Validate` row in TOOLCHAIN.md.
 8. Verify with `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out. After
     writing, run `checks.knowledgeNeutral` as `checks.knowledgeNeutralRunFrom` spells out and
-    report its output verbatim. Report to the user: the work list as done, files written, active cards, unverified commands, conflicts
+    report its output verbatim; as in "Staleness", only a line in a `knowledge.required` file
+    or its topic directory is a defect of the files this run wrote. Report to the user: the work list as done, files written, active cards, unverified commands, conflicts
     needing a decision, the inbox triage, discrepancies found in human documentation (do NOT edit human
     documentation), the backup path, and the size table below. When the knowledge dir is
-    `knowledge.dir` and `git ls-files -- <dir>` prints nothing, add one line:
+    `knowledge.dir`, `git rev-parse --is-inside-work-tree` succeeds and
+    `git ls-files -- <dir>` prints nothing, add one line:
     `Commit <dir> alone — one commit, one pull request, no other file.`
 
 ## Size table
@@ -419,4 +421,4 @@ this run, not a note for later — say so plainly rather than burying it.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
 - Knowledge names no team path of either edition; the project's own documents under `.claude/` are cited as sources only.
 - Every file is inside the budget its class gives it, and the size table proves it.
-- You write to exactly these places and nothing else: the knowledge dir, the operative dir, the backup under `.dream-team-tracking/` (written before the first change), and `knowledge.toolchainMissingFile`. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- You write to exactly these places and nothing else: the knowledge dir, the operative dir, the backup under `.dream-team-tracking/` (written before the first change), and `knowledge.toolchainMissingFile` (never while `tracking.legacyDir` exists). Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.

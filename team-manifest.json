@@ -262,7 +262,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["researcher-explorer", "architect", "developer", "reviewer"],
       "useWhen": "The task depends on a third-party library or framework and the exact current signature, option name, or version-specific behaviour is not visible in this repository. Look it up before designing or writing the call, not after it fails.",
-      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from .claude/knowledge/ and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
+      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from the project knowledge and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
     },
     {
       "capability": "session-memory",
@@ -336,8 +336,8 @@
     "frontmatter": "bash checks/verify-frontmatter.sh",
     "scaffoldCheck": "bash checks/verify-scaffold-check.sh",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
-    "knowledgeIntegrityArgs": "<backup-dir> <dir>, in that order, once per pair: the backup's knowledge/ with the resolver's project dir, its operative/ with the resolver's operative dir; exit 0 means every guarantee held",
-    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/; one run per pair — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp>/knowledge \"$(bash .claude/tools/knowledge-dir.sh project)\", then bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp>/operative \"$(bash .claude/tools/knowledge-dir.sh operative)\"",
+    "knowledgeIntegrityArgs": "<backup-dir> <dir> [inbox], in that order, once per pair: the backup's knowledge/ with the resolver's project dir, its operative/ with the resolver's operative dir and the third argument inbox, which compares only LEARNINGS.md and learnings/, ignores every other entry, and passes when both directories are absent; exit 0 means every guarantee held",
+    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both directory arguments are project-root-relative, so prefix the script path with .claude/; one run per pair — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp>/knowledge \"$(bash .claude/tools/knowledge-dir.sh project)\", then, only when the backup has operative/, bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp>/operative \"$(bash .claude/tools/knowledge-dir.sh operative)\" inbox",
     "learningsInbox": "bash checks/verify-learnings-inbox.sh",
     "learningsInboxArgs": "<operative-dir>; exit 0 = inbox clean, 1 = /generate-knowledge is due, 2 = could not read what it needs",
     "learningsInboxRunFrom": "the project root, not .claude/: the argument is the resolver's operative dir, project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh \"$(bash .claude/tools/knowledge-dir.sh operative)\"",

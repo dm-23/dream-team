@@ -2,7 +2,15 @@
 # Verifies that a /generate-knowledge shape-work run moved text without losing or
 # altering it.
 #
-#   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>
+#   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox]
+#
+# With the third argument "inbox" (the operative pair), only the learnings
+# inbox is compared: Check 1 over LEARNINGS.md and learnings/, nothing else.
+# Every other entry of either directory -- the capabilities directory of an
+# edition, a legacy-knowledge-* backup, a stamp file -- is ignored, because
+# the operative dir holds machine state the generator never moves. Both
+# directories absent is a pass (there was no inbox to lose); one absent is a
+# failure, as without the argument. Without "inbox" nothing below changes.
 #
 # The manifest is read from the team root, "$(dirname "$0")/..": the directory that
 # holds the checks and team-manifest.json in a deployment, never beside the
@@ -82,8 +90,18 @@
 set -uo pipefail
 export LC_ALL=C
 
-backup="${1:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>}"
-current="${2:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>}"
+backup="${1:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox]}"
+current="${2:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox]}"
+mode="${3:-}"
+case "$mode" in
+  ''|inbox) ;;
+  *) echo "FAIL: unknown third argument '$mode' (usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox])" >&2; exit 1 ;;
+esac
+
+if [ "$mode" = inbox ] && [ ! -e "$backup" ] && [ ! -e "$current" ]; then
+  echo "knowledge integrity: ok (inbox: neither directory exists)"
+  exit 0
+fi
 
 # A missing backup or knowledge dir means nothing was actually compared. Fail
 # loudly instead of silently reporting "ok" having verified nothing: the
@@ -326,6 +344,13 @@ if ! diff -q "$tmp/old-hashes" "$tmp/new-hashes" >/dev/null 2>&1; then
   comm -13 "$tmp/old-hashes" "$tmp/new-hashes" \
     | sed 's/^/  entry present now but not in the backup, hash /' >&2
   status=1
+fi
+
+# The operative pair stops here: nothing else in that directory is the
+# generator's to move, so nothing else is compared or swept.
+if [ "$mode" = inbox ]; then
+  [ $status -eq 0 ] && echo "knowledge integrity: ok (inbox: LEARNINGS.md and learnings/ only)"
+  exit $status
 fi
 
 # --- Check 2: every classified file gets a verdict ----------------------------
