@@ -10,7 +10,7 @@ Run `bash .claude/tools/inbox.sh where` once, from the project root. Its second 
 
 ## Drift
 
-Run `bash .claude/{knowledge.drift}` once per run, from the project root, after the directories. Its output, one line or a block, is pasted verbatim into the `knowledge drift` field of every handoff. Once status.md exists (Step 0), write its first line to Process notes as `Knowledge drift: <line>`; a resumed run that already has the line gets no second one. A failure of the tool — it cannot be run, or prints nothing — is written as `Knowledge drift: not computed`, the field reads `not computed`, and the run continues. Never block the run on drift: a run that lags still runs.
+Run `bash .claude/{knowledge.drift}` once per run, from the project root, after the directories. Its output, one line or a block, is pasted verbatim into the `knowledge drift` field of every handoff. Once status.md exists (Step 0), write its first line to Process notes as `Knowledge drift: <line>`; a resumed run that already has the line gets no second one. A failure of the tool — it cannot be run, or prints nothing — is written as `Knowledge drift: not computed`, the field reads `not computed`, and the run continues. Never block the run on drift: a run that lags still runs. A knowledge refresh accepted in this preflight rewrites what the tool measures: run it once more after the refresh, before the first handoff, and use that output.
 
 ## Required files
 
