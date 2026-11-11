@@ -36,7 +36,7 @@ Steps:
 4. For each user-facing part trace UI → API call → request handler.
 5. Check wiring and boundaries (registration/startup per DI-AND-STARTUP.md, module dependencies).
 6. Map existing tests for the impacted areas (per TESTING-CONVENTIONS.md).
-7. List the documentation obligations from `PROJECT-RULES.md` that the plan will trigger.
+7. List the documentation obligations from `PROJECT-RULES.md` that the plan will trigger, with the authored rules whose `Belongs with:` is `PROJECT-RULES.md` (cited as `rule:<slug>`).
 8. Match the paths under `### Relevant Existing Files` against `PROJECT-RULES.md → ## Critical zones` and write the `Critical zones touched` line, so the Architect and the plan audit see it without opening PROJECT-RULES.md.
 
 Output — append to `draft-plan.md` (never replace):
@@ -54,7 +54,7 @@ Output — append to `draft-plan.md` (never replace):
 - `path` — the existing members with a comparable role (same kind of input or same kind of output), each with its line; the result, return or error types they use; the options or settings objects the file or its module holds; one line on the conventions they show (how results and failures come back, how optional behaviour is switched, naming). A file with nothing comparable gets the line `no comparable member`.
 
 ### Documentation Obligations Triggered
-- obligation (from PROJECT-RULES.md) — which task should satisfy it
+- obligation (from PROJECT-RULES.md, or rule:<slug>) — which task should satisfy it
 
 ### Potential Conflicts / Risks
 - risk
