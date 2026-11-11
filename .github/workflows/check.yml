@@ -16,7 +16,7 @@ jobs:
           LINT="$(sed -n 's/^[[:space:]]*"stackNeutralityLint": "\(.*\)",$/\1/p' team-manifest.json | sed 's/\\"/"/g; s/\\\\/\\/g')"
           if eval "$LINT"; then echo "stack neutrality: hits above"; exit 1; fi
           for c in checks/verify-*.sh; do
-            case "$c" in *knowledge-integrity*|*learnings-inbox*|*knowledge-scaffold*|*knowledge-neutral*) continue;; esac
+            case "$c" in *knowledge-integrity*|*learnings-inbox*|*knowledge-scaffold*|*knowledge-neutral*|*knowledge-shape*) continue;; esac
             echo "== $c"; CI=1 bash "$c"
           done
           rm -rf /tmp/dt-build && bash copilot/build.sh /tmp/dt-build

@@ -58,7 +58,11 @@
 # operator could not exempt them by hand either. They are read from the
 # manifest and exempted from the file sweep -- and from that sweep only:
 # nothing else about them is assumed, and a *directory* by the same name is
-# still unclassified.
+# still unclassified. The same goes for the entries the manifest names by
+# knowledge.rulesDir, knowledge.proposalsDir and knowledge.baselineFile: the
+# authored rules, the proposals and the review baseline are written by the
+# team's own tools, not by fix, so they are read from the manifest and exempt
+# from the file sweep and the directory sweep, by name and nothing wider.
 #
 # Check 1: the entries accumulated in the learnings log survive the run. The
 #          invariant is a set equation rather than a presence test: the entries
@@ -242,6 +246,15 @@ if [ "$environment_blocks" -eq 1 ]; then
     }
   ' "$tmp/environment-block" > "$tmp/environment-names"
 fi
+
+# --- Read the entries named by rulesDir, proposalsDir and baselineFile --------
+# String values of knowledge, exempt from both sweeps below by name. An absent
+# key exempts nothing.
+: > "$tmp/authored-names"
+for key in rulesDir proposalsDir baselineFile; do
+  sed -n "s/.*\"$key\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$tmp/knowledge-block" \
+    | tr -d '\r' >> "$tmp/authored-names"
+done
 
 # --- Check 1: the learnings entries survive the run --------------------------
 # Splits a learnings log into one file per entry under <outdir>.
@@ -469,6 +482,7 @@ for f in "$current"/*.md; do
   # Declared under knowledge.environment: describes the machine, written by
   # /team-setup on every run, never classified and never touched by fix.
   grep -qxF "$(basename "$f")" "$tmp/environment-names" && continue
+  grep -qxF "$(basename "$f")" "$tmp/authored-names" && continue
   lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
   if ! grep -qxF "$lower" "$tmp/known-names"; then
     echo "FAIL: $f is not classified in $manifest (knowledge.classification)" >&2
@@ -480,6 +494,7 @@ for dir in "$current"/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
   [ "$name" = "learnings" ] && continue
+  grep -qxF "$name" "$tmp/authored-names" && continue
   if ! grep -qxF "$name" "$tmp/known-names"; then
     echo "FAIL: $dir is not classified in $manifest (knowledge.classification)" >&2
     status=1

@@ -101,7 +101,8 @@ extract_scoped required "[" "]"
 # so a key missing from the manifest leaves a rule with nothing behind it.
 for key in indexTokens topicTokens wholeFileTokens \
            learningsIndexRowTitleChars learningsIndexRowMaxTags \
-           learningsIndexMaxRows learningsEntryLines; do
+           learningsIndexMaxRows learningsEntryLines \
+           rulesMaxFiles ruleMaxLines; do
   grep -q "\"$key\"" "$tmp/budgets-block" \
     || { echo "FAIL: knowledge.budgets.$key missing" >&2; status=1; }
 done

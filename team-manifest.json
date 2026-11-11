@@ -149,6 +149,8 @@
       "learningsIndexMaxRows": 30,
       "learningsEntryLines": 25,
       "learningsTrapAgeDays": 90,
+      "rulesMaxFiles": 60,
+      "ruleMaxLines": 12,
       "overrides": {
         "REVIEW-CHECKLIST.md": 14000
       }
@@ -170,6 +172,10 @@
       "learnings/"
     ],
     "learningsEntryTemplate": ".claude/templates/learnings-entry.md",
+    "rulesDir": "rules",
+    "proposalsDir": "proposals",
+    "baselineFile": "BASELINE",
+    "ruleTemplate": ".claude/templates/rule.md",
     "environment": {
       "CAPABILITIES.md": {
         "writtenBy": "/team-setup",
@@ -233,6 +239,7 @@
     "learningsEntry": "learnings-entry.md",
     "teamAmendments": "team-amendments.md",
     "reviewBaseline": "review-baseline.md",
+    "rule": "rule.md",
     "interface": "interface",
     "standards": "standards"
   },
@@ -330,6 +337,7 @@
     "learningsIndex": "bash checks/verify-learnings-index.sh",
     "inbox": "bash checks/verify-inbox.sh",
     "neutralCheck": "bash checks/verify-neutral-check.sh",
+    "shapeCheck": "bash checks/verify-shape-check.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",
@@ -346,6 +354,9 @@
     "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, the second the resolver's project dir, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . \"$(bash .claude/tools/knowledge-dir.sh project)\"",
     "knowledgeNeutral": "bash checks/verify-knowledge-neutral.sh",
     "knowledgeNeutralArgs": "<knowledge-dir>; exit 0 = no team path named, 1 = lines listed, 2 = unreadable",
-    "knowledgeNeutralRunFrom": "the project root: bash .claude/checks/verify-knowledge-neutral.sh <the resolver's project dir>"
+    "knowledgeNeutralRunFrom": "the project root: bash .claude/checks/verify-knowledge-neutral.sh <the resolver's project dir>",
+    "knowledgeShape": "bash checks/verify-knowledge-shape.sh",
+    "knowledgeShapeArgs": "<knowledge-dir>; exit 0 = in shape, 1 = lines listed, 2 = unreadable",
+    "knowledgeShapeRunFrom": "the project root: bash .claude/checks/verify-knowledge-shape.sh \"$(bash .claude/tools/knowledge-dir.sh project)\""
   }
 }
