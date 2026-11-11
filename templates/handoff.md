@@ -5,7 +5,7 @@
 - context_id: {workflow_key}_{slug}_{YYYY-MM-DD}
 - workflow: {Analyze | Docs | Bug Fix | Small Change | Quick Fix | Change Set | Full Feature | Review Changes}
 - role: {brainstorm | advisor | researcher-explorer | architect | designer | plan-auditor | developer | doc-writer | tester | reviewer | verifier | change-reviewer}
-- mode/phase: {wide | targeted | questions | solution | diagnosis | ux-audit | brief | audit | batch-review | final-review | diagnose | verify | amendment | retire | review | final-pass | approach | blocked | n/a}
+- mode/phase: {wide | targeted | questions | solution | diagnosis | ux-audit | brief | audit | batch-review | final-review | diagnose | verify | amendment | retire | review | merge | re-review | final-pass | approach | blocked | n/a}
 - lens (brainstorm only): {minimalism | risk | reuse}
 - language: {answer in this language}
 - knowledge dir: {output of the resolver's project} (read the files your role prompt names; do not read others unless needed)

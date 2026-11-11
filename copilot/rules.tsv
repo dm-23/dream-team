@@ -43,6 +43,9 @@ skills/team/*	.claude/skills/generate-knowledge/SKILL.md	.github/skills/generate
 skills/team/*	one AskUserQuestion	one question-tool call
 skills/team/references/review_changes.md	, model from the cell `review_changes.change-reviewer`	
 skills/team/references/review_changes.md	, model from the cell `review_changes.verifier`	
+skills/team/references/merge-review.md	, on the same cell as step 3 names	
+skills/team/references/re-review.md	, on the same cell as step 3 names	
+skills/team/references/review-parts.md	 on the same cell as the parts	
 skills/team/references/final-pass.md	, model from the cell `<workflow>.change-reviewer`	
 skills/team/references/final-pass.md	, each call on its cell as **Models** says	
 skills/team/references/final-pass.md	**Models.** The Verifier takes `<workflow>.verifier`, where the cell is low / medium / high by the highest Complexity among the tasks the voted findings' paths belong to. The Developer and Tester calls of this pass take their usual cells by the same Complexity; a fix from the gate takes the highest Complexity of the tasks its chosen items' paths belong to. The Reviewer passes after them take `reviewer:final` in Full Feature and `reviewer` elsewhere.\n\n	

@@ -122,7 +122,7 @@ Each workflow's steps live in one file. Read it in full before the workflow's fi
 | Full Feature | `.claude/skills/team/references/full_feature.md` |
 | Review Changes | `.claude/skills/team/references/review_changes.md` |
 
-Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `knowledge-refresh.md`, `report-requests.md`, `review-comments.md`, `amendments.md`, `final-pass.md`, all under the same directory.
+Shared mechanics, read when a workflow step names them: `quorum.md`, `rework.md`, `learnings-check.md`, `design.md`, `capabilities.md`, `operations.md`, `knowledge-refresh.md`, `report-requests.md`, `review-comments.md`, `amendments.md`, `final-pass.md`, `accepted-exceptions.md`, and for Review Changes `merge-review.md`, `re-review.md`, `review-parts.md`, all under the same directory.
 
 ## Closing
 
@@ -163,7 +163,7 @@ Record it in status.md → "Decisions log": once in Step 0, once more if you rev
 
 ## Files (relative to `.dream-team-tracking/{context_id}/`)
 
-`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, Quick Fix, and the one combined pass of a Change Set) · `research/diagnosis.md` (a linked Bug Fix opened by `follow-up.md`) · `reports/review-findings.md`, `reports/review-findings-{part}.md` (Review Changes, final pass) · `reports/review-{slug}.html` (Review Changes).
+`status.md` (all) · `reports/` (Analyze) · `reports/ux-audit.md` (Analyze, interface audit) · `design/brief.md` (Full Feature, Change Set, when user-facing), `design/evidence/` (also Analyze) · `plans/draft-plan.md`, `plans/detailed-plan.md` (Full Feature) · `plans/change-set.md` (Change Set) · `plans/plan-audit.md` (Full Feature, Change Set) · `reports/plan-{slug}.html` (Full Feature) · `tasks/*.md` (Full Feature, Change Set) · `research/task-{N}-exploration.md` (Full Feature, Change Set) · `research/exploration.md` (Analyze, Bug Fix, Small Change, Quick Fix, and the one combined pass of a Change Set) · `research/diagnosis.md` (a linked Bug Fix opened by `follow-up.md`) · `reports/review-findings.md`, `reports/review-findings-{part}.md` (Review Changes, final pass) · `research/review-threads.md`, `reports/review-{slug}.html` (Review Changes).
 
 ## Simplicity enforcement
 

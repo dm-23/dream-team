@@ -1,4 +1,4 @@
-<!-- The team's review baseline. A team file, shipped with every deployment and never regenerated: the quality bar of a review does not depend on the project's knowledge being current. The change-reviewer applies every section; the Reviewer applies sections 4, 5 and 8. Stack-neutral by rule: no language, framework, tool or library is named here, so the same lines hold in every project the team serves. -->
+<!-- The team's review baseline. A team file, shipped with every deployment and never regenerated: the quality bar of a review does not depend on the project's knowledge being current. The change-reviewer applies every section; the Reviewer applies sections 4, 5 and 8, and never 4a, which is read on a whole finished change only. Stack-neutral by rule: no language, framework, tool or library is named here, so the same lines hold in every project the team serves. -->
 
 # Review baseline
 
@@ -52,6 +52,15 @@ A security finding keeps its real severity whatever the focus of the review.
 - A mode or a branch next to the changed one that does nothing and still reports success is a finding.
 - A sibling path left uncovered without a stated reason is a finding at the severity of what the uncovered path can do.
 
+## 4a. Rule coverage — far siblings
+
+The change-reviewer's alone, on a whole finished change: the final pass of a run and a Review Changes run. These siblings sit far from the changed lines, so a search beside the diff does not find them; look for each one by name. A far sibling is a finding only with the step that reaches it, as a `path:line`, and it is written as a section 4 finding is.
+
+- The same operation started without a person: a background job, a schedule, a retry after a failure. A rule, a check or a message the change adds for the person's path holds there too, or is shown not to be needed; a check that assumes a current user fails or is skipped where there is none.
+- The code that copies the entity the change extends: a clone, an export and its import, a backup and its restore. A new field, relation or rule is carried by every copy path, or the copy is shown not to need it.
+- A placeholder value the change writes or passes on (empty, null, a default, "none"): every layer that reads it gives it the same meaning. A value that means "not set" where it is stored and "all" where it is sent is a finding at the severity of what "all" can do.
+- What the change starts to refer to (a record, a template, a group, a setting): the path that deletes or renames it either refuses while the reference exists or leaves the referring side in a state the code handles.
+
 ## 5. Duplicated knowledge
 
 - A constant, a contract, a validation rule, a business calculation or a message a person sees, written in two places, is a finding on the first repeat. Two look-alike functions that change for different reasons are not.
@@ -92,6 +101,8 @@ Flag only with a concrete reason. Never demand a micro-optimisation without a me
 
 - Tests exist where the project's conventions require them for the behaviour the change adds or alters.
 - They assert observable behaviour, never a mock verifying a mock.
+- A test checks something: it does not remove the very data it should compare, its stand-in does not return the value the assertion expects, it has an assertion, and its name says what its body does.
+- A test that pins the behaviour another finding calls a defect is a finding linked to that one.
 - Boundary and error paths are covered, not only the expected path.
 - Tests are deterministic.
 - No passing test is weakened, deleted, skipped or changed to accommodate the change without a stated reason. A silently weakened test is High.
@@ -103,13 +114,16 @@ Flag only with a concrete reason. Never demand a micro-optimisation without a me
 - A new setting has a default and is documented where the codebase documents settings. A feature flag has a removal plan.
 - A new failure mode is logged at the level the codebase uses for it. Nothing is swallowed silently. No log noise on hot paths.
 - The change can be deployed and rolled back without data loss, and any ordering constraint between a schema change and the code is stated.
+- A change to stored data or its schema holds in the three states a rollout passes through: the previous code on the new schema, the new code on the previous schema, and the previous code after a rollback, reading what the new code wrote. A state the change cannot survive is either split into two releases or stated with the reason it cannot occur.
 - Repository documentation the change makes stale is updated in the same change.
 
 ## 11. Change hygiene
 
 - The description is enough for a future reader of the history.
 - Generated files, build output, editor settings and secrets are not committed.
-- Each file keeps its line endings.
+- Each file keeps its line endings. A file whose diff shrinks to under half once line endings are ignored was saved with other endings: a finding, since the rewrite hides the real change and conflicts with every later merge.
+- No changed file holds a conflict marker.
+- Excluded is not unchecked: a file left out of line-by-line reading (`PROJECT-RULES.md → ## Generated files`) still gets the check that section names for it, and a generated file changed without its source, or edited by hand, is a finding.
 - A change that should have been split is said so, and is reviewed anyway.
 
 ## Severity
