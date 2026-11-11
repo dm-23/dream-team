@@ -8,6 +8,7 @@ skills/generate-knowledge/SKILL.md	.claude/PROJECT.md	@KEEP-CLAUDE@PROJECT.md
 skills/generate-knowledge/SKILL.md	.claude/docs	@KEEP-CLAUDE@docs
 skills/generate-knowledge/SKILL.md	`.claude/agents/*.md`	`.github/agents/*.agent.md`
 skills/generate-knowledge/SKILL.md	Do not touch `.claude/agents/`, `.claude/skills/`,	Do not touch `.github/agents/`, `.github/skills/`,
+skills/generate-knowledge/SKILL.md	the project's own documents under `.claude/` are cited	the project's own documents (`@KEEP-CLAUDE@PROJECT.md`, `@KEEP-CLAUDE@docs/`, and the project's files under `.github/`) are cited
 skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS` — file names only	Arguments: the text the user typed after the command — file names only
 skills/generate-knowledge/SKILL.md	One AskUserQuestion call	One question-tool call
 skills/generate-knowledge/SKILL.md	One AskUserQuestion, in the language	One question-tool call, in the language
