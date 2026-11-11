@@ -228,12 +228,15 @@ make_runtime() {
   cp "$MANIFEST" "$P/proj/.claude/team-manifest.json"
   OPD="$P/proj/.dream-team-tracking/operative"
 }
-# write_index <dir> <rows>: a LEARNINGS.md with that many index rows.
+# write_index <dir> <rows>: that many entry files under learnings/, one index
+# row each.
 write_index() {
-  { printf '# Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n'
-    local i=1
-    while [ "$i" -le "$2" ]; do printf '| 2026-01-01 | t%s | x |\n' "$i"; i=$((i + 1)); done
-  } > "$1/LEARNINGS.md"
+  local i=1
+  mkdir -p "$1/learnings"
+  while [ "$i" -le "$2" ]; do
+    printf '## [2026-01-01] e%s\n- **Tags:** x\n' "$i" > "$1/learnings/2026-01-01-e$i.md"
+    i=$((i + 1))
+  done
 }
 rt_expect() { # <label> <expected-rc> <args...>: run a runtime check from the team dir
   local label="$1" want="$2" script="$3" rc; shift 3

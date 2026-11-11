@@ -27,8 +27,8 @@
 # candidates in the manifest itself would reintroduce the exact defect this
 # script exists to catch in the knowledge directory.
 #
-# For every file in knowledge.classification (other than LEARNINGS.md, which
-# Check 1 owns):
+# For every file in knowledge.classification (LEARNINGS.md, which Check 1
+# owns, is skipped should an older manifest still classify it):
 #   - "subset" with a topic directory present  -> Check 2, both directions:
 #     nothing in the topic directory is absent from the backup original
 #     (nothing fabricated), and nothing in the backup original is absent from
@@ -246,10 +246,11 @@ fi
 # --- Check 1: the learnings entries survive the run --------------------------
 # Splits a learnings log into one file per entry under <outdir>.
 #
-# Fence-aware, and that is the whole point of it. templates/learnings.md
-# documents the entry format inside a fenced block whose first line is a
-# literal "## [YYYY-MM-DD] {short-title}". Every deployed LEARNINGS.md carries
-# that example, so a splitter that keyed on "^## \[" alone counted one entry
+# Fence-aware, and that is the whole point of it. The LEARNINGS.md template,
+# retired when the index became derived from the entry files, documented the
+# entry format inside a fenced block whose first line is a literal
+# "## [YYYY-MM-DD] {short-title}". Every LEARNINGS.md deployed from it still
+# carries that example, so a splitter that keyed on "^## \[" alone counted one entry
 # more than exists and failed a *correct* migration -- and the acceptance
 # reacts to a failure by restoring the backup, so the check would have
 # destroyed what it exists to protect.

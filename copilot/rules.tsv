@@ -88,6 +88,7 @@ team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n
 team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
 team-manifest.json	    "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",\n	
 team-manifest.json	    "knowledgeDir": "bash checks/verify-knowledge-dir.sh",\n	
+team-manifest.json	    "learningsIndex": "bash checks/verify-learnings-index.sh",\n	
 team-manifest.json	    "neutralCheck": "bash checks/verify-neutral-check.sh",\n	
 team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	
 team-manifest.json	    "teamReferences": "bash checks/verify-team-references.sh",\n	

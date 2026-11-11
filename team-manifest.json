@@ -124,6 +124,7 @@
     "toolchainMissingFile": ".dream-team-tracking/toolchain-missing.md",
     "resolver": "tools/knowledge-dir.sh",
     "migration": "tools/migrate-knowledge.sh",
+    "learningsIndex": "tools/learnings-index.sh",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -138,19 +139,17 @@
       "PROJECT-RULES.md"
     ],
     "budgets": {
-      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. LEARNINGS.md is an index whose rows are capped separately, so its override is the deployed template plus learningsIndexMaxRows rows of learningsIndexRowTokens; checks/verify-manifest-budgets.sh enforces that sum. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more.",
+      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. The learnings index is no file: knowledge.learningsIndex prints it from the entry files, one row per entry, the title cut to learningsIndexRowTitleChars and the tags to learningsIndexRowMaxTags, and checks/verify-learnings-inbox.sh reports /generate-knowledge due past learningsIndexMaxRows rows. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more.",
       "indexTokens": 800,
       "topicTokens": 1500,
       "wholeFileTokens": 4000,
-      "learningsIndexRowTokens": 45,
       "learningsIndexRowTitleChars": 80,
       "learningsIndexRowMaxTags": 6,
       "learningsIndexMaxRows": 30,
       "learningsEntryLines": 25,
       "learningsTrapAgeDays": 90,
       "overrides": {
-        "REVIEW-CHECKLIST.md": 14000,
-        "LEARNINGS.md": 2000
+        "REVIEW-CHECKLIST.md": 14000
       }
     },
     "classification": {
@@ -164,16 +163,11 @@
       "TOOLCHAIN.md": "whole",
       "CODING-STANDARDS.md": "subset",
       "REVIEW-CHECKLIST.md": "whole",
-      "PROJECT-RULES.md": "whole",
-      "LEARNINGS.md": "subset"
+      "PROJECT-RULES.md": "whole"
     },
     "persistent": [
-      "LEARNINGS.md",
       "learnings/"
     ],
-    "persistentTemplates": {
-      "LEARNINGS.md": ".claude/templates/learnings.md"
-    },
     "learningsEntryTemplate": ".claude/templates/learnings-entry.md",
     "environment": {
       "CAPABILITIES.md": {
@@ -332,6 +326,7 @@
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
     "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",
     "knowledgeDir": "bash checks/verify-knowledge-dir.sh",
+    "learningsIndex": "bash checks/verify-learnings-index.sh",
     "neutralCheck": "bash checks/verify-neutral-check.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",

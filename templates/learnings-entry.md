@@ -1,6 +1,6 @@
 # Learnings entry format
 
-The index in `LEARNINGS.md` names entries; this file defines what an entry is. It is read by the `reviewer` subagent before it writes one and by `/generate-knowledge` when it triages or restructures the inbox. It is never deployed into the knowledge dir.
+The index is printed by `team-manifest.json → knowledge.learningsIndex` from the entry files, and what it shows of an entry is the heading's title and the Tags line, within `learningsIndexRowTitleChars` and `learningsIndexRowMaxTags`; this file defines what an entry is. It is read by the `reviewer` subagent before it writes one and by `/generate-knowledge` when it triages or restructures the inbox. It is never deployed into the knowledge dir.
 
 ## Entry format
 

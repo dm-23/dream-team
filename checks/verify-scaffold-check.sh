@@ -102,7 +102,7 @@ for f in BACKEND-ARCHITECTURE FRONTEND-ARCHITECTURE DI-AND-STARTUP CODING-STANDA
   mkdir -p "$k/$(printf '%s' "$f" | tr 'A-Z' 'a-z')"
 done
 printf '# Generic card\n\n- Follow the repository structure [declared]\n' > "$k/coding-standards/generic.md"
-cp "$ROOT/templates/learnings.md" "$k/LEARNINGS.md"
+printf '## [2026-10-28] A trap\n- **Tags:** x\n' > "$k/learnings/2026-10-28-a-trap.md"
 cp -r "$k" "$root/backup"
 OUT="$(cd "$root" && bash .claude/checks/verify-knowledge-integrity.sh backup .dream-team/knowledge 2>&1)"; RC=$?
 [ "$RC" = 0 ] || fail integrity "integrity check exit $RC on a scaffold base: $OUT"

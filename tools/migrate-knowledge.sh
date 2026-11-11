@@ -73,15 +73,6 @@ array_in() {
       for (i = 1; i <= n; i++) { s = a[i]; gsub(/^[ \t]*"|"[ \t]*$/, "", s); if (s != "") print s }
       exit }'
 }
-# The string value of a key inside an object placed inside a top-level block.
-nested_in() {
-  tr -d '\r' < "$M" | awk -v b="$1" -v o="$2" -v k="$3" '
-    index($0, "  \"" b "\": {") == 1 { f = 1; next }
-    f && /^  }/ { exit }
-    f && index($0, "    \"" o "\": {") == 1 { g = 1; next }
-    g && /^    }/ { exit }
-    g && index($0, "      \"" k "\":") == 1 { sub(/^[^:]*:[ \t]*"/, ""); sub(/".*$/, ""); print; exit }'
-}
 # A project-root-relative path: not empty, not absolute, no "..".
 rel_ok() {
   case "$2" in
@@ -95,7 +86,6 @@ OPS="$(value_in knowledge operativeDir)";        OPS="${OPS%/}";       rel_ok kn
 CAPS="$(value_in knowledge capabilitiesDir)";    CAPS="${CAPS%/}";     rel_ok knowledge.capabilitiesDir "$CAPS"
 TRK="$(value_in tracking dir)";                  TRK="${TRK%/}";       rel_ok tracking.dir "$TRK"
 TRKOLD="$(value_in tracking legacyDir)";         TRKOLD="${TRKOLD%/}"; rel_ok tracking.legacyDir "$TRKOLD"
-TPL="$(nested_in knowledge persistentTemplates LEARNINGS.md)";         rel_ok "knowledge.persistentTemplates LEARNINGS.md" "$TPL"
 OTHERS="$(array_in knowledge otherEditionDirs)"
 
 TMP="$(mktemp -d)" || exit 2
@@ -107,8 +97,6 @@ STAGE="$DIR.migrating"
 SRCREC="$STAGE/.migrate-source"
 TODAY="$(date +%Y-%m-%d)"
 TAB="$(printf '\t')"
-# GNU sed on Windows (Git Bash) drops CR in text mode; -b keeps CRLF files intact.
-SEDB=""; sed -b p </dev/null >/dev/null 2>&1 && SEDB="-b"
 COMMIT_LINE="project: moved to $DIR: run /generate-knowledge, then commit it alone, one commit and one pull request, no other file"
 
 # --- 1. refusals ---------------------------------------------------------
@@ -196,12 +184,13 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   [ -z "$(git ls-files -- "$DIR" 2>/dev/null | head -1)" ] || tracked=1
 fi
 legacy_project=0; has_project "$LEGACY" && legacy_project=1
-action=none INDEX_FROM="" note_line="" SRC=""
+action=none note_line="" SRC=""
 
 # plan_import: the authored lines of the private copy, what the inbox already
 # holds, and what this run writes. Fills $TMP/new (n, rel, line, mark per
-# entry to write) and $TMP/rows (index rows to add, existing entries' missing
-# rows first); sets K, the number of entries this run writes.
+# entry to write); sets K, the number of entries this run writes. No index
+# row is written: the index is printed from the entry files
+# (knowledge.learningsIndex).
 plan_import() {
   local f rel d n line rule mark hit
   # Authored lines: they end in "— source: user" or carry
@@ -225,7 +214,8 @@ plan_import() {
       if (!(line in c) && !(line in seen)) { seen[line] = 1; print } }' "$TMP/committed" "$TMP/cand" > "$TMP/kept"
 
   # The inbox as it will be after the operative move: its marks (resolved ones
-  # count as present) with the entry file holding each, and its index.
+  # count as present) with the entry file holding each, and an older index
+  # file when one is still there, read only for the numbering below.
   : > "$TMP/marks"
   for d in "$OPS/learnings" "$LEGACY/learnings"; do
     [ -d "$d" ] || continue
@@ -248,7 +238,7 @@ plan_import() {
     echo 0
   } | sort -n | tail -1)"
 
-  : > "$TMP/new"; : > "$TMP/repair"; : > "$TMP/newrows"
+  : > "$TMP/new"
   while IFS= read -r kept; do
     rel="${kept%%"$TAB"*}"; line="${kept#*"$TAB"}"
     rule="$(printf '%s\n' "$line" | LC_ALL=C awk '
@@ -260,29 +250,13 @@ plan_import() {
         print s }')"
     mark="[PROMOTE] $rel — $rule"
     hit="$(MK="$mark" LC_ALL=C awk -F'\t' 'BEGIN { m = ENVIRON["MK"] } $1 == m { print $2; exit }' "$TMP/marks")"
-    if [ -n "$hit" ]; then
-      # Already in the inbox. A migrated entry an interrupted run wrote without
-      # its index row gets the row now.
-      d="$(printf '%s' "$hit" | sed -n 's/^\([0-9]\{4\}-[0-9][0-9]-[0-9][0-9]\)-migrated-rule-[0-9][0-9]*\.md$/\1/p')"
-      if [ -n "$d" ]; then
-        hn="$(printf '%s' "$hit" | sed -n 's/^.*-migrated-rule-\([0-9][0-9]*\)\.md$/\1/p')"
-        grep -qF -- "| $d | Migrated rule $hn |" "$TMP/index" || grep -qxF -- "| $d | Migrated rule $hn | migration |" "$TMP/repair" \
-          || printf '| %s | Migrated rule %s | migration |\n' "$d" "$hn" >> "$TMP/repair"
-      fi
-      continue
-    fi
+    # Already in the inbox: an earlier run, or an interrupted one, wrote it.
+    [ -z "$hit" ] || continue
     n=$((n + 1))
     printf '%s\t%s\t%s\t%s\n' "$n" "$rel" "$line" "$mark" >> "$TMP/new"
     printf '%s\t%s-migrated-rule-%s.md\n' "$mark" "$TODAY" "$n" >> "$TMP/marks"
-    printf '| %s | Migrated rule %s | migration |\n' "$TODAY" "$n" >> "$TMP/newrows"
   done < "$TMP/kept"
-  cat "$TMP/repair" "$TMP/newrows" > "$TMP/rows"
   K="$(wc -l < "$TMP/new" | tr -d ' ')"
-  if [ -s "$TMP/rows" ] && [ -z "$IDXSRC" ]; then
-    INDEX_FROM="$TPL"
-    [ -f "$INDEX_FROM" ] || INDEX_FROM="$TEAM_ROOT/templates/${TPL##*/}"
-    [ -f "$INDEX_FROM" ] || { echo "migrate-knowledge: the LEARNINGS.md template ($TPL) is missing; nothing was moved or written" >&2; exit 2; }
-  fi
 }
 
 case "$mode" in
@@ -432,9 +406,9 @@ done < "$TMP/moves"
 [ ! -f "$DIR/${SRCREC##*/}" ] || rm -f -- "$DIR/${SRCREC##*/}"
 echo "$ops_line"
 
-# write_import: the planned entries and index rows.
+# write_import: the planned entries, one file each; no index row.
 write_import() {
-  local n rel line mark entry IDX cr pos last hd at
+  local n rel line mark entry
   while IFS="$TAB" read -r n rel line mark; do
     mkdir -p "$OPS/learnings" || exit 2
     entry="$OPS/learnings/$TODAY-migrated-rule-$n.md"
@@ -448,31 +422,6 @@ write_import() {
       printf '%s\n' "$mark"
     } > "$entry" || { echo "migrate-knowledge: could not write $entry" >&2; exit 2; }
   done < "$TMP/new"
-  [ -s "$TMP/rows" ] || return 0
-  IDX="$OPS/LEARNINGS.md"
-  if [ ! -f "$IDX" ]; then
-    { [ -n "$INDEX_FROM" ] && cp -p -- "$INDEX_FROM" "$IDX"; } || { echo "migrate-knowledge: could not create $IDX" >&2; exit 2; }
-  fi
-  # Rows go after the last row of the index table, in the file's own line ending.
-  # $'\r', not $(printf '\r'): command substitution drops a trailing CR in Git Bash.
-  cr=""; [ "$(head -n 1 "$IDX" | tr -cd '\r' | wc -c | tr -d ' ')" = 0 ] || cr=$'\r'
-  pos="$(tr -d '\r' < "$IDX" | awk '
-    /^```/ { fence = !fence; next }
-    fence { next }
-    /^## / { inidx = ($0 ~ /^## Index[ \t]*$/); if (inidx && !h) h = NR; next }
-    inidx && /^\|/ { last = NR }
-    END { print (last ? last : 0) " " (h ? h : 0) }')"
-  last="${pos% *}"; hd="${pos#* }"
-  {
-    if [ "$last" = 0 ]; then
-      [ "$hd" != 0 ] || printf '%s\n## Index%s\n' "$cr" "$cr"
-      printf '%s\n| Date | Title | Tags |%s\n|------|-------|------|%s\n' "$cr" "$cr" "$cr"
-    fi
-    while IFS= read -r r; do printf '%s%s\n' "$r" "$cr"; done < "$TMP/rows"
-  } > "$TMP/insert"
-  if [ "$last" != 0 ]; then at="$last"; elif [ "$hd" != 0 ]; then at="$hd"; else at='$'; fi
-  { LC_ALL=C sed $SEDB "${at}r $TMP/insert" "$IDX" > "$IDX.mk-tmp" && mv -f -- "$IDX.mk-tmp" "$IDX"; } \
-    || { rm -f -- "$IDX.mk-tmp"; echo "migrate-knowledge: could not add the index rows to $IDX" >&2; exit 2; }
 }
 
 case "$action" in

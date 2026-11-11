@@ -36,6 +36,12 @@ for d in agents skills templates tools checks hooks team-manifest.json; do
   [ -e "$ROOT/$d" ] && cp -R "$ROOT/$d" "$TEAM/"
 done
 
+# old_index <file>: a LEARNINGS.md as deployments before the derived index
+# kept it; the migration still moves one, byte for byte, and never writes it.
+old_index() {
+  printf '# Dream Team Learnings Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n| 2026-10-01 | A | a |\n' > "$1"
+}
+
 git_commit() { git -c user.name=t -c user.email=t@example.invalid -c core.autocrlf=false commit -qm "$1" >/dev/null; }
 
 # new_project <name> [operative]: a git repository with the team at .claude/
@@ -54,7 +60,7 @@ new_project() {
   printf '# Security\n\n- Check every input.\n' > "$P/$OLD/REVIEW-CHECKLIST/security.md"
   if [ "${2:-}" = operative ]; then
     mkdir -p "$P/$OLD/learnings"
-    cp "$TEAM/templates/learnings.md" "$P/$OLD/LEARNINGS.md"
+    old_index "$P/$OLD/LEARNINGS.md"
     printf '## [2026-10-01] A\n- **Tags:** a\n' > "$P/$OLD/learnings/a.md"
     printf '# Capabilities\n\n- shell: bash\n' > "$P/$OLD/CAPABILITIES.md"
   fi
@@ -77,7 +83,7 @@ has() { grep -qF -- "$2" "$1" || fail "$(basename "$1") lacks '$2': $(head -c 60
 lacks() { ! grep -qF -- "$2" "$1" || fail "$(basename "$1") has '$2': $(head -c 600 "$1")"; }
 same() { cmp -s "$1" "$2" || fail "$2 differs from $1"; }
 expect_rc() { [ "$rc" = "$1" ] || fail "expected exit $1, got $rc: $(head -c 600 "$tmp/err")"; }
-# the slug templates/learnings-entry.md derives from an index title
+# the slug templates/learnings-entry.md derives from an entry's title
 slug() {
   printf '%s' "$1" | tr 'A-Z' 'a-z' | sed 's/[^a-z0-9][^a-z0-9]*/-/g; s/^-//; s/-$//' | cut -c1-60 | sed 's/-$//'
 }
@@ -176,24 +182,17 @@ if [ -f "$E1" ] && [ -f "$E2" ]; then
   has "$E2" "- Never Y $EM source: learnings 2026-10-01 Foo"
   has "$E1" "- **Tags:** migration"
 fi
-L="$P/$OPS/LEARNINGS.md"
-[ -f "$L" ] || fail "no index created"
-if [ -f "$L" ]; then
-  tr -d '\r' < "$L" | grep -qxF "| $TODAY | Migrated rule 1 | migration |" || fail "index row 1 missing"
-  tr -d '\r' < "$L" | grep -qxF "| $TODAY | Migrated rule 2 | migration |" || fail "index row 2 missing"
-  tr -d '\r' < "$L" | grep -qF "# Dream Team Learnings Inbox" || fail "index not created from the template"
-  # rows sit inside the table, before the template's comment
-  r="$(tr -d '\r' < "$L" | grep -nF "| Migrated rule 2 |" | cut -d: -f1)"; c="$(tr -d '\r' < "$L" | grep -nF '<!-- INDEX' | cut -d: -f1)"
-  [ -n "$r" ] && [ -n "$c" ] && [ "$r" -lt "$c" ] || fail "rows not inside the index table"
-  lines="$(wc -l < "$L" | tr -d ' ')"; crs="$(tr -cd '\r' < "$L" | wc -c | tr -d ' ')"
-  [ "$crs" = 0 ] || [ "$crs" = "$lines" ] || fail "mixed line endings in the index ($crs CR, $lines lines)"
-  # every row's title names its entry file through the slug rule
-  tr -d '\r' < "$L" | sed -n 's/^| \([0-9-]*\) | \(Migrated rule [0-9]*\) | migration |$/\1\t\2/p' > "$tmp/rows"
-  [ "$(wc -l < "$tmp/rows" | tr -d ' ')" = 2 ] || fail "expected 2 migrated rows"
-  while IFS="$(printf '\t')" read -r d t; do
-    [ -f "$P/$OPS/learnings/$d-$(slug "$t").md" ] || fail "row '$t' names no entry file"
-  done < "$tmp/rows"
-fi
+[ ! -e "$P/$OPS/LEARNINGS.md" ] || fail "an index file was written"
+# The derived index lists both, and each row's title names its entry file
+# through the slug rule.
+(cd "$P" && bash .claude/tools/learnings-index.sh "$OPS/learnings") > "$tmp/index" 2>&1
+has "$tmp/index" "| $TODAY | Migrated rule 1 | migration | $OPS/learnings/$TODAY-migrated-rule-1.md |"
+has "$tmp/index" "| $TODAY | Migrated rule 2 | migration | $OPS/learnings/$TODAY-migrated-rule-2.md |"
+sed -n 's/^| \([0-9-]*\) | \(Migrated rule [0-9]*\) | migration | .*\/\([^/]*\) |$/\1\t\2\t\3/p' "$tmp/index" > "$tmp/rows"
+[ "$(wc -l < "$tmp/rows" | tr -d ' ')" = 2 ] || fail "expected 2 migrated rows: $(cat "$tmp/index")"
+while IFS="$(printf '\t')" read -r d t f; do
+  [ "$f" = "$d-$(slug "$t").md" ] || fail "row '$t' names $f, not its slug"
+done < "$tmp/rows"
 [ -f "$P/$CAPS/.legacy-rules-imported" ] || fail "no stamp"
 has "$P/$CAPS/.legacy-rules-imported" "$TODAY"
 has "$P/$CAPS/.legacy-rules-imported" "lines=2"
@@ -236,7 +235,9 @@ E3="$P/$OPS/learnings/$TODAY-migrated-rule-3.md"
 for r in "Always X" "Never Y" "Third Z"; do
   [ "$(cat "$P/$OPS/learnings"/*.md | tr -d '\r' | grep -cxF "[PROMOTE] PROJECT-RULES.md $EM $r")" = 1 ] || fail "'$r' is not in the inbox exactly once"
 done
-[ "$(tr -d '\r' < "$P/$OPS/LEARNINGS.md" | grep -c '| Migrated rule ')" = 3 ] || fail "expected 3 index rows"
+[ ! -e "$P/$OPS/LEARNINGS.md" ] || fail "an index file was written"
+(cd "$P" && bash .claude/tools/learnings-index.sh "$OPS/learnings") > "$tmp/index" 2>&1
+[ "$(grep -c '| Migrated rule ' "$tmp/index")" = 3 ] || fail "expected 3 derived index rows: $(cat "$tmp/index")"
 
 case="k: drop legacy, nothing tracked"
 new_project k operative
@@ -256,9 +257,8 @@ commit_knowledge
   printf -- '- Always X %s source: user\r\n' "$EM"
   printf -- '- Never Y %s source: learnings 2026-10-01 Foo\r\n' "$EM"; } > "$P/$OLD/PROJECT-RULES.md"
 # an index from an earlier migration, CRLF, holding Migrated rule 4
-tr -d '\r' < "$TEAM/templates/learnings.md" | awk -v BINMODE=3 '
-  { printf "%s\r\n", $0 }
-  /^\|------\|-------\|------\|$/ { printf "| 2026-10-01 | Migrated rule 4 | migration |\r\n" }' > "$P/$OLD/LEARNINGS.md"
+printf '# Dream Team Learnings Inbox\r\n\r\n## Index\r\n\r\n| Date | Title | Tags |\r\n|------|-------|------|\r\n| 2026-10-01 | Migrated rule 4 | migration |\r\n' > "$P/$OLD/LEARNINGS.md"
+cp "$P/$OLD/LEARNINGS.md" "$tmp/d.index"
 printf '## [2026-10-01] Migrated rule 4\r\n- **Tags:** migration\r\n' > "$P/$OLD/learnings/2026-10-01-migrated-rule-4.md"
 run
 expect_rc 0
@@ -268,12 +268,8 @@ E5="$P/$OPS/learnings/$TODAY-migrated-rule-5.md"
 [ -f "$E5" ] || fail "entry not numbered after the highest: $(ls "$P/$OPS/learnings")"
 [ -f "$E5" ] && { tr -d '\r' < "$E5" | grep -qxF "[PROMOTE] PROJECT-RULES.md $EM Never Y" || fail "entry 5 mark: $(cat "$E5")"; }
 [ -z "$(ls "$P/$OPS/learnings" | grep -e '-migrated-rule-[1-36]\.md$')" ] || fail "unexpected entry: $(ls "$P/$OPS/learnings")"
-L="$P/$OPS/LEARNINGS.md"
-lines="$(wc -l < "$L" | tr -d ' ')"; crs="$(tr -cd '\r' < "$L" | wc -c | tr -d ' ')"
-[ "$crs" = "$lines" ] || fail "CRLF index not kept CRLF ($crs CR, $lines lines)"
-r4="$(tr -d '\r' < "$L" | grep -nxF "| 2026-10-01 | Migrated rule 4 | migration |" | cut -d: -f1)"
-r5="$(tr -d '\r' < "$L" | grep -nxF "| $TODAY | Migrated rule 5 | migration |" | cut -d: -f1)"
-[ -n "$r4" ] && [ -n "$r5" ] && [ "$r5" = "$((r4 + 1))" ] || fail "row 5 not right after row 4 ($r4, $r5)"
+# the older index moves byte for byte and gains no row
+same "$tmp/d.index" "$P/$OPS/LEARNINGS.md"
 has "$P/$CAPS/.legacy-rules-imported" "lines=1"
 
 # --- (e) an open run ----------------------------------------------------------
@@ -329,7 +325,7 @@ new_project h
 mkdir -p "$P/$OTHER"
 printf '# Overview\n\nThe other edition.\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"
 printf '# Other topics\n' > "$P/$OTHER/TOOLCHAIN.md"
-cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+old_index "$P/$OTHER/LEARNINGS.md"
 before="$(snap "$P")"; run --first-commit
 expect_rc 1
 has "$tmp/err" "$OLD"
@@ -377,7 +373,7 @@ run
 expect_rc 0
 has "$tmp/out" "project: waiting for $NEW"
 
-# --- (m) an interrupted import: an entry without its index row --------------------
+# --- (m) an interrupted import: the entry files without the stamp ---------------
 case="m: interrupted import"
 new_project m
 mkdir -p "$P/$NEW"
@@ -387,16 +383,13 @@ commit_knowledge
 run
 expect_rc 0
 has "$tmp/out" "(2 authored lines kept as inbox entries)"
-# What an interrupt after the entry files and before the rows and stamp leaves.
-L="$P/$OPS/LEARNINGS.md"
-grep -v -F "| Migrated rule 2 |" "$L" > "$tmp/idx" && cat "$tmp/idx" > "$L"
+# What an interrupt after the entry files and before the stamp leaves.
 rm -f "$P/$CAPS/.legacy-rules-imported"
 run
 expect_rc 0
 has "$tmp/out" "(0 authored lines kept as inbox entries)"
-[ "$(tr -d '\r' < "$L" | grep -cxF "| $TODAY | Migrated rule 2 | migration |")" = 1 ] || fail "the missing row was not restored once"
-[ "$(tr -d '\r' < "$L" | grep -cxF "| $TODAY | Migrated rule 1 | migration |")" = 1 ] || fail "row 1 duplicated or lost"
 [ "$(ls "$P/$OPS/learnings" | grep -c -e '-migrated-rule-')" = 2 ] || fail "an entry was written twice: $(ls "$P/$OPS/learnings")"
+[ ! -e "$P/$OPS/LEARNINGS.md" ] || fail "an index file was written"
 has "$P/$CAPS/.legacy-rules-imported" "lines=0"
 
 # --- (n) an interrupted first commit ------------------------------------------------
@@ -438,7 +431,7 @@ new_project n2
 mkdir -p "$P/$OTHER/TOPIC"
 printf '# Overview\n\nThe other edition.\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"
 printf '# Topic\n' > "$P/$OTHER/TOPIC/x.md"
-cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+old_index "$P/$OTHER/LEARNINGS.md"
 kbefore="$(snap "$P/$OLD")"
 run_failing "/TOPIC" --first-commit --from "$OTHER"
 expect_rc 2
@@ -474,7 +467,7 @@ new_project n4
 mkdir -p "$P/$OTHER"
 printf '# Overview\n\nThe other edition.\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"
 printf '# Toolchain\n' > "$P/$OTHER/TOOLCHAIN.md"
-cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+old_index "$P/$OTHER/LEARNINGS.md"
 kbefore="$(snap "$P/$OLD")"
 # Only the rename of the staging directory ends in ".migrating".
 run_failing ".migrating" --first-commit --from "$OTHER"
@@ -505,7 +498,7 @@ new_project n5
 # so a guess would merge it in silently.
 mkdir -p "$P/$OTHER" "$P/$NEW.migrating"
 printf '# Toolchain\n' > "$P/$NEW.migrating/TOOLCHAIN.md"
-cp "$TEAM/templates/learnings.md" "$P/$OTHER/LEARNINGS.md"
+old_index "$P/$OTHER/LEARNINGS.md"
 kbefore="$(snap "$P/$OLD")"
 before="$(snap "$P")"; run --first-commit
 expect_rc 1
