@@ -101,7 +101,7 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
       summary="$(printf '%s\n' "$inbox" | head -1 | sed 's/^learnings inbox: //')"
       summary="$(escape_for_json "$summary")"
       context="${context}<TEAM-INBOX-DUE>\n"
-      context="${context}The learnings inbox is due: ${summary}. In Step 0, before any research, offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Inbox due: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}The learnings inbox is due: ${summary}. In Step 0, before any research, offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one question, as that file words it), then record \\\"Inbox due: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-INBOX-DUE>\n"
     fi
   fi
@@ -111,7 +111,7 @@ if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*
       written="$(printf '%s\n' "$scaffold" | sed -n 's/^knowledge: scaffold //p' | head -1)"
       written="$(escape_for_json "$written")"
       context="${context}<TEAM-KNOWLEDGE-SCAFFOLD>\n"
-      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Scaffold knowledge: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one question, as that file words it), then record \\\"Scaffold knowledge: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-KNOWLEDGE-SCAFFOLD>\n"
     fi
   fi

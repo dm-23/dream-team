@@ -155,7 +155,7 @@ run_deployed() { # CASE PROJECT PROMPT: runs the hook from its deployed place
 p="$(inbox_project inbox-due)"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'one question, as that file words it'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
 run_deployed inbox-due-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-plain "inbox block on a plain prompt: $OUT" ;; esac
 run_deployed inbox-due-status "$p" '"/team status"'
@@ -182,7 +182,7 @@ entry='## [2026-10-01] A trap
 p="$(inbox_project inbox-due-new new)"
 printf '%s\n' "$entry" > "$p/.dream-team-tracking/operative/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due-new "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due-new "expected the inbox block: $OUT" ;; esac
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'one question, as that file words it'*) ;; *) fail inbox-due-new "expected the inbox block: $OUT" ;; esac
 run_deployed inbox-due-new-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-new-plain "inbox block on a plain prompt: $OUT" ;; esac
 p="$(inbox_project inbox-clean-new new)"
