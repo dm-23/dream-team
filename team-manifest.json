@@ -129,6 +129,7 @@
     "ruleExtractor": "tools/extract-rules.sh",
     "drift": "tools/knowledge-drift.sh",
     "proposals": "tools/proposals.sh",
+    "refresh": "tools/knowledge-refresh.sh",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -360,6 +361,7 @@
     "shapeCheck": "bash checks/verify-shape-check.sh",
     "knowledgeDrift": "bash checks/verify-knowledge-drift.sh",
     "proposals": "bash checks/verify-proposals.sh",
+    "knowledgeRefresh": "bash checks/verify-knowledge-refresh.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",

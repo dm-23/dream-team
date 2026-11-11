@@ -22,6 +22,7 @@ tools/normalize-status.sh text eol=lf
 tools/collect-amendments.sh text eol=lf
 tools/knowledge-drift.sh text eol=lf
 tools/proposals.sh text eol=lf
+tools/knowledge-refresh.sh text eol=lf
 # copilot/ builds the GitHub Copilot edition; its scripts and awk programs run
 # through bash and awk, which a CRLF checkout breaks the same way.
 copilot/*.sh text eol=lf
