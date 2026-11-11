@@ -79,6 +79,9 @@ std() {
   kfile DI-AND-STARTUP.md "src/startup/**"
   kfile CODING-STANDARDS.md "conventions"
   kfile TESTING-CONVENTIONS.md "conventions"
+  # a topic an editor on Windows saved with CRLF
+  put src/jobs/j.ts
+  printf '%s\r\n' '# Jobs' 'Covers: src/jobs/**' '' 'Body.' > "$P/$KD/backend-architecture/jobs.md"
   commit "code and knowledge"
   base
 }
@@ -151,6 +154,13 @@ has "billing --list" "baseline${TAB}$BASE_SHA"
 has "billing --list" "branch${TAB}release/1.0"
 has "billing --list" "marked${TAB}backend-architecture/logic.md${TAB}2"
 hasnt "billing --list" "Knowledge baseline"
+
+# --- a CRLF topic -------------------------------------------------------------
+new_repo crlftopic; std
+put src/jobs/j.ts "changed"; commit "jobs"
+drift
+has "crlf topic" "- backend-architecture/jobs.md  (src/jobs/**: 1 files)"
+case "$OUT" in *"$CR"*) fail "crlf topic: output holds a CR";; esac
 
 # --- package.json -------------------------------------------------------------
 new_repo toolchain; std
@@ -315,6 +325,99 @@ while IFS= read -r p; do
 done <<EOF
 $PATTERNS
 EOF
+
+# --- the project in a subdirectory of the repository -------------------------
+# Covers: patterns and "not covered" groups are repository-root paths; a change
+# under the project's knowledge dir is still no change.
+new_repo mono
+P="$WORK/mono/app"; mkdir -p "$P/$KD"
+put src/a.ts; put src/b.ts
+kfile PROJECT-OVERVIEW.md "app/src/**"
+kfile TOOLCHAIN.md "app/package.json"; put package.json
+kfile DI-AND-STARTUP.md "app/startup/**"; put startup/s.ts
+P="$WORK/mono"; put lib/l.ts; commit "monorepo"
+BASE_SHA="$(git -C "$P" rev-parse HEAD | tr -d '\r')"
+printf '%s\n' "commit=$BASE_SHA" "date=2026-11-01" "branch=release/1.0" > "$P/app/$KD/BASELINE"
+commit "knowledge refresh"
+P="$WORK/mono/app"; kfile SEARCH-PLAYBOOK.md "app/docs/**"
+P="$WORK/mono"; commit "knowledge edit"
+P="$WORK/mono/app"; drift
+rc0 "subdirectory, knowledge-only change"
+first_is "subdirectory, knowledge-only change" "Knowledge baseline: ${BASE_SHA:0:7} (2026-11-01). Nothing changed since."
+put src/a.ts "changed"; P="$WORK/mono"; put lib/m.ts; commit "code"
+P="$WORK/mono/app"; drift
+first_is "subdirectory, code change" "Knowledge baseline: ${BASE_SHA:0:7} (2026-11-01). Changed since: 2 files."
+has "subdirectory, code change" "- PROJECT-OVERVIEW.md  (app/src/**: 1 files)"
+has "subdirectory, code change" "Not covered by knowledge: lib/ (1 files)"
+
+# --- a failed diff is never "Nothing changed since." -------------------------
+# A git that fails every diff, ahead of the real one on PATH.
+REALGIT="$(command -v git)"
+mkdir -p "$WORK/stub"
+printf '%s\n' '#!/usr/bin/env bash' 'for a in "$@"; do [ "$a" = diff ] && exit 128; done' "exec \"$REALGIT\" \"\$@\"" > "$WORK/stub/git"
+chmod +x "$WORK/stub/git"
+P="$WORK/knowledgeonly"
+OUT="$(cd "$P" && PATH="$WORK/stub:$PATH" bash "$TOOL" 2>&1)"; RC=$?
+rc0 "failed diff"
+UNCOMPARED="cannot be compared with HEAD in this copy — the lag is unknown."
+has "failed diff" "$UNCOMPARED"
+hasnt "failed diff" "Nothing changed since"
+OUT="$(cd "$P" && PATH="$WORK/stub:$PATH" bash "$TOOL" --list 2>&1)"; RC=$?
+has "failed diff --list" "state${TAB}unresolved"
+
+# --- a partial clone is never fetched into -----------------------------------
+# The source: main holds the code and the knowledge, whose BASELINE names a
+# commit of a branch the clone never fetches.
+SRC="$WORK/partial-src"
+new_repo partial-src
+git -C "$P" symbolic-ref HEAD refs/heads/main
+git -C "$P" config uploadpack.allowFilter true
+git -C "$P" config uploadpack.allowAnySHA1InWant true
+put src/a.ts; commit "code"
+git -C "$P" checkout -q -b other; put src/other.ts; commit "other"
+OTHER="$(git -C "$P" rev-parse HEAD | tr -d '\r')"
+git -C "$P" checkout -q main
+kfile PROJECT-OVERVIEW.md "src/**"
+printf '%s\n' "commit=$OTHER" "date=2026-11-01" "branch=release/1.0" > "$P/$KD/BASELINE"
+commit "knowledge"
+SRCDIR="$(cd "$SRC" && { pwd -W 2>/dev/null || pwd; })"
+case "$SRCDIR" in /*) SRCURL="file://$SRCDIR" ;; *) SRCURL="file:///$SRCDIR" ;; esac
+if git -c protocol.file.allow=always clone -q --filter=blob:none --single-branch --branch main "$SRCURL" "$WORK/partial-blobless" 2>/dev/null \
+   && [ "$(git -C "$WORK/partial-blobless" config --get remote.origin.promisor 2>/dev/null | tr -d '\r')" = true ]; then
+  P="$WORK/partial-blobless"
+  GIT_NO_LAZY_FETCH=1 git -C "$P" cat-file -e "$OTHER^{commit}" 2>/dev/null \
+    && fail "partial clone: the fixture already holds the other branch's commit"
+  drift
+  rc0 "partial clone"
+  first_is "partial clone" "Knowledge baseline: ${OTHER:0:7} (2026-11-01) is not in this copy — the lag is unknown."
+  GIT_NO_LAZY_FETCH=1 git -C "$P" cat-file -e "$OTHER^{commit}" 2>/dev/null \
+    && fail "partial clone: the tool fetched the baseline commit"
+
+  # A treeless clone holds the baseline commit but not its tree: the diff fails.
+  P="$SRC"
+  git -C "$P" checkout -q other; put src/third.ts; commit "third"; git -C "$P" checkout -q main
+  git -C "$P" merge -q --no-edit other >/dev/null 2>&1
+  OLD="$(git -C "$P" rev-parse HEAD~1 | tr -d '\r')"
+  printf '%s\n' "commit=$OLD" "date=2026-11-01" "branch=release/1.0" > "$P/$KD/BASELINE"
+  put src/later.ts; commit "baseline and a change"
+  if git -c protocol.file.allow=always clone -q --filter=tree:0 --single-branch --branch main "$SRCURL" "$WORK/partial-treeless" 2>/dev/null; then
+    P="$WORK/partial-treeless"
+    if GIT_NO_LAZY_FETCH=1 git -C "$P" cat-file -e "$OLD^{tree}" 2>/dev/null; then
+      echo "skip [treeless clone] the clone already holds the baseline tree"
+    else
+      drift
+      rc0 "treeless clone"
+      has "treeless clone" "$UNCOMPARED"
+      hasnt "treeless clone" "Nothing changed since"
+      GIT_NO_LAZY_FETCH=1 git -C "$P" cat-file -e "$OLD^{tree}" 2>/dev/null \
+        && fail "treeless clone: the tool fetched the baseline tree"
+    fi
+  else
+    echo "skip [treeless clone] this git cannot make a tree:0 partial clone"
+  fi
+else
+  echo "skip [partial clone] this git cannot make a blob:none partial clone"
+fi
 
 # --- arguments ----------------------------------------------------------------
 P="$WORK/billing"; drift --bogus

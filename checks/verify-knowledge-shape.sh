@@ -25,7 +25,9 @@
 #     (after the scaffold banner, when it has one); and every pattern such a
 #     line lists, unless it reads "conventions" or "topics", matches at least
 #     one path git tracks in the repository that holds <knowledge-dir>
-#     (git ls-files -- ':(top,glob)<pattern>'). tools/knowledge-drift.sh reads
+#     (git ls-files -- ':(top,glob)<pattern>'), and holds no backslash: a
+#     pattern names paths with "/", and a backslash is an escape to git, a
+#     Windows separator to whoever wrote it. tools/knowledge-drift.sh reads
 #     the same lines.
 #
 # The budgets rulesMaxFiles and ruleMaxLines are read from knowledge.budgets of
@@ -43,6 +45,7 @@
 #   <path>/BASELINE: no "commit=" line of 40 hex digits   (and date=, branch=)
 #   <path>: no "Covers:" line in its first five lines
 #   <path>: pattern matches nothing: <pattern>
+#   <path>: pattern has a backslash: <pattern>
 #   <knowledge-dir>: not inside a git repository, so no Covers pattern can be checked
 #
 # Exit 0 = in shape (prints "knowledge shape: ok"). Exit 1 = defects listed.
@@ -231,6 +234,9 @@ if [ -f "$DIR/BASELINE" ]; then
     fi
     while IFS= read -r p; do
       [ -n "$p" ] || continue
+      case "$p" in
+        *'\'*) echo "$f: pattern has a backslash: $p"; FOUND=1; continue ;;
+      esac
       if [ -z "$(git -C "$DIR" ls-files -- ":(top,glob)$p" 2>/dev/null | head -n 1)" ]; then
         echo "$f: pattern matches nothing: $p"
         FOUND=1

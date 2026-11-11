@@ -12,7 +12,10 @@
 # declares, within its first five lines (after the scaffold banner, when it
 # has one), the paths it describes:
 #
-#   Covers: <pattern>, <pattern>   git glob pathspecs from the repository root
+#   Covers: <pattern>, <pattern>   git glob pathspecs from the repository root,
+#                                  also when the project is a subdirectory of
+#                                  the repository; "not covered" groups are
+#                                  repository-root paths too
 #   Covers: conventions            never marked by path
 #   Covers: topics                 the index of a split file, never marked
 #
@@ -21,8 +24,10 @@
 #   none        not a repository, or nothing tracked under the knowledge dir
 #   scaffold    checks/verify-knowledge-scaffold.sh exits 1 or 3
 #   missing     no baseline file, or no commit= line of 40 hex digits
-#   unresolved  the baseline commit is not in this copy
-#   clean       no path changed since the baseline commit
+#   unresolved  the baseline commit is not in this copy, or this copy cannot
+#               compare it with HEAD (a partial clone missing its trees):
+#               "the lag is unknown", never "Nothing changed since."
+#   clean      no path changed since the baseline commit
 #   over        more than knowledge.budgets.driftMarkedPercent of the located
 #               topics are marked: one line, "a refresh is due"
 #   listed      a block: the changed-file count, the marked files, each with
@@ -59,10 +64,16 @@
 #   uncovered <group> <n>    over and listed
 #
 # Reads only; never writes outside a temporary directory, never contacts a
-# remote. Exit 0 always, 2 on a bad argument. A manifest that cannot be read
-# is named on stderr and the tool exits 0 with nothing on stdout.
+# remote: in a partial clone a missing object is never fetched lazily
+# (GIT_NO_LAZY_FETCH, and protocol.allow=never for git older than 2.44, which
+# lacks it) and no credential prompt can stall the run (GIT_TERMINAL_PROMPT).
+# Exit 0 always, 2 on a bad argument. A manifest that cannot be read is named
+# on stderr and the tool exits 0 with nothing on stdout.
 set -uo pipefail
 export LC_ALL=C
+export GIT_NO_LAZY_FETCH=1 GIT_TERMINAL_PROMPT=0
+# Every git call that may reach an object: no transport is allowed.
+lgit() { git -c protocol.allow=never "$@"; }
 
 usage() { echo "usage: knowledge-drift.sh [--list]" >&2; exit 2; }
 LIST=0
@@ -185,17 +196,24 @@ case "$DATE" in
 esac
 
 # --- unresolved --------------------------------------------------------------------
-git cat-file -e "$SHA^{commit}" 2>/dev/null || {
+lgit cat-file -e "$SHA^{commit}" 2>/dev/null || {
   report unresolved "Knowledge baseline: $SHORT ($DATE) is not in this copy — the lag is unknown."
   exit 0
 }
 
 # --- clean -----------------------------------------------------------------------
 # NUL-separated, so no path is quoted or split; a newline inside a path becomes
-# \001, and each path is one line.
-git diff --name-only -z --no-renames --no-relative "$SHA" HEAD 2>/dev/null \
-  | tr '\n\000' '\001\n' > "$tmp/all"
-awk -v kd="$KD/" '$0 != "" && index($0, kd) != 1' "$tmp/all" > "$tmp/changed"
+# \001, and each path is one line. The paths are repository-root paths
+# (--no-relative), so the knowledge dir, which is project-root-relative, is
+# prefixed with the project's place in the repository. A failed diff is never
+# read as an empty one.
+PREFIX="$(git rev-parse --show-prefix 2>/dev/null | tr -d '\r')"
+lgit diff --name-only -z --no-renames --no-relative "$SHA" HEAD > "$tmp/raw" 2>/dev/null || {
+  report unresolved "Knowledge baseline: $SHORT ($DATE) cannot be compared with HEAD in this copy — the lag is unknown."
+  exit 0
+}
+tr '\n\000' '\001\n' < "$tmp/raw" > "$tmp/all"
+awk -v kd="$PREFIX$KD/" '$0 != "" && index($0, kd) != 1' "$tmp/all" > "$tmp/changed"
 if [ ! -s "$tmp/changed" ]; then
   report clean "Knowledge baseline: $SHORT ($DATE). Nothing changed since."
   exit 0
@@ -351,7 +369,7 @@ if [ "$LIST" = 1 ]; then
 fi
 
 if [ "$STATE" = over ]; then
-  C="$(git rev-list --count "$SHA..HEAD" 2>/dev/null | tr -d '\r')"
+  C="$(lgit rev-list --count "$SHA..HEAD" 2>/dev/null | tr -d '\r')"
   printf '%s\n' "Knowledge baseline: $SHORT ($DATE). ${C:-?} commits behind, $SHARE% of the located topics changed: a refresh is due; verify every topic against the code."
   exit 0
 fi

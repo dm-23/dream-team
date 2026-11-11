@@ -130,6 +130,9 @@ mk_covered
 printf '%s\n' '# Data' 'Covers: src/**, lib/**' > "$K/backend-architecture/data.md"
 run_case "baseline, a pattern matching nothing" 1 "backend-architecture/data.md: pattern matches nothing: lib/**" "$K"
 mk_covered
+printf '%s\n' '# Data' 'Covers: src\a.ext' > "$K/backend-architecture/data.md"
+run_case "baseline, a pattern with a backslash" 1 'backend-architecture/data.md: pattern has a backslash: src\a.ext' "$K"
+mk_covered
 printf '%s\n' 'commit=0123456789abcdef0123456789abcdef01234567' 'branch=release/1.0' > "$K/BASELINE"
 run_case "baseline without a date" 1 "BASELINE: no \"date=\" line" "$K"
 printf '%s\n' 'commit=12345' 'date=2026-11-01' 'branch=release/1.0' > "$K/BASELINE"
