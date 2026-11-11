@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "4.8.0",
+    "version": "5.0.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -211,7 +211,8 @@
       "4.3.0": { "knowledge": "PROJECT-RULES.md (critical zones section)" },
       "4.4.0": { "knowledge": "FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md (design language and its checks)" },
       "4.5.0": { "do": "normalize the first line of every status.md closed in old prose (setup.normalizer)" },
-      "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" }
+      "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" },
+      "5.0.0": { "do": "move the learnings inbox and CAPABILITIES.md out of the edition's knowledge directory (knowledge.migration; step 1b runs it)", "knowledge": "TOOLCHAIN.md (Missing on this machine leaves the file)" }
     }
   },
   "hooks": {
