@@ -16,6 +16,7 @@ tools/migrate-tracking.sh text eol=lf
 tools/knowledge-dir.sh text eol=lf
 tools/migrate-knowledge.sh text eol=lf
 tools/learnings-index.sh text eol=lf
+tools/inbox.sh text eol=lf
 tools/normalize-status.sh text eol=lf
 tools/collect-amendments.sh text eol=lf
 # copilot/ builds the GitHub Copilot edition; its scripts and awk programs run
