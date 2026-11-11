@@ -34,9 +34,10 @@ Put into every handoff's `team amendments` field the `Rule` lines whose `Roles` 
 
 ## Candidates
 
-During the run, write each lesson about the team into `status.md → ## Team amendment candidates`, in the entry format without `Added`, the `Evidence` lines pointing at this run's tracking files. Three sources:
+During the run, write each lesson about the team into `status.md → ## Team amendment candidates`, in the entry format without `Added`, the `Evidence` lines pointing at this run's tracking files. Four sources:
 
 - a team-amendment candidate from `review-comments.md` step 8;
+- a finding of a Review Changes run with a `Missed:` line whose reason is a missing rule (`review_changes.md` step 6): another reviewer's thread held and the team's own review did not raise it;
 - each item of a Reviewer's `Team issues` line;
 - a Process notes deviation you recorded because a rule of the team did not fit the case.
 
