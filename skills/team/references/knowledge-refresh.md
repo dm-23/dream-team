@@ -1,6 +1,6 @@
 # Knowledge refresh (offered, never imposed)
 
-**The mode** is read from the first line of the drift tool's output, computed once in `preflight.md` → "Drift": the `none` state ("Knowledge baseline: none — the knowledge is not committed in this branch.") is **private mode**; any other line is **committed mode**, where the knowledge belongs to the whole team and only `/generate-knowledge refresh`, run by whoever maintains the knowledge, writes it. `not computed` reads as private mode: the generator finds its own mode and never writes committed knowledge from a run.
+**The mode.** A knowledge dir (the resolver's output) that is `knowledge.legacyDir` is **private mode** whatever git says, as the generator rules. Otherwise the mode is read from the first line of the drift tool's output, computed once in `preflight.md` → "Drift": the `none` state ("Knowledge baseline: none — the knowledge is not committed in this branch.") is **private mode**; any other line is **committed mode**, where the knowledge belongs to the whole team and only `/generate-knowledge refresh`, run by whoever maintains the knowledge, writes it. `not computed` is **mode unknown**: no offer at Step 0 and no knowledge option at close; one line names `/generate-knowledge` for the developer to run (it finds its own mode), and with a `knowledge.required` file missing the run stops, naming the files and `/generate-knowledge`.
 
 **The release branch** (committed mode only) is the `branch` record (`branch<TAB><name>`) of `bash .claude/{knowledge.drift} --list`, run from the project root once per run, the first time this file needs it; no such record, no branch.
 
@@ -36,6 +36,6 @@ Scope: no file names at either moment. The generator's own staleness check and i
 
 - `## Decisions log`, private mode: `{YYYY-MM-DD} — Knowledge refreshed by the team: {files | all}, {M} marks triaged; backup {path from the generator's report}`.
 - `## Decisions log`, committed mode: `{YYYY-MM-DD} — Remarks submitted by the team: {N} on {new branch}; push and pull request left to the developer`, N and the new branch from the tool's `proposals:` line. The final report repeats the tool's `push:` and `pull request:` lines verbatim. When nothing was submitted, the line reads `{YYYY-MM-DD} — Inbox triaged by the team; nothing submitted: {the reason the generator reported}`.
-- `## Process notes`: `Inbox due: offered YYYY-MM-DD — refreshed | triaged | declined` or `Scaffold knowledge: offered YYYY-MM-DD — refreshed | declined` (committed mode: `Scaffold knowledge: told YYYY-MM-DD`), one line, written once. A resumed session that finds the line says nothing more about it.
+- `## Process notes`: `Inbox due: offered YYYY-MM-DD — refreshed | triaged | declined` (mode unknown: `Inbox due: told YYYY-MM-DD`) or `Scaffold knowledge: offered YYYY-MM-DD — refreshed | declined` (committed mode or mode unknown: `Scaffold knowledge: told YYYY-MM-DD`), one line, written once. A resumed session that finds the line says nothing more about it.
 
 On no, the run continues; nothing is repeated on resume. Never block a run on knowledge, except for the stop on missing required files above.
