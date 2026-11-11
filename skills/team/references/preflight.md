@@ -8,6 +8,10 @@ Run `bash .claude/{knowledge.resolver} project` from the project root: the knowl
 
 Run `bash .claude/tools/inbox.sh where` once, from the project root. Its second line goes to status.md → "Process notes" as `Learnings inbox: <line>` once status.md exists (Step 0; a resumed run that already has the line gets no second one). A `note:` line it prints is said once, as `learnings-check.md` says. Its first line, the inbox's directory, is never written into a handoff, a file or a command: every reader reaches the inbox through the tool. Nothing is created here; `inbox.sh add` creates `learnings/` with the first entry.
 
+## Drift
+
+Run `bash .claude/{knowledge.drift}` once per run, from the project root, after the directories. Its output, one line or a block, is pasted verbatim into the `knowledge drift` field of every handoff. Once status.md exists (Step 0), write its first line to Process notes as `Knowledge drift: <line>`; a resumed run that already has the line gets no second one. A failure of the tool — it cannot be run, or prints nothing — is written as `Knowledge drift: not computed`, the field reads `not computed`, and the run continues. Never block the run on drift: a run that lags still runs.
+
 ## Required files
 
 Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check it exists under the knowledge dir. If any is missing: offer to generate them now as `.claude/skills/team/references/knowledge-refresh.md` says (one question, naming the missing files); on no, stop and name the files. Never write a knowledge file yourself.
@@ -27,4 +31,5 @@ Read `CAPABILITIES.md` from `knowledge.capabilitiesDir` if it exists; when it do
 ## Tools you may run
 
 - The resolver (`knowledge.resolver`), run from the project root.
+- The drift tool (`knowledge.drift`), `bash .claude/tools/knowledge-drift.sh`, run from the project root: once, in "Drift".
 - The inbox tool (`knowledge.inbox`), `bash .claude/tools/inbox.sh`, run from the project root: `where` here, `index`, `show` and `check` in `learnings-check.md`, `show` and `append` in `accepted-exceptions.md`.

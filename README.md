@@ -127,6 +127,10 @@ git commit
 
 The second line drops whatever the merge brought into the directory, including files that exist only on the older branch, and restores the directory as it is on the branch you are merging into. If the merge already stopped on conflicts, run the second line there. When the branch you are merging into has no `.dream-team/knowledge/` yet, the `git checkout` fails with a pathspec error; that is expected, because the `git rm` has already left the right state (no directory). `git checkout --ours -- .dream-team/knowledge && git add .dream-team/knowledge` also works during a merge into the current branch (`--ours` is the current branch), but it leaves behind files that exist only on the older branch, so prefer the line above. A merge performed on a server cannot run it; whoever merges there restores the directory afterwards, in a follow-up commit of its own. A rule adopted on the older branch does not reach the newer one by itself: carry it over by hand.
 
+### How far knowledge lags
+
+The knowledge records the commit it was last verified against in `.dream-team/knowledge/BASELINE` (`commit=`, `date=`, `branch=`), written by a `/generate-knowledge` run that regenerated every file from the code, and every generated file and topic names the paths it describes on a `Covers:` line near its top. At the start of every run, `tools/knowledge-drift.sh` compares that commit with the current one, in your working copy and without contacting a remote, and every handoff carries its report as `knowledge drift`: how many files changed since the baseline, which knowledge files describe changed paths, and which changed paths no knowledge covers. When too many topics are marked, it says a refresh is due instead; scaffold knowledge, a missing baseline, or a baseline commit this copy does not have gets one line saying so. A marked topic is still read: where it and the code disagree, the code wins and the agent reports the disagreement. The report never stops a run.
+
 ## Directory layout
 
 This repository, and equally the project's `.claude/` after deployment:
