@@ -342,6 +342,11 @@ checks = {
     "knowledge.dir": m["knowledge"]["dir"] == ".dream-team/knowledge",
     "knowledge.legacyDir": m["knowledge"].get("legacyDir") == ".github/dream-team/knowledge",
     "knowledge.capabilitiesDir": m["knowledge"].get("capabilitiesDir", "").endswith("operative/copilot"),
+    "knowledge.profileDir": m["knowledge"].get("profileDir") == "~/.dream-team",
+    "knowledge.inbox": m["knowledge"].get("inbox") == "tools/inbox.sh"
+        and os.path.isfile(os.path.join(out, ".github/dream-team/tools/inbox.sh")),
+    "knowledge.persistent": m["knowledge"].get("persistent") == ["learnings/"]
+        and "persistentTemplates" not in m["knowledge"],
     "tracking.dir": m["tracking"]["dir"] == ".dream-team-tracking",
     "tracking.legacyDir": m["tracking"].get("legacyDir") == ".claude-tracking",
     "tracking.migration": m["tracking"].get("migration") == "tools/migrate-tracking.sh",
@@ -381,6 +386,12 @@ MS="$REAL/.github/dream-team/tools/migrate-tracking.sh"
 [ -f "$MS" ] || fail "migrate-tracking.sh not in the edition"
 grep -qF "'^[.]claude/'" "$MS" && grep -qF "'^[.]github/dream-team/'" "$MS" \
   || fail "the edition's migration script lost an exclusion pattern"
+finish
+
+start copilot-inbox-profile
+[ -f "$REAL/.github/dream-team/tools/inbox.sh" ] || fail "tools/inbox.sh not in the edition"
+grep -qF '"profileDir": "~/.dream-team",' "$REAL/.github/dream-team/team-manifest.json" \
+  || fail "the edition's manifest lost knowledge.profileDir ~/.dream-team"
 finish
 
 start real-drift
@@ -444,18 +455,21 @@ team_state() { # every installed path: hash mtime path
   (cd "$1" && find .github -type f 2>/dev/null | sort | while IFS= read -r f; do
     printf '%s %s %s\n' "$(git hash-object -- "$f")" "$(stat -c %Y -- "$f")" "$f"; done)
 }
-SEEDED=".github/dream-team/knowledge/learnings/2026-01-01-trap.md .github/dream-team/knowledge/LEARNINGS.md
+SEEDED=".github/dream-team/knowledge/learnings/2026-01-01-trap.md .github/dream-team/knowledge/learnings/2026-01-02-other.md
 .github/dream-team/knowledge/CAPABILITIES.md .dream-team-tracking/.team-mode .dream-team-tracking/run_x/status.md
 .dream-team-tracking/.service-consent .git/info/exclude .github/copilot-instructions.md .github/agents/other.agent.md
-.vscode/settings.json .dream-team/knowledge/PROJECT-OVERVIEW.md .dream-team-tracking/operative/LEARNINGS.md"
+.vscode/settings.json .dream-team/knowledge/PROJECT-OVERVIEW.md .dream-team-tracking/operative/learnings/2026-01-03-trap.md
+.dream-team-tracking/operative/review-exceptions.md .dream-team-tracking/operative/copilot/CAPABILITIES.md"
 seed_state() {
   local p="$1"
-  mkdir -p "$p/.dream-team/knowledge" "$p/.dream-team-tracking/operative" "$p/.github/dream-team/knowledge/learnings" "$p/.dream-team-tracking/run_x" "$p/.github/agents" "$p/.vscode"
+  mkdir -p "$p/.dream-team/knowledge" "$p/.dream-team-tracking/operative/learnings" "$p/.dream-team-tracking/operative/copilot" "$p/.github/dream-team/knowledge/learnings" "$p/.dream-team-tracking/run_x" "$p/.github/agents" "$p/.vscode"
   echo "entry" > "$p/.github/dream-team/knowledge/learnings/2026-01-01-trap.md"
-  echo "# Learnings" > "$p/.github/dream-team/knowledge/LEARNINGS.md"
+  echo "entry 2" > "$p/.github/dream-team/knowledge/learnings/2026-01-02-other.md"
   echo "caps" > "$p/.github/dream-team/knowledge/CAPABILITIES.md"
   echo "# Project" > "$p/.dream-team/knowledge/PROJECT-OVERVIEW.md"
-  echo "# Inbox" > "$p/.dream-team-tracking/operative/LEARNINGS.md"
+  echo "entry 3" > "$p/.dream-team-tracking/operative/learnings/2026-01-03-trap.md"
+  echo "# Accepted exceptions" > "$p/.dream-team-tracking/operative/review-exceptions.md"
+  echo "caps here" > "$p/.dream-team-tracking/operative/copilot/CAPABILITIES.md"
   echo "context_id=run_x" > "$p/.dream-team-tracking/.team-mode"
   echo "status" > "$p/.dream-team-tracking/run_x/status.md"
   echo "update-check=granted 2026-10-01" > "$p/.dream-team-tracking/.service-consent"
