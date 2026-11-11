@@ -106,7 +106,7 @@ This split is the whole design. Layer one carries process and roles. Layer three
 
 1. Update the team in that checkout.
 2. Run `/team-setup`. It moves the operative files and, since the shared directory is not there yet, tells you which command the next step needs. It never runs that command itself.
-3. Run `bash .claude/tools/migrate-knowledge.sh --first-commit` from the project root (add `--from <dir>` when both editions left a private copy and you must choose). It moves the project files into `.dream-team/knowledge/`.
+3. Run `bash .claude/tools/migrate-knowledge.sh --first-commit` (the Copilot edition: `bash .github/dream-team/tools/migrate-knowledge.sh --first-commit`) from the project root (add `--from <dir>` when both editions left a private copy and you must choose). It moves the project files into `.dream-team/knowledge/`.
 4. Run `/generate-knowledge`. It writes the files in the new place, takes the machine-specific section out of `TOOLCHAIN.md`, and removes any team path from the text.
 5. Commit `.dream-team/knowledge/` alone, in a commit that touches nothing else, and push.
 
@@ -122,7 +122,7 @@ git rm -rfq --ignore-unmatch .dream-team/knowledge && git checkout HEAD -- .drea
 git commit
 ```
 
-The second line drops whatever the merge brought into the directory, including files that exist only on the older branch, and restores the directory as it is on the branch you are merging into. If the merge already stopped on conflicts, run the second line there. `git checkout --ours -- .dream-team/knowledge && git add .dream-team/knowledge` also works during a merge into the current branch (`--ours` is the current branch), but it leaves behind files that exist only on the older branch, so prefer the line above. A merge performed on a server cannot run it; whoever merges there restores the directory afterwards, in a follow-up commit of its own. A rule adopted on the older branch does not reach the newer one by itself: carry it over by hand.
+The second line drops whatever the merge brought into the directory, including files that exist only on the older branch, and restores the directory as it is on the branch you are merging into. If the merge already stopped on conflicts, run the second line there. When the branch you are merging into has no `.dream-team/knowledge/` yet, the `git checkout` fails with a pathspec error; that is expected, because the `git rm` has already left the right state (no directory). `git checkout --ours -- .dream-team/knowledge && git add .dream-team/knowledge` also works during a merge into the current branch (`--ours` is the current branch), but it leaves behind files that exist only on the older branch, so prefer the line above. A merge performed on a server cannot run it; whoever merges there restores the directory afterwards, in a follow-up commit of its own. A rule adopted on the older branch does not reach the newer one by itself: carry it over by hand.
 
 ## Directory layout
 

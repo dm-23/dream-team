@@ -494,8 +494,8 @@ run_install "$P"
 [ "$RC" = 0 ] || fail "exit $RC: $(cat "$TMP/inst.err")"
 run_install "$P"
 [ "$before" = "$(seeded_state "$P")" ] || fail "seeded state changed: $(diff <(echo "$before") <(seeded_state "$P") | tr '\n' ' ')"
-grep -q '^\.github/dream-team/knowledge' "$P/.github/dream-team/.installed" && fail "record claims a knowledge file"
-grep -q '^[.]dream-team' "$P/.github/dream-team/.installed" && fail "record claims a project file"
+grep -q ' [.]github/dream-team/knowledge' "$P/.github/dream-team/.installed" && fail "record claims a knowledge file"
+grep -q ' [.]dream-team/' "$P/.github/dream-team/.installed" && fail "record claims a project file"
 finish
 
 start install-conflict
@@ -625,6 +625,7 @@ for bad in ".github/dream-team/templates${bsl}..${bsl}knowledge${bsl}CAPABILITIE
   [ "$RC" = 2 ] || fail "$bad: expected exit 2, got $RC"
   grep -qF "outside the team's paths" "$TMP/inst.err" || fail "$bad: message: $(cat "$TMP/inst.err")"
   [ "$(cat "$k")" = caps ] || fail "$bad: knowledge file touched"
+  [ "$(cat "$P/.dream-team/knowledge/PROJECT-OVERVIEW.md")" = "# Project" ] || fail "$bad: shared knowledge file touched"
   [ -f "$P/.git/info/exclude" ] || fail "$bad: .git/info/exclude touched"
 done
 finish
