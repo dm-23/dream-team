@@ -119,6 +119,7 @@
     "legacyDir": ".claude/knowledge",
     "otherEditionDirs": [".github/dream-team/knowledge"],
     "operativeDir": ".dream-team-tracking/operative",
+    "profileDir": "~/.dream-team",
     "capabilitiesDir": ".dream-team-tracking/operative/claude",
     "toolchainMissingFile": ".dream-team-tracking/toolchain-missing.md",
     "resolver": "tools/knowledge-dir.sh",
