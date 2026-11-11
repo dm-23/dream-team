@@ -110,7 +110,7 @@ EOF
 EOF
   echo "template" > "$s/templates/t.md"
   echo "#!/usr/bin/env bash" > "$s/tools/a.sh"
-  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-role-consistency.sh; do
+  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh verify-role-consistency.sh; do
     echo "#!/usr/bin/env bash" > "$s/checks/$c"
   done
   echo "knowledge/" > "$s/.gitignore"
@@ -138,7 +138,7 @@ run_build "$TMP/fx-out" "$FIX"
 want="$TMP/want-files"
 printf '%s\n' .github/agents/alpha.agent.md .github/dream-team/.gitignore \
   .github/dream-team/checks/verify-knowledge-integrity.sh \
-  .github/dream-team/checks/verify-learnings-inbox.sh .github/dream-team/checks/verify-knowledge-scaffold.sh .github/dream-team/hooks/h \
+  .github/dream-team/checks/verify-learnings-inbox.sh .github/dream-team/checks/verify-knowledge-scaffold.sh .github/dream-team/checks/verify-knowledge-neutral.sh .github/dream-team/hooks/h \
   .github/dream-team/team-manifest.json .github/dream-team/templates/t.md \
   .github/dream-team/tools/a.sh .github/skills/demo/SKILL.md | sort > "$want"
 (cd "$TMP/fx-out" 2>/dev/null && find . -type f | sed 's|^\./||' | sort) > "$TMP/got-files"
@@ -296,7 +296,7 @@ run_build "$REAL" "$ROOT"
   find skills -type f | sed 's|^|.github/|'
   find templates -type f | sed 's|^|.github/dream-team/|'
   for f in tools/*.sh; do echo ".github/dream-team/$f"; done
-  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh; do
+  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh; do
     echo ".github/dream-team/checks/$c"
   done
   echo .github/dream-team/team-manifest.json
@@ -339,7 +339,9 @@ checks = {
     "version kept": m["team"]["version"] == s["team"]["version"],
     "agents kept": m["agents"] == s["agents"],
     "skills kept": m["skills"] == s["skills"],
-    "knowledge.dir": m["knowledge"]["dir"] == ".github/dream-team/knowledge",
+    "knowledge.dir": m["knowledge"]["dir"] == ".dream-team/knowledge",
+    "knowledge.legacyDir": m["knowledge"].get("legacyDir") == ".github/dream-team/knowledge",
+    "knowledge.capabilitiesDir": m["knowledge"].get("capabilitiesDir", "").endswith("operative/copilot"),
     "tracking.dir": m["tracking"]["dir"] == ".dream-team-tracking",
     "tracking.legacyDir": m["tracking"].get("legacyDir") == ".claude-tracking",
     "tracking.migration": m["tracking"].get("migration") == "tools/migrate-tracking.sh",
@@ -445,13 +447,15 @@ team_state() { # every installed path: hash mtime path
 SEEDED=".github/dream-team/knowledge/learnings/2026-01-01-trap.md .github/dream-team/knowledge/LEARNINGS.md
 .github/dream-team/knowledge/CAPABILITIES.md .dream-team-tracking/.team-mode .dream-team-tracking/run_x/status.md
 .dream-team-tracking/.service-consent .git/info/exclude .github/copilot-instructions.md .github/agents/other.agent.md
-.vscode/settings.json"
+.vscode/settings.json .dream-team/knowledge/PROJECT-OVERVIEW.md .dream-team-tracking/operative/LEARNINGS.md"
 seed_state() {
   local p="$1"
-  mkdir -p "$p/.github/dream-team/knowledge/learnings" "$p/.dream-team-tracking/run_x" "$p/.github/agents" "$p/.vscode"
+  mkdir -p "$p/.dream-team/knowledge" "$p/.dream-team-tracking/operative" "$p/.github/dream-team/knowledge/learnings" "$p/.dream-team-tracking/run_x" "$p/.github/agents" "$p/.vscode"
   echo "entry" > "$p/.github/dream-team/knowledge/learnings/2026-01-01-trap.md"
   echo "# Learnings" > "$p/.github/dream-team/knowledge/LEARNINGS.md"
   echo "caps" > "$p/.github/dream-team/knowledge/CAPABILITIES.md"
+  echo "# Project" > "$p/.dream-team/knowledge/PROJECT-OVERVIEW.md"
+  echo "# Inbox" > "$p/.dream-team-tracking/operative/LEARNINGS.md"
   echo "context_id=run_x" > "$p/.dream-team-tracking/.team-mode"
   echo "status" > "$p/.dream-team-tracking/run_x/status.md"
   echo "update-check=granted 2026-10-01" > "$p/.dream-team-tracking/.service-consent"
@@ -491,6 +495,7 @@ run_install "$P"
 run_install "$P"
 [ "$before" = "$(seeded_state "$P")" ] || fail "seeded state changed: $(diff <(echo "$before") <(seeded_state "$P") | tr '\n' ' ')"
 grep -q '^\.github/dream-team/knowledge' "$P/.github/dream-team/.installed" && fail "record claims a knowledge file"
+grep -q '^[.]dream-team' "$P/.github/dream-team/.installed" && fail "record claims a project file"
 finish
 
 start install-conflict
@@ -613,7 +618,7 @@ bsl=$'\x5c'
 for bad in ".github/dream-team/templates${bsl}..${bsl}knowledge${bsl}CAPABILITIES.md" \
   ".github/dream-team/..${bsl}..${bsl}.git${bsl}info${bsl}exclude" \
   ".github/dream-team/Knowledge/CAPABILITIES.md" ".github/dream-team/KNOWLEDGE/CAPABILITIES.md" \
-  ".github/dream-team/KNOWLE~1/CAPABILITIES.md"; do
+  ".github/dream-team/KNOWLE~1/CAPABILITIES.md" ".dream-team/knowledge/PROJECT-OVERVIEW.md"; do
   cp "$TMP/rec.orig" "$rec"
   printf '%s %s\n' "$(git hash-object "$k")" "$bad" >> "$rec"
   run_install "$P"
