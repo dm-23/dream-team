@@ -34,20 +34,24 @@ g() { git -C "$P" "$@"; }
 gx() { (cd "$P" && MSYS_NO_PATHCONV=1 git "$@"); }
 # new_fixture <dir> [untracked]: rel with code and committed knowledge (no
 # BASELINE yet); with "untracked", the knowledge files exist but nothing under
-# the knowledge dir is committed.
+# the knowledge dir is committed; with "none", there is no knowledge dir at
+# all. The repository's commit hooks are its own .git/hooks.
 new_fixture() {
   P="$1"
   mkdir -p "$P"
   g init -q
   g config core.autocrlf true
   g config core.safecrlf false
+  g config core.hooksPath .git/hooks
   g symbolic-ref HEAD refs/heads/rel
   g remote add origin "https://example.invalid/acme/refresh.git"
   printf '.dream-team-tracking/\n' >> "$P/.git/info/exclude"
-  mkdir -p "$P/src" "$P/$KD"
+  mkdir -p "$P/src"
   printf 'code\n' > "$P/src/a.txt"
   printf 'tracked\n' > "$P/t.txt"
   g add -A && g commit -q -m "code"
+  [ "${2:-}" = none ] && return 0
+  mkdir -p "$P/$KD"
   printf '# Overview\nCovers: src/**\n\nA project.\n' > "$P/$KD/PROJECT-OVERVIEW.md"
   printf '# Testing\nCovers: conventions\n\nTests.\n' > "$P/$KD/TESTING-CONVENTIONS.md"
   printf '# Old\nCovers: conventions\n\nGone soon.\n' > "$P/$KD/OLD.md"
@@ -140,6 +144,7 @@ case_ab() { # <fixture dir> <label>
   has_line "refresh: committed $(g rev-parse --short "$work" | tr -d '\r') on $work"
   has_line "push: git push -u origin $work"
   has_line "pull request: $work → rel; knowledge only"
+  ! grep -q '^warning:' "$P.out" || fail "a warning with no outside edit: $OUT"
   n="$(g rev-list --count "rel..$work" | tr -d '\r')"
   [ "$n" = 1 ] || fail "the work branch is $n commits ahead of rel, wanted 1"
   [ "$(g rev-parse "$work^" | tr -d '\r')" = "$base" ] || fail "the commit's parent is not the base"
@@ -237,6 +242,15 @@ rc 0
 on rel
 
 # --- (d) begin refusals ------------------------------------------------------------
+case="d no knowledge dir"
+P="$WORK/d0"
+new_fixture "$P" none
+before="$(snapshot)"
+run begin
+rc 1
+has "nothing is tracked under $KD"
+unchanged "$before"
+
 case="d untracked knowledge"
 P="$WORK/d1"
 new_fixture "$P" untracked
@@ -380,6 +394,90 @@ rc 2
 [ -f "$P/$STATE" ] || fail "the state file was removed"
 run abort
 rc 0
+
+# --- (h) a commit made on the work branch: finish and abort refuse ------------------
+case="h finish"
+P="$WORK/h"
+new_fixture "$P"
+base="$(g rev-parse HEAD | tr -d '\r')"
+run begin
+rc 0
+work="$(work_from_out)"
+printf 'feature\n' > "$P/src/feature.txt"
+g add src/feature.txt && g commit -q -m "a foreign feature"
+foreign="$(g rev-parse HEAD | tr -d '\r')"
+printf 'More.\n' >> "$P/$KD/PROJECT-OVERVIEW.md"
+run finish
+rc 1
+has "a foreign feature"
+on "$work"
+[ "$(g rev-parse HEAD | tr -d '\r')" = "$foreign" ] || fail "HEAD moved"
+[ ! -e "$P/$KD/BASELINE" ] || fail "BASELINE was written"
+[ -f "$P/$STATE" ] || fail "the state file was removed"
+
+case="h abort"
+run abort
+rc 1
+has "a foreign feature"
+on "$work"
+[ "$(g rev-parse "$work" | tr -d '\r')" = "$foreign" ] || fail "the work branch lost its commit"
+grep -qxF 'More.' "$P/$KD/PROJECT-OVERVIEW.md" || fail "abort restored the knowledge before refusing"
+[ -f "$P/$STATE" ] || fail "the state file was removed"
+g branch -q keep
+g reset -q --keep "$base"
+run abort
+rc 0
+on rel
+[ -z "$(works)" ] || fail "the work branch is still there: $(works)"
+[ "$(g rev-parse keep | tr -d '\r')" = "$foreign" ] || fail "the moved commit is gone"
+
+# --- (i) outside edits during the refresh: warned, never committed -------------------
+case="i"
+P="$WORK/i"
+new_fixture "$P"
+product_changes
+run begin
+rc 0
+work="$(work_from_out)"
+printf 'again\n' >> "$P/t.txt"
+printf 'new\n' > "$P/n.txt"
+printf 'More.\n' >> "$P/$KD/PROJECT-OVERVIEW.md"
+run finish
+rc 0
+on rel
+has_line "warning: t.txt changed outside the knowledge dir during the refresh; it is not in the commit"
+has_line "warning: n.txt changed outside the knowledge dir during the refresh; it is not in the commit"
+[ "$(grep -c '^warning:' "$P.out")" = 2 ] || fail "warnings other than t.txt and n.txt: $OUT"
+has_line "refresh: committed $(g rev-parse --short "$work" | tr -d '\r') on $work"
+bad="$(g diff --name-only rel "$work" | tr -d '\r' | grep -v "^$KD/")"
+[ -z "$bad" ] || fail "the commit holds paths outside the knowledge dir: $bad"
+grep -qxF again "$P/t.txt" || fail "t.txt lost its later change"
+[ -f "$P/n.txt" ] || fail "n.txt is gone"
+
+# --- (k) a commit hook rejects the refresh commit ------------------------------------
+case="k"
+P="$WORK/k"
+new_fixture "$P"
+mkdir -p "$P/.git/hooks"
+printf '#!/bin/sh\necho "commit-msg: rejected by the project" >&2\nexit 1\n' > "$P/.git/hooks/commit-msg"
+chmod +x "$P/.git/hooks/commit-msg"
+base="$(g rev-parse HEAD | tr -d '\r')"
+run begin
+rc 0
+work="$(work_from_out)"
+printf 'More.\n' >> "$P/$KD/PROJECT-OVERVIEW.md"
+run finish
+rc 2
+has "commit-msg: rejected by the project"
+has "run finish again"
+on "$work"
+[ "$(g rev-parse HEAD | tr -d '\r')" = "$base" ] || fail "a commit was made"
+[ -f "$P/$STATE" ] || fail "the state file was removed"
+rm "$P/.git/hooks/commit-msg"
+run finish
+rc 0
+on rel
+[ "$(g rev-list --count "rel..$work" | tr -d '\r')" = 1 ] || fail "no commit after the hook was fixed"
 
 # --- usage ----------------------------------------------------------------------------
 case="usage"

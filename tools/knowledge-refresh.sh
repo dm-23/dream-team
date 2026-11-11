@@ -10,8 +10,10 @@
 #   bash <team-root>/tools/knowledge-refresh.sh abort
 #
 # The knowledge dir is the resolver's project dir (knowledge.resolver). The
-# run's state lives in <tracking.dir>/.knowledge-refresh, three lines:
-# branch=<release branch>, base=<40 hex>, work=<work branch>.
+# run's state lives in <tracking.dir>/.knowledge-refresh: branch=<release
+# branch>, base=<40 hex>, work=<work branch>, then one outside=<XY><TAB><hash
+# or -><TAB><path> line per path git status listed at begin outside the
+# knowledge dir and the tracking dir (the product changes present then).
 #
 # begin
 #   Refuses with exit 1, changing nothing, when: a state file exists (a
@@ -30,7 +32,10 @@
 #   untracked.
 #
 # finish
-#   On the work branch only. Writes <knowledge dir>/<knowledge.baselineFile>
+#   On the work branch only, and only while it is still at base: a commit
+#   made on it is refused with exit 1, listed, nothing written, so that the
+#   refresh commit never carries anything but knowledge. Writes
+#   <knowledge dir>/<knowledge.baselineFile>
 #   with LF endings: commit=<base>, date=<committer date of base, YYYY-MM-DD>,
 #   branch=<branch>. Runs checks/verify-knowledge-shape.sh and
 #   checks/verify-knowledge-neutral.sh of the team root on the knowledge dir;
@@ -40,25 +45,33 @@
 #   subject "knowledge: refresh <branch> to <short base>" and, with
 #   --message-file, the file's text as the body: the pathspec keeps anything
 #   staged elsewhere out of the commit. A refresh that changed nothing but
-#   BASELINE still commits: the baseline moved. Then git switch <branch>,
-#   which puts back the branch's own knowledge and carries every product
-#   change over, removes the state file and prints
+#   BASELINE still commits: the baseline moved. The project's commit hooks
+#   run on that commit; one that rejects it is exit 2 with the refresh kept
+#   on the work branch, and finish can run again once the cause is fixed.
+#   Then git switch <branch>, which puts back the branch's own knowledge and
+#   carries every product change over, removes the state file and prints a
+#     warning: <path> changed outside the knowledge dir during the refresh; it is not in the commit
+#   line per path outside the knowledge dir whose git status line or working
+#   file differs from begin's, then
 #     refresh: committed <short sha> on <work>
 #     push: git push -u origin <work>
 #     pull request: <work> → <branch>; knowledge only
 #
 # abort
-#   On the work branch only. git restore --source=<base> --staged --worktree
-#   and git clean -fdq on the knowledge dir, git switch <branch>,
-#   git branch -D <work>, and removes the state file. Product changes stay.
+#   On the work branch only, and only while it is still at base: a commit
+#   made on it is refused with exit 1 and listed, never lost. git restore
+#   --source=<base> --staged --worktree and git clean -fdq on the knowledge
+#   dir, git switch <branch>, removes the state file and git branch -d <work>
+#   (never -D). Product changes stay.
 #
 # Never contacts a remote and never pushes: no object is fetched lazily in a
 # partial clone (GIT_NO_LAZY_FETCH, and protocol.allow=never for git older
 # than 2.44) and no credential prompt can stall the run (GIT_TERMINAL_PROMPT).
 #
 # Exit 0 = done. 1 = refused (see above; finish and abort: no state file, not
-# on the work branch; finish: a check found defects). 2 = a bad argument, no
-# repository or manifest, or a git step that failed.
+# on the work branch, the work branch moved off base; finish: a check found
+# defects). 2 = a bad argument, no repository or manifest, or a git step that
+# failed (a rejecting commit hook included).
 set -uo pipefail
 export LC_ALL=C
 export GIT_NO_LAZY_FETCH=1 GIT_TERMINAL_PROMPT=0
@@ -115,12 +128,56 @@ KD="$(bash "$TEAM_ROOT/tools/knowledge-dir.sh" project 2>/dev/null | tr -d '\r')
 [ -n "$KD" ] || die "the knowledge dir cannot be resolved (tools/knowledge-dir.sh project)"
 KD="${KD%/}"
 BASELINE="$KD/$BASELINE_NAME"
+TOP="$(lgit rev-parse --show-toplevel 2>/dev/null | tr -d '\r')"
+[ -n "$TOP" ] || die "the repository root could not be found"
+PREFIX="$(lgit rev-parse --show-prefix 2>/dev/null | tr -d '\r')"
 
 current_branch() { lgit symbolic-ref -q --short HEAD 2>/dev/null | tr -d '\r'; }
 
-# Reads the state file into S_BRANCH, S_BASE, S_WORK; refuses without one.
+# outside_snapshot <file>: one line per path git status lists outside the
+# knowledge dir and the tracking dir, sorted, tab-separated:
+# <XY> <hash of the working file, or -> <repository-root path>. An untracked
+# directory is one entry, as git status lists it.
+outside_snapshot() {
+  local rec skip=0 i p h
+  local -a XY=() PS=()
+  lgit -C "$TOP" status --porcelain -z -- . ":(exclude)$PREFIX$KD" ":(exclude)$PREFIX$TRACK" \
+    > "$1.raw" 2>/dev/null || return 1
+  while IFS= read -r -d '' rec; do
+    if [ "$skip" = 1 ]; then skip=0; continue; fi
+    case "$rec" in R*|C*) skip=1 ;; esac   # the next record is the source path
+    XY+=("${rec:0:2}"); PS+=("${rec:3}")
+  done < "$1.raw"
+  rm -f "$1.raw"
+  : > "$1"
+  for i in "${!PS[@]}"; do
+    h=-
+    if [ -f "$TOP/${PS[$i]}" ]; then
+      h="$(lgit -C "$TOP" hash-object --no-filters -- "${PS[$i]}" 2>/dev/null | tr -d '\r')"
+    fi
+    p="${PS[$i]//$'\n'/?}"; p="${p//$'\t'/?}"
+    printf '%s\t%s\t%s\n' "${XY[$i]}" "${h:--}" "$p" >> "$1"
+  done
+  sort -o "$1" "$1"
+}
+
+# refuse_moved <step>: refuses when the work branch is no longer at the base,
+# naming the commits the step would build on or lose.
+refuse_moved() {
+  local head log
+  head="$(lgit rev-parse --verify -q HEAD 2>/dev/null | tr -d '\r')"
+  [ "$head" = "$S_BASE" ] && return 0
+  log="$(lgit log --oneline "$S_BASE..HEAD" 2>/dev/null | tr -d '\r')"
+  [ -n "$log" ] || log="(HEAD $head is not a descendant of the base)"
+  refuse "$S_WORK is not at the refresh's base ${S_BASE:0:7} any more; $1 would $2 these commits:
+$log
+Move them to a branch of their own (git branch <name>), put $S_WORK back with git reset --keep ${S_BASE:0:7}, and run $1 again."
+}
+
+# Reads the state file into S_BRANCH, S_BASE, S_WORK and S_OUTSIDE (the
+# outside snapshot taken by begin); refuses without one.
 read_state() {
-  S_BRANCH="" S_BASE="" S_WORK=""
+  S_BRANCH="" S_BASE="" S_WORK="" S_OUTSIDE=""
   [ -f "$STATE" ] || refuse "no refresh in progress ($STATE does not exist); run begin first"
   local line
   while IFS= read -r line || [ -n "$line" ]; do
@@ -129,6 +186,7 @@ read_state() {
       branch=*) S_BRANCH="${line#branch=}" ;;
       base=*) S_BASE="${line#base=}" ;;
       work=*) S_WORK="${line#work=}" ;;
+      outside=*) S_OUTSIDE="$S_OUTSIDE${line#outside=}"$'\n' ;;
     esac
   done < "$STATE"
   case "$S_BASE" in *[!0-9a-f]*) S_BASE="" ;; esac
@@ -176,8 +234,12 @@ $ST"
   fi
 
   mkdir -p "$TRACK" 2>/dev/null || die "cannot create $TRACK"
-  printf 'branch=%s\nbase=%s\nwork=%s\n' "$BRANCH" "$BASE" "$WORKB" > "$STATE" \
-    || die "cannot write $STATE"
+  outside_snapshot "$STATE.outside" || { rm -f "$STATE.outside"; die "git status failed outside $KD"; }
+  {
+    printf 'branch=%s\nbase=%s\nwork=%s\n' "$BRANCH" "$BASE" "$WORKB"
+    sed 's/^/outside=/' "$STATE.outside"
+  } > "$STATE" || { rm -f "$STATE" "$STATE.outside"; die "cannot write $STATE"; }
+  rm -f "$STATE.outside"
   if ! lgit switch -q -c "$WORKB" >/dev/null 2>"$STATE.err"; then
     cat "$STATE.err" >&2; rm -f "$STATE" "$STATE.err"
     die "git switch -c $WORKB failed; nothing changed"
@@ -203,6 +265,7 @@ fi
 # --- finish -----------------------------------------------------------------------
 if [ "$cmd" = finish ]; then
   read_state
+  refuse_moved finish "commit the knowledge on top of"
   if [ -n "$MSGFILE" ]; then
     [ -f "$MSGFILE" ] && [ -r "$MSGFILE" ] || die "cannot read the message file: $MSGFILE"
   fi
@@ -236,10 +299,35 @@ if [ "$cmd" = finish ]; then
       tr -d '\r' < "$MSGFILE"
     fi
   } > "$TMP/message" || die "cannot write the commit message"
+  # Paths outside the knowledge dir whose state changed since begin: they are
+  # never in the commit, and the lead hears about them.
+  printf '%s' "$S_OUTSIDE" > "$TMP/before"
+  if outside_snapshot "$TMP/now"; then
+    awk -F'\t' '
+      { k = $3 }
+      FILENAME == ARGV[1] { b[k] = $0; next }
+      { n[k] = $0 }
+      END {
+        for (k in b) if (!(k in n) || n[k] != b[k]) print k
+        for (k in n) if (!(k in b)) print k
+      }' "$TMP/before" "$TMP/now" | sort -u > "$TMP/changed"
+  else
+    echo "outside: could not be compared" > "$TMP/changed"
+  fi
+
   lgit add -A -- "$KD" || die "git add failed on $KD; nothing committed, still on $S_WORK"
+  # The project's commit hooks run on this commit, as on any other.
   lgit commit -q --cleanup=whitespace -F "$(native "$TMP/message")" -- "$KD" \
-    || die "git commit failed; nothing committed, still on $S_WORK"
+    || die "git commit failed (a commit hook may have rejected it); nothing committed, still on $S_WORK with the refresh kept. Fix the cause and run finish again, or abort."
   SHA="$(lgit rev-parse --short HEAD | tr -d '\r')"
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    if [ "$p" = "outside: could not be compared" ]; then
+      echo "warning: the paths outside the knowledge dir could not be compared with begin; check git status"
+    else
+      printf 'warning: %s changed outside the knowledge dir during the refresh; it is not in the commit\n' "$p"
+    fi
+  done < "$TMP/changed"
   rm -f "$STATE"
   # The work branch differs from the release branch only under the knowledge
   # dir, so the switch rewrites that dir to the branch's version and carries
@@ -254,11 +342,13 @@ fi
 
 # --- abort ------------------------------------------------------------------------
 read_state
+refuse_moved abort "lose"
 lgit restore --source="$S_BASE" --staged --worktree -- "$KD" \
   || die "git restore of $KD from $S_BASE failed; still on $S_WORK"
 lgit clean -fdq -- "$KD" || die "git clean of $KD failed; still on $S_WORK"
 lgit switch -q "$S_BRANCH" || die "git switch $S_BRANCH failed; still on $S_WORK"
-lgit branch -q -D "$S_WORK" || die "git branch -D $S_WORK failed; delete it by hand"
 rm -f "$STATE"
+# -d, never -D: a branch holding a commit that is not in $S_BRANCH stays.
+lgit branch -q -d "$S_WORK" || die "git branch -d $S_WORK failed; back on $S_BRANCH, the branch kept"
 printf 'refresh: aborted; back on %s, %s deleted\n' "$S_BRANCH" "$S_WORK"
 exit 0
