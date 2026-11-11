@@ -1,0 +1,29 @@
+# Committed mode: the inbox becomes proposals
+
+Read by the Knowledge Generator in committed mode when the run names no file ("What this run does" in `SKILL.md`). The knowledge is the team's and changes only through the refresh, so this run never applies what the inbox says: it sends the remarks worth keeping to the refresh as one commit on a branch of their own, and removes what is not worth keeping. The inbox is reached only through `inbox.sh`, as `SKILL.md` says; every path below is project-root-relative. `<stamp>` is `YYYY-MM-DD-HHmm`, taken once, and `<work>` is `.dream-team-tracking/knowledge-backup-<stamp>/work/`, where the sources of every inbox write are written with Write.
+
+1. **Skip** under the conditions of step 1 of "Triage the learnings inbox (private mode)": an open run (`.dream-team-tracking/.team-mode` without a `state=closed` line, or `{tracking.legacyDir}/.team-mode`) or legacy run state (the directory `tracking.legacyDir` exists). Say which and that the inbox was left alone; the staleness line is still reported.
+
+2. **Classify.** Read the inbox: `inbox.sh index`, `inbox.sh list`, `inbox.sh show` of every entry and of `review-exceptions.md`. Run `bash .claude/{knowledge.proposals} status`; each line it prints is `learnings/<file>.md`, a tab, the state, and for `closed` a tab and the reason. The name it prints is the inbox name: pass it to `inbox.sh` unchanged. Then every entry:
+   - with a status line: `closed` → to remove, its reason quoted in the report (`closed` with no reason: say the refresh gave none); `in force` or `pending` → it stays, untouched.
+   - without one, the classes of step 2 of "Triage the learnings inbox (private mode)", verified against the repository the same way: `rule`, `fact`, `trap` (an `aged` trap included) → may be submitted; `summary`, `team`, `obsolete`, `covered`, and a rule about a risk without its `Reachable:` sequence (an unproven risk) → to remove, a `team` entry quoted verbatim in the report so the developer can pass it to the team's maintainers.
+
+   `review-exceptions.md`, line by line after its first line:
+   - a line without the suffix ` [SUBMITTED]` → a new entry is planned: `YYYY-MM-DD-exception-<n>.md`, today's date and `<n>` counting from 1 in this run, holding two lines, the heading `## [YYYY-MM-DD] exception <path>` (`<path>` is the line's text after `- ` up to the first ` · `) and `[EXCEPTION] <the line verbatim>`. It counts as a remark to submit. Nothing is written yet.
+   - a line with the suffix → removed from the file once `rules/` in the knowledge dir holds a rule file whose `Exception:` has the same path, cited line and rule, or once the exception entry that carries this line is `closed`; otherwise it stays.
+
+3. **The branch.** The `Branch:` argument when there is one, else the `branch` record of `bash .claude/{knowledge.drift} --list` (a tab-separated record `branch<TAB><name>`). Neither → nothing is submitted this run, and the report says `the release branch is unknown: nothing submitted (run again with Branch: <release branch>)`; the removals are still offered.
+
+4. **One question,** in the language of the request, with AskUserQuestion, whose text lists only what has members: `P remarks to submit to <branch>: <titles>`, `R entries to remove (N closed, N run summaries, N team defects listed in the report, N obsolete, N covered, N unproven risks, N exception lines already shared)`, `K entries waiting for the refresh (in force or pending)`, `backup of the inbox to .dream-team-tracking/knowledge-backup-<stamp>/operative/`. Options, exactly three: **Do it** (submit and remove), **Only remove** (the removals; nothing is submitted), **Nothing** (the list was the report). `Consent: given` in the arguments skips the question and does everything listed. Nothing to submit and nothing to remove → report `nothing to do` and ask nothing.
+
+5. **Apply what was accepted,** in this order:
+   1. `inbox.sh backup .dream-team-tracking/knowledge-backup-<stamp>/operative`, before the first write; name the path in the report.
+   2. Each planned exception entry (Do it only): its two lines written with Write to `<work>`, then `inbox.sh add <work>/<file> <file>`; the name it prints is the one submitted.
+   3. Submission (Do it only, with a branch): `bash .claude/{knowledge.proposals} submit --branch <branch> <name> ...`, every remark's inbox name. Report its three lines verbatim, and any `skipped:` line before them. The tool marks each entry `[SUBMITTED …]` itself; never write that mark. Exit 1 or 2 → report its message verbatim; the entries stay as they were, the exception entries this run added are removed again with `inbox.sh remove`, and `review-exceptions.md` is not rewritten.
+   4. After a submission that exited 0: every exception line that became an entry gains the suffix ` [SUBMITTED]`, and every suffixed line step 2 found shared or closed is dropped. Write the whole new file, its first line kept and every other line byte for byte, to `<work>/review-exceptions.md`, then `inbox.sh put review-exceptions.md <work>/review-exceptions.md`. With **Only remove**, only the dropping is written, the same way.
+   5. `inbox.sh remove <name> ...` for every entry accepted for removal.
+   6. `inbox.sh check`, its output reported verbatim.
+
+6. **Never** push, never open a pull request, never write under the knowledge dir, never rewrite an entry's text. The submission's `push:` and `pull request:` lines are for the developer to run. A remark lives on in the inbox, marked, until the refresh consumes or rejects it; the next run of this file removes it then, with the reason the refresh gave.
+
+**Report:** entries per class, what was submitted (the tool's lines), what was removed with each closed entry's reason, what stays and why, the backup path, the team defects verbatim, and the staleness line of "What this run does".

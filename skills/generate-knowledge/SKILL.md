@@ -1,7 +1,7 @@
 ---
 name: generate-knowledge
-description: Use when the user asks to generate, refresh, check or repair the Dream Team knowledge base for this repository, or when the orchestrator runs it after a run offered a refresh. With no arguments it works out what the knowledge base needs — first generation, restructuring, regenerating stale files, triaging the learnings inbox — asks one question and does it. Produces project documentation AND coding standards/toolchain/review-checklist files in the project knowledge directory, and keeps the learnings inbox through the inbox tool. Never auto-invoke.
-argument-hint: "[FILE-NAME.md ...]"
+description: Use when the user asks to generate, refresh, check or repair the Dream Team knowledge base for this repository, or when the orchestrator runs it after a run offered a refresh. With no arguments it works out what the knowledge base needs — first generation, restructuring, regenerating stale files, triaging the learnings inbox — asks one question and does it. Once the knowledge is committed, a plain run only triages the developer's inbox and submits its remarks on a branch of their own, and "refresh", run by whoever maintains the knowledge, is the one run that rewrites it, in one commit on its own branch. Produces project documentation AND coding standards/toolchain/review-checklist files in the project knowledge directory, and keeps the learnings inbox through the inbox tool. Never auto-invoke.
+argument-hint: "[refresh] | [FILE-NAME.md ...]"
 disable-model-invocation: true
 user-invocable: true
 ---
@@ -9,6 +9,16 @@ user-invocable: true
 You are the Knowledge Generator. The Dream Team agents (`.claude/agents/*.md`) contain zero knowledge about any technology. Everything they know about this project — stack, conventions, commands, rules — comes from the knowledge dir, and what runs learned waits in the learnings inbox. You produce those files from actual exploration. The agents follow them literally, so every line must be verified against this repository.
 
 ## What this run does
+
+**The mode comes first.** The knowledge dir (the next paragraph says where it comes from) is in one of two modes, and the mode decides what this run may write:
+
+- **Private mode** — `git ls-files -- <knowledge dir>` prints nothing: a private copy, the knowledge waiting for its first commit, a first generation before that commit, or no repository at all. A knowledge dir that is `knowledge.legacyDir` is private mode whatever git says. Everything below works as written. `refresh` as the first argument is refused in one line: `Nothing is committed under <knowledge dir> yet: the first generation is a plain /generate-knowledge, committed alone.`
+- **Committed mode** — it prints something: the knowledge belongs to the whole team, on the release branch, and only the refresh writes it.
+  - `refresh` as the first argument → read `references/refresh.md` in this skill's directory and follow it. It replaces the rest of this section, "Consent" and "Process"; the sections it names are read as it says.
+  - No file name → the inbox only, as `references/proposals.md` in this skill's directory says: its remarks are submitted for the refresh, and nothing under the knowledge dir is written. "Empty project", the shape gate and "Process" do not run. The staleness check ("Staleness") still runs, reading only, and its whole result is one line of the report: `For whoever runs the refresh: <N> files stale (<names>)`, a `RULE UNBORNE` rule named as `rule:<slug>`, or `For whoever runs the refresh: nothing stale`.
+  - File names → refused in one line: `The knowledge is committed: only /generate-knowledge refresh, run by whoever maintains the knowledge, regenerates files.`
+
+`Consent: given` and `Branch: <release branch>` are never file names: an orchestrator passes them, and each mode reads them where "Consent" and the references say.
 
 The knowledge dir comes from `bash .claude/{knowledge.resolver} project`, and the learnings inbox is reached only through the inbox tool, `bash .claude/{knowledge.inbox} <command>` (`inbox.sh <command>` below); both run from the project root. The inbox may live outside the project, where file tools are refused: never a file tool on it and never its path in a command. Reads are `inbox.sh where`, `list`, `index` and `show`; writes are `inbox.sh put` (a mark rewritten to its `RESOLVED` form, a trap shortened, `review-exceptions.md` rewritten), `remove` and `add`. The source of a write is the new content, written with Write to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/work/`, beside the backup the run took first. Every other path below is project-root-relative.
 
@@ -22,7 +32,7 @@ An empty list is reported as `nothing to do` and the run ends without a question
 
 ## Consent
 
-Every branch backs up first, so one question covers all of it. One AskUserQuestion, in the language of the request, whose text is the work list with counts: `N files to regenerate: …`, `S files to restructure: …`, `M rules to promote into rules/`, `F facts to fold into …`, `R entries to remove (…)`, `T traps to shorten`, `A aged traps to promote into rules/ (kept unless Do it)`, `E accepted exceptions to share in rules/ (S stale dropped)`, `backup to .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/`. Options, exactly three: **Do it** (everything listed), **Only the regenerations** (the generation and shape lists; the inbox is left as it is), **Nothing** (the list was the report). A run started with `Consent: given` in its arguments skips the question and does everything listed. The empty-project stack question is a different question and the only one that run asks.
+Every branch backs up first, so one question covers all of it. One AskUserQuestion, in the language of the request, whose text is the work list with counts: `N files to regenerate: …`, `S files to restructure: …`, `M rules to promote into rules/`, `F facts to fold into …`, `R entries to remove (…)`, `T traps to shorten`, `A aged traps to promote into rules/ (kept unless Do it)`, `E accepted exceptions to share in rules/ (S stale dropped)`, `backup to .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/`. Options, exactly three: **Do it** (everything listed), **Only the regenerations** (the generation and shape lists; the inbox is left as it is), **Nothing** (the list was the report). A run started with `Consent: given` in its arguments skips the question and does everything listed. The empty-project stack question is a different question and the only one that run asks. In committed mode this question is not asked: `references/proposals.md` and `references/refresh.md` each ask their own, and `Consent: given` skips theirs the same way.
 
 Output language: the language of the user's request; file contents in English (agents read them).
 
@@ -338,7 +348,9 @@ A rule a person authored — one promoted from the inbox, a critical zone the us
 
 A rule about a risk is re-verified by its sequence, not by its wording. A risk is a race, a stale value, an ordering, or a value read after something should have cleared it. Trace the sequence its `Reachable:` line gives: the line that writes the state, the line that reads it, and nothing in between that clears it. A rule about a risk with no sequence, or whose sequence the code no longer bears out, is an unproven risk: `RULE UNBORNE`. A rule built on an unproven risk sends every later change that omits the guard back for rework.
 
-## Triage the learnings inbox
+## Triage the learnings inbox (private mode)
+
+This is the triage of private mode, where this run writes the knowledge itself. In committed mode nothing here writes: a developer's run follows `references/proposals.md`, which submits remarks instead of applying them, and the refresh follows `references/refresh.md`, which triages the remarks with the classes of step 2 below.
 
 A step of every run whose work list includes the inbox ("What this run does", item 3), after the knowledge files are written and before the cross-check. A run naming files skips it.
 
@@ -383,7 +395,7 @@ alongside the budget:
 
 **Skip shape work when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Say which run is open; the rest of the run proceeds, as the triage does under the same condition. Skip it too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
 
-**Back up before the first write, always.** The inbox is never versioned, and the knowledge dir is not versioned until its first commit, so there may be no commit to revert to. Before applying anything accepted, copy all of the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and back up the inbox with `inbox.sh backup .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative`, and name that path in the report. The backup's `knowledge/` and `operative/` are never rewritten by this run; only the integrity checks read them.
+**Back up before the first write, always.** The inbox is never versioned, and the knowledge dir is not versioned until its first commit, so there may be no commit to revert to. Before applying anything accepted, copy all of the knowledge dir to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/knowledge/` and back up the inbox with `inbox.sh backup .dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/operative`, and name that path in the report. The backup's `knowledge/` and `operative/` are never rewritten by this run; only the integrity checks read them. In committed mode the knowledge dir is not copied: `git` is the way back, and the integrity check of the backup's `knowledge/` is skipped with it. The inbox is still backed up with `inbox.sh backup`, before the first write, by every run that writes it.
 
 **Two classes of work.**
 
@@ -437,7 +449,9 @@ run leaves behind. Shape work never touches the inbox: an inbox that is due is c
     documentation), the backup path, and the size table below. When the knowledge dir is
     `knowledge.dir`, `git rev-parse --is-inside-work-tree` succeeds and
     `git ls-files -- <dir>` prints nothing, add one line:
-    `Commit <dir> alone — one commit, one pull request, no other file.`
+    `Commit <dir> alone — one commit, one pull request, no other file.` When this run wrote
+    the baseline, the line goes on: ` BASELINE was written at <short sha of commit=>; the
+    commit carries it, and from then on only /generate-knowledge refresh changes <dir>.`
 
 ## Size table
 
@@ -455,4 +469,4 @@ this run, not a note for later — say so plainly rather than burying it.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
 - Knowledge names no team path of either edition; the project's own documents under `.claude/` are cited as sources only.
 - Every file is inside the budget its class gives it, and the size table proves it.
-- You write to exactly these places and nothing else: the knowledge dir, its `rules/` written only by the triage and `knowledge.ruleExtractor` (and a rule file removed only under consent), the inbox (through `inbox.sh` only), the backup under `.dream-team-tracking/` (written before the first change) with its `work/` sources, and `knowledge.toolchainMissingFile` (never while `tracking.legacyDir` exists). Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- You write to exactly these places and nothing else: the knowledge dir, its `rules/` written only by the triage and `knowledge.ruleExtractor` (and a rule file removed only under consent), the inbox (through `inbox.sh` only), the backup under `.dream-team-tracking/` (written before the first change) with its `work/` sources, and `knowledge.toolchainMissingFile` (never while `tracking.legacyDir` exists). In committed mode a developer's run writes no knowledge file and no rule file: only the inbox, its backup and `work/`, and the commit `knowledge.proposals` makes; the refresh writes the knowledge dir only between `begin` and `finish`, on the work branch. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
