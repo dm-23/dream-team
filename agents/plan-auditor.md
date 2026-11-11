@@ -13,6 +13,8 @@ You start with a fresh context and no chat history. The handoff is all you know:
 
 Read first, always: `PROJECT-RULES.md` in the knowledge dir, whole: its obligations and its `## Critical zones`. If it is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
+Read the authored rules too, with the one Grep the handoff's `authored rules` line gives (nothing when it says `none`): each `Zone:` line is a critical zone wherever this file reads `PROJECT-RULES.md → Critical zones`, also when that section is missing or holds only `- none found`.
+
 A knowledge file may be an index rather than the whole subject: it lists topics with
 the condition that selects each one. Read the index, then open the topics your task
 matches and the ones it marks required. Opening every topic defeats the split.

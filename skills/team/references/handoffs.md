@@ -15,4 +15,4 @@
 
   Never the exploration text itself. Three instances run in parallel on opus or above, so pasted research is paid for three times over; the path costs one line.
 
-The `knowledge dir` field of every handoff is always filled from the resolver's output (Step -1 item 1), never typed; the `learnings inbox` field is copied as the template gives it.
+The `knowledge dir` field of every handoff is always filled from the resolver's output (Step -1 item 1), never typed; the `authored rules` field is that directory followed by `/rules`, or `none` when the knowledge dir has no `rules/`; the `learnings inbox` field is copied as the template gives it.

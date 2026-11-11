@@ -9,6 +9,7 @@
 - lens (brainstorm only): {minimalism | risk | reuse}
 - language: {answer in this language}
 - knowledge dir: {output of the resolver's project} (read the files your role prompt names; do not read others unless needed)
+- authored rules: {knowledge dir}/rules (one file per rule, critical zone or accepted exception; read them all with one Grep there for lines starting "- Kind:", "- Rule:", "- Check:", "- Zone:", "- Exception:", "- Belongs with:" or "- Reachable:"; cite one as rule:<file name without .md>; "none" when the directory does not exist)
 - learnings inbox: only through bash .claude/tools/inbox.sh (index, show, add, append); never by a path — it may live outside the project, where file tools are refused
 - tracking dir: .dream-team-tracking/{context_id}
 - baseline: commit {short-sha}; pre-existing uncommitted files: {none | list}

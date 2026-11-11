@@ -10,7 +10,7 @@ Only a finding the developer declined in their own words or by their own choice 
 
 ## The line
 
-Read the finding in full in its findings file. Write the one line below into a file in the run's tracking directory, then add it to the inbox with `bash .claude/tools/inbox.sh append review-exceptions.md <that file>`, never by a path. The tool creates `review-exceptions.md` when it is missing; the first time, write the file's first line above the entry, `# Review exceptions — an inbox; /generate-knowledge moves live entries into REVIEW-CHECKLIST.md` (`bash .claude/tools/inbox.sh show review-exceptions.md` prints `(missing)` after the name when it is):
+Read the finding in full in its findings file. Write the one line below into a file in the run's tracking directory, then add it to the inbox with `bash .claude/tools/inbox.sh append review-exceptions.md <that file>`, never by a path. The tool creates `review-exceptions.md` when it is missing; the first time, write the file's first line above the entry, `# Review exceptions — an inbox; live entries become rule files of kind exception` (`bash .claude/tools/inbox.sh show review-exceptions.md` prints `(missing)` after the name when it is):
 
 ```
 - <path> · "<the line of code the finding cites, verbatim, trimmed>" · <the finding's Section value> — accepted YYYY-MM-DD: "<the developer's words, or the option chosen>" (<context_id> F-<n>)
@@ -24,6 +24,6 @@ Log `Exception recorded: F-<n> · <path>` in the Decisions log, and name the rec
 
 ## The shared copy
 
-This file is one developer's. `/generate-knowledge` moves its live entries into `REVIEW-CHECKLIST.md → ## Accepted exceptions`, with the inbox triage and under its consent; from then on every developer's reviews read them.
+This file is one developer's. `/generate-knowledge` turns its live entries into rule files of kind `exception` in the knowledge dir's `rules/`, with the inbox triage and under its consent; from then on every developer's reviews read them.
 
 **What you never do here:** write to `REVIEW-CHECKLIST.md` or any other knowledge file, record a finding the developer did not name, or reword the cited line.

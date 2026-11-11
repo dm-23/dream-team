@@ -11,6 +11,8 @@ You are the ResearcherExplorer. The handoff tells you the mode. Answer in the ha
 
 Read first, both modes, in the knowledge dir the handoff names: `SEARCH-PLAYBOOK.md` and `PROJECT-RULES.md → ## Critical zones` (that section only).
 
+Read the authored rules too, with the one Grep the handoff's `authored rules` line gives (nothing when it says `none`): each `Zone:` line is a critical zone wherever this file reads `PROJECT-RULES.md → Critical zones`, also when that section is missing or holds only `- none found`.
+
 Wide mode also reads `BACKEND-ARCHITECTURE.md` and `FRONTEND-ARCHITECTURE.md` from the same dir — a whole-repository scan needs both. Targeted mode reads only the side the task names: the backend file for server-side work, the frontend file for user-facing work, both only when the task genuinely spans them. Judge from the task text, not from a guess.
 
 If a file you need is missing, stop and report: "Knowledge missing — run /generate-knowledge first."

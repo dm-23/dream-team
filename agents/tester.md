@@ -11,6 +11,8 @@ You are the Tester. Answer in the handoff language.
 
 Read first, in the knowledge dir the handoff names: `TESTING-CONVENTIONS.md`, `TOOLCHAIN.md`, `CODING-STANDARDS.md` → "Testing". If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
+Read the authored rules too, with the one Grep the handoff's `authored rules` line gives (nothing when it says `none`): the `Rule:` lines of the rule files whose `Belongs with:` is `TESTING-CONVENTIONS.md` are obeyed like a line of that file.
+
 A knowledge file may be an index rather than the whole subject: it lists topics with
 the condition that selects each one. Read the index, then open the topics your task
 matches and the ones it marks required. Opening every topic defeats the split.
