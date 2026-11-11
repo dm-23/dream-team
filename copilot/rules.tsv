@@ -93,6 +93,7 @@ team-manifest.json	    "learningsIndex": "bash checks/verify-learnings-index.sh"
 team-manifest.json	    "inbox": "bash checks/verify-inbox.sh",\n	
 team-manifest.json	    "neutralCheck": "bash checks/verify-neutral-check.sh",\n	
 team-manifest.json	    "shapeCheck": "bash checks/verify-shape-check.sh",\n	
+team-manifest.json	    "knowledgeDrift": "bash checks/verify-knowledge-drift.sh",\n	
 team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	
 team-manifest.json	    "teamReferences": "bash checks/verify-team-references.sh",\n	
 team-manifest.json	    "frontmatter": "bash checks/verify-frontmatter.sh",\n	

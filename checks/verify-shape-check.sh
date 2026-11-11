@@ -104,6 +104,45 @@ run_case "sixty rules" 0 "" "$WORK/k"
 
 run_case "missing dir" 2 "" "$WORK/does-not-exist"
 
+# --- BASELINE and the Covers lines --------------------------------------------
+# A repository holding src/a.ext and package.json, its knowledge in kb/.
+R="$WORK/repo"; K="$R/kb"
+mkdir -p "$R/src" "$K/rules" "$K/backend-architecture"
+git -C "$R" init -q; git -C "$R" config core.autocrlf false
+echo x > "$R/src/a.ext"; echo x > "$R/package.json"
+git -C "$R" add src/a.ext package.json
+mk_baseline() { printf '%s\n' 'commit=0123456789abcdef0123456789abcdef01234567' 'date=2026-11-01' 'branch=release/1.0' > "$K/BASELINE"; }
+mk_covered() {
+  rm -f "$K"/*.md "$K"/backend-architecture/*.md
+  printf '%s\n' '# Overview' 'Covers: src/**, package.json' > "$K/PROJECT-OVERVIEW.md"
+  printf '%s\n' '# Backend' 'Covers: topics' > "$K/BACKEND-ARCHITECTURE.md"
+  printf '%s\r\n' '# Logic' '' 'Covers: src/*.ext' > "$K/backend-architecture/logic.md"
+  printf '%s\n' '# Standards' 'Covers: conventions' > "$K/CODING-STANDARDS.md"
+  printf '%s\n' '# T' '- Kind: rule' '- Rule: R.' '- Source: user' '- Added: 2026-11-11' > "$K/rules/a.md"
+}
+mk_covered; mk_baseline
+run_case "baseline, every file covered" 0 "knowledge shape: ok" "$K"
+printf '%s\n' '# Toolchain' 'line 2' 'line 3' 'line 4' 'line 5' 'Covers: package.json' > "$K/TOOLCHAIN.md"
+run_case "baseline, Covers on line six" 1 "TOOLCHAIN.md: no \"Covers:\" line in its first five lines" "$K"
+printf '%s\n' '# Toolchain' 'body' > "$K/TOOLCHAIN.md"
+run_case "baseline, a file without Covers" 1 "TOOLCHAIN.md: no \"Covers:\" line" "$K"
+mk_covered
+printf '%s\n' '# Data' 'Covers: src/**, lib/**' > "$K/backend-architecture/data.md"
+run_case "baseline, a pattern matching nothing" 1 "backend-architecture/data.md: pattern matches nothing: lib/**" "$K"
+mk_covered
+printf '%s\n' 'commit=0123456789abcdef0123456789abcdef01234567' 'branch=release/1.0' > "$K/BASELINE"
+run_case "baseline without a date" 1 "BASELINE: no \"date=\" line" "$K"
+printf '%s\n' 'commit=12345' 'date=2026-11-01' 'branch=release/1.0' > "$K/BASELINE"
+run_case "baseline with a short commit" 1 "BASELINE: no \"commit=\" line" "$K"
+printf '%s\n' 'commit=0123456789abcdef0123456789abcdef01234567' 'date=2026-11-01' > "$K/BASELINE"
+run_case "baseline without a branch" 1 "BASELINE: no \"branch=\" line" "$K"
+printf 'commit=0123456789abcdef0123456789abcdef01234567\r\ndate=2026-11-01\r\nbranch=release/1.0\r\n' > "$K/BASELINE"
+run_case "baseline saved with CRLF" 0 "knowledge shape: ok" "$K"
+rm "$K/BASELINE"
+printf '%s\n' '# Toolchain' 'body' > "$K/TOOLCHAIN.md"
+printf '%s\n' '# Data' 'Covers: lib/**' > "$K/backend-architecture/data.md"
+run_case "no baseline, the same files" 0 "knowledge shape: ok" "$K"
+
 # --- the integrity check's sweep ---------------------------------------------
 # A fixture team root: the checks directory and a manifest, so the integrity
 # check reads its classification and keys from there.

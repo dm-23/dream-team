@@ -127,6 +127,7 @@
     "learningsIndex": "tools/learnings-index.sh",
     "inbox": "tools/inbox.sh",
     "ruleExtractor": "tools/extract-rules.sh",
+    "drift": "tools/knowledge-drift.sh",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -152,6 +153,8 @@
       "learningsTrapAgeDays": 90,
       "rulesMaxFiles": 60,
       "ruleMaxLines": 12,
+      "driftMarkedPercent": 33,
+      "driftListMaxLines": 12,
       "overrides": {
         "REVIEW-CHECKLIST.md": 14000
       }
@@ -168,6 +171,19 @@
       "CODING-STANDARDS.md": "subset",
       "REVIEW-CHECKLIST.md": "whole",
       "PROJECT-RULES.md": "whole"
+    },
+    "covers": {
+      "_comment": "What each required file's Covers: line declares, and the default knowledge.drift applies to a file, or a topic of its index, that has none. paths = the file describes code at git glob pathspecs and is marked when one of them changed since the baseline commit. conventions = the file describes how code is written, never marked by path.",
+      "PROJECT-OVERVIEW.md": "paths",
+      "BACKEND-ARCHITECTURE.md": "paths",
+      "FRONTEND-ARCHITECTURE.md": "paths",
+      "DI-AND-STARTUP.md": "paths",
+      "TESTING-CONVENTIONS.md": "conventions",
+      "SEARCH-PLAYBOOK.md": "paths",
+      "TOOLCHAIN.md": "paths",
+      "CODING-STANDARDS.md": "conventions",
+      "REVIEW-CHECKLIST.md": "conventions",
+      "PROJECT-RULES.md": "conventions"
     },
     "persistent": [
       "learnings/"
@@ -340,6 +356,7 @@
     "inbox": "bash checks/verify-inbox.sh",
     "neutralCheck": "bash checks/verify-neutral-check.sh",
     "shapeCheck": "bash checks/verify-shape-check.sh",
+    "knowledgeDrift": "bash checks/verify-knowledge-drift.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",

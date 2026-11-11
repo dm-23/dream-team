@@ -95,6 +95,7 @@ extract_scoped() {
 extract_scoped budgets "{" "}"
 extract_scoped classification "{" "}"
 extract_scoped required "[" "]"
+extract_scoped covers "{" "}"
 
 # The budget keys the skills and the instruction files name. Every number the
 # team applies lives here; an instruction file names the key, never the value,
@@ -102,7 +103,8 @@ extract_scoped required "[" "]"
 for key in indexTokens topicTokens wholeFileTokens \
            learningsIndexRowTitleChars learningsIndexRowMaxTags \
            learningsIndexMaxRows learningsEntryLines \
-           rulesMaxFiles ruleMaxLines; do
+           rulesMaxFiles ruleMaxLines \
+           driftMarkedPercent driftListMaxLines; do
   grep -q "\"$key\"" "$tmp/budgets-block" \
     || { echo "FAIL: knowledge.budgets.$key missing" >&2; status=1; }
 done
@@ -123,6 +125,10 @@ while read -r f; do
   [ -n "$f" ] || continue
   grep -q "\"$f\"" "$tmp/classification-block" \
     || { echo "FAIL: no classification for $f" >&2; status=1; }
+  # knowledge.covers: what the file's Covers: line declares, and the default
+  # tools/knowledge-drift.sh applies when the line is missing.
+  grep -q -E "\"$f\"[[:space:]]*:[[:space:]]*\"(paths|conventions)\"" "$tmp/covers-block" \
+    || { echo "FAIL: knowledge.covers gives $f neither \"paths\" nor \"conventions\"" >&2; status=1; }
 done < "$tmp/required-files"
 
 [ $status -eq 0 ] && echo "manifest budgets: ok"
