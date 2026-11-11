@@ -44,16 +44,26 @@
 #                   another edition's (--from picks it when both hold project
 #                   files) is staged entry by entry in knowledge.dir.migrating,
 #                   which is renamed at the end, so an interrupted run resumes
-#                   and knowledge.dir only ever appears complete.
+#                   and knowledge.dir only ever appears complete. Then
+#                   tools/extract-rules.sh moves the authored lines of the
+#                   moved files into knowledge.dir/rules/ and its line is
+#                   printed.
 #   --drop-legacy   the committed copy is tracked: authored lines the inbox
 #                   does not hold yet become entries, then the private copy is
 #                   backed up under operativeDir, checked, and removed.
 #   --dry-run       prints what a run would do, prefixed "would:"; writes
 #                   nothing, and creates no profile directory.
 #
+# In the default mode and --drop-legacy, an authored line of the private copy
+# is already held, and becomes no entry, when the committed copy holds the
+# whole line (CR ignored) or when its text (the line without the list marker,
+# the source suffix and the CR) is the value of a "- Rule:", "- Check:",
+# "- Zone:" or "- Exception:" line of a file directly inside knowledge.dir/rules/.
+#
 # Every refusal is decided before the first write, so a refused run leaves the
-# tree as it found it. Moves are byte-exact (mv); a moved file is never
-# rewritten.
+# tree as it found it. Moves are byte-exact (mv); a moved file is rewritten
+# only by the extractor after a first commit, which removes its authored lines
+# and keeps every other byte.
 #
 # Exit 0 = done, nothing to do, or a dry run. 1 = refused: a run is open, the
 # run state is still in the legacy tracking directory, a name exists on both
@@ -365,10 +375,27 @@ plan_import() {
   # Every line of every file of the committed copy, without a trailing CR.
   : > "$TMP/committed"
   [ ! -d "$DIR" ] || find "$DIR" -type f -exec awk '{ sub(/\r$/, ""); print }' {} + > "$TMP/committed" 2>/dev/null
+  # The values of the committed rule files (tools/extract-rules.sh wrote
+  # them from such lines): a line whose text is one of them is held too.
+  : > "$TMP/rulevals"
+  if [ -d "$DIR/rules" ]; then
+    for f in "$DIR/rules"/*.md; do
+      [ -f "$f" ] || continue
+      LC_ALL=C awk '{ sub(/\r$/, "") } sub(/^- (Rule|Check|Zone|Exception):[ \t]*/, "") { sub(/[ \t]+$/, ""); print }' "$f" >> "$TMP/rulevals"
+    done
+  fi
   LC_ALL=C awk '
+    BEGIN { u = "— source: user"; l = "— source: learnings " }
+    function textof(s,   i) {
+      if (length(s) >= length(u) && substr(s, length(s) - length(u) + 1) == u) s = substr(s, 1, length(s) - length(u))
+      else { i = index(s, l); if (i) s = substr(s, 1, i - 1) }
+      sub(/[ \t]+$/, "", s); sub(/^[ \t]*([-*+]|[0-9]+\.)[ \t]+/, "", s); sub(/^[ \t]+/, "", s)
+      return s
+    }
     FILENAME == ARGV[1] { c[$0] = 1; next }
+    FILENAME == ARGV[2] { v[$0] = 1; next }
     { t = index($0, "\t"); line = substr($0, t + 1)
-      if (!(line in c) && !(line in seen)) { seen[line] = 1; print } }' "$TMP/committed" "$TMP/cand" > "$TMP/kept"
+      if (!(line in c) && !(textof(line) in v) && !(line in seen)) { seen[line] = 1; print } }' "$TMP/committed" "$TMP/rulevals" "$TMP/cand" > "$TMP/kept"
 
   # The inbox as it will be after the operative move and the profile step
   # (the profile's entries included): its marks (resolved ones count as
@@ -544,11 +571,37 @@ default)
   ;;
 esac
 
+# The rule extractor on knowledge.dir once the move is done (a first commit).
+EXTRACT="$TEAM_ROOT/tools/extract-rules.sh"
+extract_rules() {
+  local out
+  if ! out="$(bash "$EXTRACT" "$DIR" 2> "$TMP/xerr")"; then
+    cat "$TMP/xerr" >&2
+    echo "migrate-knowledge: the project files are in $DIR/, but their authored lines were not moved into $DIR/rules/; fix that, then run bash <team-root>/tools/extract-rules.sh $DIR" >&2
+    exit 2
+  fi
+  echo "$out"
+}
+
 # --- dry run ------------------------------------------------------------------
 if [ "$dry" = 1 ]; then
   echo "would: $ops_line"
   echo "would: $prof_line"
   echo "would: $proj_line"
+  if [ "$mode" = first ]; then
+    # What the extractor would do with the moved files: a copy of them, read
+    # where the move would put them.
+    PV="$TMP/preview"; mkdir -p "$PV" || exit 2
+    [ "$action" != stage ] || [ ! -d "$STAGE" ] || cp -R "$STAGE/." "$PV/" 2>/dev/null
+    if [ "$action" = rename ]; then project_entries "$LEGACY"; else cat "$TMP/pentries" 2>/dev/null; fi > "$TMP/pv.entries"
+    while IFS= read -r e; do cp -R -- "$e" "$PV/" 2>/dev/null; done < "$TMP/pv.entries"
+    if xout="$(bash "$EXTRACT" --dry-run "$PV" 2>/dev/null)"; then
+      case "$xout" in *" into $PV/rules") xout="${xout%" into $PV/rules"} into $DIR/rules" ;; esac
+      echo "$xout"
+    else
+      echo "would: rules: could not tell what the extractor would move"
+    fi
+  fi
   [ -z "$note_line" ] || echo "would: $note_line"
   exit 0
 fi
@@ -661,6 +714,7 @@ rename)
   { mkdir -p "$(dirname "$DIR")" && mv -- "$LEGACY" "$DIR"; } \
     || { echo "migrate-knowledge: could not move $LEGACY/ to $DIR/ (a file open elsewhere?); nothing of it was moved; fix that and run again" >&2; exit 2; }
   echo "$proj_line"
+  extract_rules
   ;;
 stage)
   mkdir -p "$STAGE" || { echo "migrate-knowledge: could not create $STAGE/" >&2; exit 2; }
@@ -677,6 +731,7 @@ stage)
   rm -f -- "$DIR/${SRCREC##*/}"
   [ -z "$SRC" ] || rmdir "$SRC" 2>/dev/null
   echo "$proj_line"
+  extract_rules
   [ -z "$note_line" ] || echo "$note_line"
   ;;
 drop)

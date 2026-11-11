@@ -126,6 +126,7 @@
     "migration": "tools/migrate-knowledge.sh",
     "learningsIndex": "tools/learnings-index.sh",
     "inbox": "tools/inbox.sh",
+    "ruleExtractor": "tools/extract-rules.sh",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -333,6 +334,7 @@
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
     "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",
+    "extractRules": "bash checks/verify-extract-rules.sh",
     "knowledgeDir": "bash checks/verify-knowledge-dir.sh",
     "learningsIndex": "bash checks/verify-learnings-index.sh",
     "inbox": "bash checks/verify-inbox.sh",

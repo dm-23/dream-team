@@ -398,6 +398,44 @@ has "$tmp/out" "(0 authored lines kept as inbox entries)"
 [ ! -e "$P/$OPS/LEARNINGS.md" ] || fail "an index file was written"
 has "$P/$CAPS/.legacy-rules-imported" "lines=0"
 
+# --- (rx) the first commit moves authored lines into rule files ----------------------
+case="rx: first commit extracts rules"
+new_project rx
+printf -- '- Never Y %s source: learnings 2026-10-01 Foo\n' "$EM" >> "$P/$OLD/PROJECT-RULES.md"
+before="$(snap "$P")"; run --first-commit --dry-run
+expect_rc 0
+has "$tmp/out" "would: rules: extracted 1 (1 rules, 0 critical zones, 0 exceptions) into $NEW/rules"
+[ "$before" = "$(snap "$P")" ] || fail "a first-commit dry run changed files"
+run --first-commit
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW"
+has "$tmp/out" "rules: extracted 1 (1 rules, 0 critical zones, 0 exceptions) into $NEW/rules"
+same "$tmp/rx.orig/PROJECT-OVERVIEW.md" "$P/$NEW/PROJECT-OVERVIEW.md"
+[ "$(cat "$P/$NEW/PROJECT-RULES.md")" = "$(printf '# Project Rules\n\n- Keep the build green.')" ] \
+  || fail "the line is still in the moved file: $(cat "$P/$NEW/PROJECT-RULES.md")"
+[ -f "$P/$NEW/rules/foo.md" ] && grep -qxF -- "- Rule: Never Y" "$P/$NEW/rules/foo.md" \
+  || fail "the line is not in $NEW/rules/: $(ls "$P/$NEW/rules" 2>&1)"
+(cd "$P" && bash .claude/checks/verify-knowledge-shape.sh "$NEW") > "$tmp/shape" 2>&1 || fail "shape check: $(cat "$tmp/shape")"
+
+# --- (ry) the committed rules/ holds the private copy's rule text ------------------
+case="ry: rule text held in rules/"
+new_project ry
+mkdir -p "$P/$NEW/rules"
+printf '# Project Rules\n\n- Keep the build green.\n' > "$P/$NEW/PROJECT-RULES.md"
+printf '# Foo\n- Kind: rule\n- Rule: Never Y\n- Belongs with: PROJECT-RULES.md\n- Source: learnings 2026-10-01 Foo\n- Added: 2026-10-02\n' > "$P/$NEW/rules/foo.md"
+printf '# src/pay/**\n- Kind: critical-zone\n- Zone: src/pay/** %s money\n- Source: user\n- Added: 2026-10-02\n' "$EM" > "$P/$NEW/rules/src-pay.md"
+commit_knowledge
+{ printf -- '- Never Y %s source: learnings 2026-10-01 Foo\r\n' "$EM"
+  printf '\r\n## Critical zones\r\n\r\n- src/pay/** %s money %s source: user\r\n' "$EM" "$EM"; } >> "$P/$OLD/PROJECT-RULES.md"
+run
+expect_rc 0
+has "$tmp/out" "(0 authored lines kept as inbox entries)"
+[ -z "$(ls "$P/$OPS/learnings" 2>/dev/null | grep -e '-migrated-rule-')" ] || fail "an entry was written: $(ls "$P/$OPS/learnings")"
+printf -- '- Other W %s source: user\n' "$EM" >> "$P/$OLD/PROJECT-RULES.md"
+run --drop-legacy
+expect_rc 0
+has "$tmp/out" "; 1 authored lines kept as inbox entries)"
+
 # --- (n) an interrupted first commit ------------------------------------------------
 # A stub mv that fails for one path, the way a file held open fails on Windows.
 mkdir -p "$tmp/stub"

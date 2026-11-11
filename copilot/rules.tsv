@@ -87,6 +87,7 @@ team-manifest.json	    "textEncoding": "bash checks/verify-text-encoding.sh",\n
 team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
 team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
 team-manifest.json	    "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",\n	
+team-manifest.json	    "extractRules": "bash checks/verify-extract-rules.sh",\n	
 team-manifest.json	    "knowledgeDir": "bash checks/verify-knowledge-dir.sh",\n	
 team-manifest.json	    "learningsIndex": "bash checks/verify-learnings-index.sh",\n	
 team-manifest.json	    "inbox": "bash checks/verify-inbox.sh",\n	
