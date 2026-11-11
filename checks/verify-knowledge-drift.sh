@@ -419,6 +419,64 @@ else
   echo "skip [partial clone] this git cannot make a blob:none partial clone"
 fi
 
+# --- the proposals budget -----------------------------------------------------
+# More files under proposals/ than knowledge.budgets.proposalsMaxFiles: every
+# output but none gains a last line; --list always ends with the count.
+PMAX="$(tr -d '\r' < "$TEAM/team-manifest.json" | sed -n 's/^ *"proposalsMaxFiles": *\([0-9][0-9]*\).*/\1/p')"
+[ -n "$PMAX" ] || fail "proposals: no proposalsMaxFiles in the manifest"
+PLINE="Proposals: $((PMAX + 1)) waiting, the budget is $PMAX: a refresh is due."
+proposals() { # <count>: exactly that many files under proposals/, committed
+  rm -rf "$P/$KD/proposals"; mkdir -p "$P/$KD/proposals"
+  local i
+  for i in $(seq 1 "$1"); do printf '%s\n' "## [2026-11-01] p$i" > "$P/$KD/proposals/p$i.md"; done
+  commit "$1 proposals"
+}
+last_is() { # <case> <exact last line>
+  local l; l="$(printf '%s\n' "$OUT" | tail -n 1)"
+  [ "$l" = "$2" ] || fail "$1: last line '$l', wanted '$2'"
+}
+new_repo propbudget; std
+put src/billing/a.ts "changed"; commit "billing"
+proposals $((PMAX + 1))
+drift
+rc0 "proposals over, listed"
+first_is "proposals over, listed" "Knowledge baseline: ${BASE_SHA:0:7} (2026-11-01). Changed since: 1 files."
+has "proposals over, listed" "- backend-architecture/logic.md  (src/billing/**: 1 files)"
+last_is "proposals over, listed" "$PLINE"
+drift --list
+last_is "proposals over, --list" "proposals${TAB}$((PMAX + 1))"
+hasnt "proposals over, --list" "Proposals:"
+proposals "$PMAX"
+drift
+hasnt "proposals at the budget" "Proposals:"
+drift --list
+last_is "proposals at the budget, --list" "proposals${TAB}$PMAX"
+
+new_repo propclean; std
+proposals $((PMAX + 1))
+drift
+first_is "proposals over, clean" "Knowledge baseline: ${BASE_SHA:0:7} (2026-11-01). Nothing changed since."
+last_is "proposals over, clean" "$PLINE"
+
+new_repo propmissing; put src/a.ts; kfile PROJECT-OVERVIEW.md "src/**"; commit "k"
+proposals $((PMAX + 1))
+drift
+first_is "proposals over, missing" "$MISSING"
+last_is "proposals over, missing" "$PLINE"
+
+new_repo propscaffold; put src/a.ts
+printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-11-01. Regenerate once code exists.' '# Overview' > "$P/$KD/PROJECT-OVERVIEW.md"
+commit "scaffold"
+proposals $((PMAX + 1))
+drift
+first_is "proposals over, scaffold" "$SCAFFOLD"
+last_is "proposals over, scaffold" "$PLINE"
+
+P="$WORK/plain"; drift
+hasnt "proposals, none" "Proposals:"
+drift --list
+hasnt "proposals, none --list" "proposals${TAB}"
+
 # --- arguments ----------------------------------------------------------------
 P="$WORK/billing"; drift --bogus
 [ "$RC" = 2 ] || fail "bad argument: exit $RC, wanted 2"

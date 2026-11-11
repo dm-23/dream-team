@@ -128,6 +128,7 @@
     "inbox": "tools/inbox.sh",
     "ruleExtractor": "tools/extract-rules.sh",
     "drift": "tools/knowledge-drift.sh",
+    "proposals": "tools/proposals.sh",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -142,7 +143,7 @@
       "PROJECT-RULES.md"
     ],
     "budgets": {
-      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. The learnings index is no file: knowledge.learningsIndex prints it from the entry files, one row per entry, the title cut to learningsIndexRowTitleChars and the tags to learningsIndexRowMaxTags, and checks/verify-learnings-inbox.sh reports /generate-knowledge due past learningsIndexMaxRows rows. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more.",
+      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. The learnings index is no file: knowledge.learningsIndex prints it from the entry files, one row per entry, the title cut to learningsIndexRowTitleChars and the tags to learningsIndexRowMaxTags, and checks/verify-learnings-inbox.sh reports /generate-knowledge due past learningsIndexMaxRows rows. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more. proposalsMaxFiles: with more files than this under proposalsDir, waiting for a refresh, knowledge.drift says a refresh is due.",
       "indexTokens": 800,
       "topicTokens": 1500,
       "wholeFileTokens": 4000,
@@ -155,6 +156,7 @@
       "ruleMaxLines": 12,
       "driftMarkedPercent": 33,
       "driftListMaxLines": 12,
+      "proposalsMaxFiles": 40,
       "overrides": {
         "REVIEW-CHECKLIST.md": 14000
       }
@@ -357,6 +359,7 @@
     "neutralCheck": "bash checks/verify-neutral-check.sh",
     "shapeCheck": "bash checks/verify-shape-check.sh",
     "knowledgeDrift": "bash checks/verify-knowledge-drift.sh",
+    "proposals": "bash checks/verify-proposals.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",

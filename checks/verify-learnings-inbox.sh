@@ -18,7 +18,10 @@
 #   - an entry longer than learningsEntryLines.
 #   - an unresolved [PROMOTE] or [STALE-CHECK] mark: a rule or a fact waiting
 #     to be written into a knowledge file. The resolved forms carry RESOLVED
-#     inside the brackets and do not count.
+#     inside the brackets and do not count. Neither do the marks of an entry
+#     that carries a [SUBMITTED line (tools/proposals.sh): its remark waits
+#     for the lead's refresh, and only that changes knowledge. The entry
+#     still counts as an index row.
 #
 # Entries still inline in a LEARNINGS.md -- a deployment that fix has not
 # migrated -- are measured the same way as entry files.
@@ -130,9 +133,9 @@ measure() {
     function flush() {
       if (open) {
         while (n > 0 && blank[n]) n--
-        printf "%s\t%d\t%d\n", name, n, marks
+        printf "%s\t%d\t%d\n", name, n, (submitted ? 0 : marks)
       }
-      open = 0; n = 0; marks = 0
+      open = 0; n = 0; marks = 0; submitted = 0
     }
     {
       isfence = ($0 ~ /^```/)
@@ -145,6 +148,7 @@ measure() {
         n++
         blank[n] = ($0 ~ /^[[:space:]]*$/)
         if (!fence && !isfence && $0 ~ /^[[:space:]]*(- )?\[(PROMOTE|STALE-CHECK)\]/) marks++
+        if (!fence && !isfence && $0 ~ /^[[:space:]]*(- )?\[SUBMITTED /) submitted = 1
       }
       if (isfence) fence = !fence
     }

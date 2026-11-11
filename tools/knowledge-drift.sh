@@ -36,6 +36,13 @@
 #               (src/notifications/), a file one level down by its directory
 #               (src/), a root file by its name
 #
+# Every output but none ends with one more line when more files are tracked
+# under <knowledge dir>/<knowledge.proposalsDir> than
+# knowledge.budgets.proposalsMaxFiles (remarks waiting for a refresh, see
+# knowledge.proposals):
+#
+#   Proposals: <N> waiting, the budget is <M>: a refresh is due.
+#
 # Changed paths: git diff --name-only --no-renames <commit> HEAD, without the
 # paths under the knowledge dir, so a commit that only touched the knowledge
 # reads "Nothing changed since." A rename counts at both its paths. The list is
@@ -62,6 +69,8 @@
 #   marked    <file> <n>     over and listed; n is the count of the pattern that
 #                            matched most, 0 for a missing Covers: line
 #   uncovered <group> <n>    over and listed
+#   proposals <n>            the last record, from scaffold on: the files
+#                            tracked under the proposals dir
 #
 # Reads only; never writes outside a temporary directory, never contacts a
 # remote: in a partial clone a missing object is never fetched lazily
@@ -106,12 +115,6 @@ KD="$(bash "$TEAM_ROOT/tools/knowledge-dir.sh" project 2>/dev/null | tr -d '\r')
 [ -n "$KD" ] || complain "the knowledge dir cannot be resolved (tools/knowledge-dir.sh project)"
 KD="${KD%/}"
 [ -n "$(git ls-files -- "$KD" 2>/dev/null | head -n 1)" ] || { report none "$NONE"; exit 0; }
-
-# --- scaffold ------------------------------------------------------------------
-bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" . "$KD" >/dev/null 2>&1
-case $? in
-  1|3) report scaffold "Knowledge baseline: scaffold knowledge — nothing in it is verified against code."; exit 0 ;;
-esac
 
 # --- the manifest ----------------------------------------------------------------
 # knowledge's string values and its budgets and covers entries, read by
@@ -162,8 +165,28 @@ RULES="$(get rulesDir)" || exit 0
 PROPOSALS="$(get proposalsDir)" || exit 0
 PCT="$(get budgets.driftMarkedPercent)" || exit 0
 MAXL="$(get budgets.driftListMaxLines)" || exit 0
+PMAX="$(get budgets.proposalsMaxFiles)" || exit 0
 awk -F'\t' 'index($1, "covers.") == 1 { print substr($1, 8) "\t" $2 }' "$tmp/manifest.tsv" > "$tmp/covers.tsv"
 [ -s "$tmp/covers.tsv" ] || complain "knowledge.covers is missing from the manifest; update the team"
+
+# --- the proposals budget ----------------------------------------------------------
+# Remarks waiting for a refresh: the files tracked under the proposals dir.
+PROPN="$(git ls-files -- "$KD/$PROPOSALS" 2>/dev/null | wc -l | tr -d ' ')"
+# finish: the last line of every output from scaffold on, then exit 0.
+finish() {
+  if [ "$LIST" = 1 ]; then
+    printf 'proposals\t%s\n' "$PROPN"
+  elif [ "$PROPN" -gt "$PMAX" ]; then
+    printf '%s\n' "Proposals: $PROPN waiting, the budget is $PMAX: a refresh is due."
+  fi
+  exit 0
+}
+
+# --- scaffold ------------------------------------------------------------------
+bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" . "$KD" >/dev/null 2>&1
+case $? in
+  1|3) report scaffold "Knowledge baseline: scaffold knowledge — nothing in it is verified against code."; finish ;;
+esac
 
 # --- missing ---------------------------------------------------------------------
 B="$KD/$BASELINE_NAME"
@@ -186,7 +209,7 @@ esac
 if [ -z "$SHA" ]; then
   BRANCH=""
   report missing "Knowledge baseline: missing — the lag is unknown until a refresh writes it."
-  exit 0
+  finish
 fi
 SHA="$(printf '%s' "$SHA" | tr 'A-F' 'a-f')"
 SHORT="${SHA:0:7}"
@@ -198,7 +221,7 @@ esac
 # --- unresolved --------------------------------------------------------------------
 lgit cat-file -e "$SHA^{commit}" 2>/dev/null || {
   report unresolved "Knowledge baseline: $SHORT ($DATE) is not in this copy — the lag is unknown."
-  exit 0
+  finish
 }
 
 # --- clean -----------------------------------------------------------------------
@@ -210,13 +233,13 @@ lgit cat-file -e "$SHA^{commit}" 2>/dev/null || {
 PREFIX="$(git rev-parse --show-prefix 2>/dev/null | tr -d '\r')"
 lgit diff --name-only -z --no-renames --no-relative "$SHA" HEAD > "$tmp/raw" 2>/dev/null || {
   report unresolved "Knowledge baseline: $SHORT ($DATE) cannot be compared with HEAD in this copy — the lag is unknown."
-  exit 0
+  finish
 }
 tr '\n\000' '\001\n' < "$tmp/raw" > "$tmp/all"
 awk -v kd="$PREFIX$KD/" '$0 != "" && index($0, kd) != 1' "$tmp/all" > "$tmp/changed"
 if [ ! -s "$tmp/changed" ]; then
   report clean "Knowledge baseline: $SHORT ($DATE). Nothing changed since."
-  exit 0
+  finish
 fi
 
 # --- the located topics ------------------------------------------------------------
@@ -365,13 +388,13 @@ if [ "$LIST" = 1 ]; then
   report "$STATE" ""
   awk -F'\t' '{ print "marked\t" $1 "\t" $2 }' "$tmp/marked"
   awk -F'\t' '{ print "uncovered\t" $1 "\t" $2 }' "$tmp/uncovered"
-  exit 0
+  finish
 fi
 
 if [ "$STATE" = over ]; then
   C="$(lgit rev-list --count "$SHA..HEAD" 2>/dev/null | tr -d '\r')"
   printf '%s\n' "Knowledge baseline: $SHORT ($DATE). ${C:-?} commits behind, $SHARE% of the located topics changed: a refresh is due; verify every topic against the code."
-  exit 0
+  finish
 fi
 
 printf '%s\n' "Knowledge baseline: $SHORT ($DATE). Changed since: $N files."
@@ -389,4 +412,4 @@ awk -F'\t' -v max="$MAXL" '
     if (NR > 0) print "Not covered by knowledge: " s
   }
 ' "$tmp/uncovered"
-exit 0
+finish

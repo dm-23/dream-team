@@ -139,6 +139,18 @@ inbox "$tmp/opsm"
 expect_rc 1
 grep -qF "1 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
 
+case="inbox: a submitted entry with a mark"
+entry "$tmp/opss/learnings/2026-10-01-s.md" 2026-10-01 S x
+printf '[PROMOTE] PROJECT-RULES.md — Always X\n[SUBMITTED 2026-10-02] knowledge/proposals-20261002-101010 as 2026-10-01-s.md\n' >> "$tmp/opss/learnings/2026-10-01-s.md"
+entry "$tmp/opss/learnings/2026-10-02-t.md" 2026-10-02 T x
+inbox "$tmp/opss"
+expect_rc 0
+grep -qxF "learnings inbox: 2 index rows (max $(budget learningsIndexMaxRows)), 2 entries, 0 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
+(cd "$tmp" && bash "$TOOL" opss/learnings) > "$tmp/out" 2> "$tmp/err"; rc=$?
+expect_rc 0
+has_line "entries: 2"
+has_line "| 2026-10-01 | S | x | opss/learnings/2026-10-01-s.md |"
+
 case="inbox: empty directory"
 mkdir -p "$tmp/opse"
 inbox "$tmp/opse"
