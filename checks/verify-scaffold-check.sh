@@ -73,7 +73,7 @@ run readme-dir "$p"; expect readme-dir 1 "project: has content" "knowledge: scaf
 # banner reports "unknown" and the byte after the prefix never leaks half-cut.
 p="$(project literal-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on YYYY-MM-DD; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
 run literal-date "$p"; expect literal-date 3 "project: empty" "knowledge: scaffold unknown"
-p="$(project odd-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on 28 октября 2026; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
+p="$(project odd-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on 28 \xd0\xbe\xd0\xba\xd1\x82\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8f 2026; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
 run odd-date "$p"; expect odd-date 3 "project: empty" "knowledge: scaffold unknown"
 
 # Mixed state: one file regenerated from code, the others still scaffolds. Any
