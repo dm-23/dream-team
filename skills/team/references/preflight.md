@@ -6,7 +6,7 @@ The orchestrator runs this at Step -1, in this order.
 
 Run `bash .claude/{knowledge.resolver} project` from the project root: the knowledge dir of this run, written into every handoff.
 
-Run `bash .claude/tools/inbox.sh where` once, from the project root. Its second line goes to status.md → "Process notes" as `Learnings inbox: <line>` once status.md exists (Step 0; a resumed run that already has the line gets no second one). A `note:` line it prints is said once, as `learnings-check.md` says. Its first line, the inbox's directory, is never written into a handoff, a file or a command: every reader reaches the inbox through the tool. Nothing is created here; `inbox.sh add` creates `learnings/` with the first entry.
+Run `bash .claude/{knowledge.resolver} remarks` once, from the project root: the remarks dir, a project-root-relative directory written into the `remarks dir` field of every handoff. It is read with Read; nothing writes into it during a run but `remarks.sh accept` (SKILL.md → "Closing", `accepted-exceptions.md`). Nothing is created here; `remarks.sh accept` creates the directory with the first accepted remark.
 
 ## Drift
 
@@ -35,5 +35,6 @@ Read `CAPABILITIES.md` from `knowledge.capabilitiesDir` if it exists; when it do
 ## Tools you may run
 
 - The resolver (`knowledge.resolver`), run from the project root.
-- The drift tool (`knowledge.drift`), `bash .claude/tools/knowledge-drift.sh`, run from the project root: once, in "Drift"; and with `--list` once, in committed mode, when `knowledge-refresh.md` needs the release branch.
-- The inbox tool (`knowledge.inbox`), `bash .claude/tools/inbox.sh`, run from the project root: `where` here, `index`, `show` and `check` in `learnings-check.md`, `show` and `append` in `accepted-exceptions.md`.
+- The drift tool (`knowledge.drift`), `bash .claude/tools/knowledge-drift.sh`, run from the project root: once, in "Drift".
+- The learnings index (`knowledge.learningsIndex`), `bash .claude/tools/learnings-index.sh "<remarks dir>"`, run from the project root, in `learnings-check.md`; and, in private mode, the due check `checks.learningsInbox` as `checks.learningsInboxRunFrom` spells out, there too.
+- The remarks tool (`knowledge.remarks`), `bash .claude/tools/remarks.sh`, run from the project root: `pending` and `accept` in SKILL.md → "Closing", `accept` in `accepted-exceptions.md`.
