@@ -229,6 +229,12 @@ case="d: a release branch without knowledge"
 run submit --branch bare learnings/2026-11-05-ok.md
 rc 1; has "bare has no committed knowledge"; no_branch; same_entry 2026-11-05-ok.md
 
+case="d: neither copy of the release branch has knowledge"
+g update-ref refs/remotes/origin/bare main
+run submit --branch bare learnings/2026-11-05-ok.md
+rc 1; has "bare has no committed knowledge"; has "git fetch origin"; no_branch; same_entry 2026-11-05-ok.md
+g update-ref -d refs/remotes/origin/bare
+
 case="d: an entry already submitted"
 run submit --branch rel learnings/2026-11-05-ok.md learnings/2026-11-05-done.md
 rc 1; has "learnings/2026-11-05-done.md"; no_branch
@@ -271,6 +277,24 @@ case="d: no configured identity"
 OUT="$(cat "$P.out")"; ERR="$(cat "$P.err")"
 g config --unset user.useConfigOnly
 rc 2; no_branch; same_entry 2026-11-05-ok.md
+
+# --- (d2) the origin copy predates the knowledge commit ---------------------------
+case="d2: origin without knowledge, the local branch with it"
+new_fixture delta2
+g update-ref refs/remotes/origin/rel main
+entry 2026-11-05-local.md
+run submit --branch rel learnings/2026-11-05-local.md
+rc 0
+BR="$(new_branch)"
+if [ -n "$BR" ]; then
+  has_line "proposals: 1 remarks committed as $(g rev-parse --short "$BR" | tr -d '\r') on $BR (base refs/heads/rel)"
+  has "refs/remotes/origin/rel has nothing under $KD/"
+  [ "$(g rev-parse "$BR^" | tr -d '\r')" = "$(g rev-parse rel | tr -d '\r')" ] || fail "the commit's parent is not the local rel"
+else
+  fail "no branch: $OUT $ERR"
+fi
+run submit --dry-run --branch rel learnings/2026-11-05-local.md
+rc 1; has "submitted already"
 
 # --- (e) dry run ----------------------------------------------------------------
 case="e: --dry-run"

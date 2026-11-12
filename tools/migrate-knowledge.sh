@@ -21,7 +21,8 @@
 #   - The inline entries of an older LEARNINGS.md (each "## [date] title"
 #     body, cut as checks/verify-knowledge-integrity.sh cuts it) become entry
 #     files in learnings/, byte for byte, named <date>-<slug>.md by the rules
-#     of templates/learnings-entry.md (-2, -3 when taken); LEARNINGS.md then
+#     of templates/learnings-entry.md ("entry" for an empty slug; -2, -3
+#     when taken); LEARNINGS.md then
 #     moves to operativeDir/dropped-index-<YYYY-MM-DD-HHmm>.md. An unclosed
 #     fence or an inline heading without a date keeps the inbox per copy.
 #   - Every learnings/*.md moves into the profile: a name already there with
@@ -46,7 +47,7 @@
 #                   which is renamed at the end, so an interrupted run resumes
 #                   and knowledge.dir only ever appears complete. Then
 #                   tools/extract-rules.sh moves the authored lines of the
-#                   moved files into knowledge.dir/rules/ and its line is
+#                   moved files into knowledge.dir/<knowledge.rulesDir>/ and its line is
 #                   printed.
 #   --drop-legacy   the committed copy is tracked: authored lines the inbox
 #                   does not hold yet become entries, then the private copy is
@@ -58,7 +59,7 @@
 # is already held, and becomes no entry, when the committed copy holds the
 # whole line (CR ignored) or when its text (the line without the list marker,
 # the source suffix and the CR) is the value of a "- Rule:", "- Check:",
-# "- Zone:" or "- Exception:" line of a file directly inside knowledge.dir/rules/.
+# "- Zone:" or "- Exception:" line of a file directly inside knowledge.dir/<knowledge.rulesDir>/.
 #
 # Every refusal is decided before the first write, so a refused run leaves the
 # tree as it found it. Moves are byte-exact (mv); a moved file is rewritten
@@ -119,6 +120,7 @@ DIR="$(value_in knowledge dir)";                 DIR="${DIR%/}";       rel_ok kn
 LEGACY="$(value_in knowledge legacyDir)";        LEGACY="${LEGACY%/}"; rel_ok knowledge.legacyDir "$LEGACY"
 OPS="$(value_in knowledge operativeDir)";        OPS="${OPS%/}";       rel_ok knowledge.operativeDir "$OPS"
 CAPS="$(value_in knowledge capabilitiesDir)";    CAPS="${CAPS%/}";     rel_ok knowledge.capabilitiesDir "$CAPS"
+RULESD="$(value_in knowledge rulesDir)";         RULESD="${RULESD%/}"; rel_ok knowledge.rulesDir "$RULESD"
 TRK="$(value_in tracking dir)";                  TRK="${TRK%/}";       rel_ok tracking.dir "$TRK"
 TRKOLD="$(value_in tracking legacyDir)";         TRKOLD="${TRKOLD%/}"; rel_ok tracking.legacyDir "$TRKOLD"
 OTHERS="$(array_in knowledge otherEditionDirs)"
@@ -246,7 +248,7 @@ lookup() { # <file> <name>: the path recorded for <name> in a name<TAB>path file
 # empty when the profile holds the same bytes); sets PIDX, PL, PN, PM, PS,
 # PEXC and pidle, or prof_reason when the inbox has to stay per copy.
 profile_plan() {
-  local f src dst h d edate etitle base i cand other nm stem nonl
+  local f src dst h d edate etitle eslug base i cand other nm stem nonl
   : > "$TMP/inbox"
   if [ -d "$OPS/learnings" ]; then
     for f in "$OPS/learnings"/*.md; do
@@ -292,7 +294,9 @@ profile_plan() {
         [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
         *) prof_reason="an inline entry of LEARNINGS.md has no date in its heading ($h); fix the heading and run again"; return ;;
       esac
-      base="$edate-$(slug "$etitle")"; i=1
+      # A title with no ASCII letter or digit: "entry", as extract-rules.sh says "rule".
+      eslug="$(slug "$etitle")"; [ -n "$eslug" ] || eslug=entry
+      base="$edate-$eslug"; i=1
       while :; do
         if [ "$i" = 1 ]; then cand="$base.md"; else cand="$base-$i.md"; fi
         other="$(lookup "$TMP/taken" "$cand")"
@@ -378,8 +382,8 @@ plan_import() {
   # The values of the committed rule files (tools/extract-rules.sh wrote
   # them from such lines): a line whose text is one of them is held too.
   : > "$TMP/rulevals"
-  if [ -d "$DIR/rules" ]; then
-    for f in "$DIR/rules"/*.md; do
+  if [ -d "$DIR/$RULESD" ]; then
+    for f in "$DIR/$RULESD"/*.md; do
       [ -f "$f" ] || continue
       LC_ALL=C awk '{ sub(/\r$/, "") } sub(/^- (Rule|Check|Zone|Exception):[ \t]*/, "") { sub(/[ \t]+$/, ""); print }' "$f" >> "$TMP/rulevals"
     done
@@ -577,7 +581,7 @@ extract_rules() {
   local out
   if ! out="$(bash "$EXTRACT" "$DIR" 2> "$TMP/xerr")"; then
     cat "$TMP/xerr" >&2
-    echo "migrate-knowledge: the project files are in $DIR/, but their authored lines were not moved into $DIR/rules/; fix that, then run bash <team-root>/tools/extract-rules.sh $DIR" >&2
+    echo "migrate-knowledge: the project files are in $DIR/, but their authored lines were not moved into $DIR/$RULESD/; fix that, then run bash <team-root>/tools/extract-rules.sh $DIR" >&2
     exit 2
   fi
   echo "$out"
@@ -596,7 +600,7 @@ if [ "$dry" = 1 ]; then
     if [ "$action" = rename ]; then project_entries "$LEGACY"; else cat "$TMP/pentries" 2>/dev/null; fi > "$TMP/pv.entries"
     while IFS= read -r e; do cp -R -- "$e" "$PV/" 2>/dev/null; done < "$TMP/pv.entries"
     if xout="$(bash "$EXTRACT" --dry-run "$PV" 2>/dev/null)"; then
-      case "$xout" in *" into $PV/rules") xout="${xout%" into $PV/rules"} into $DIR/rules" ;; esac
+      case "$xout" in *" into $PV/$RULESD") xout="${xout%" into $PV/$RULESD"} into $DIR/$RULESD" ;; esac
       echo "$xout"
     else
       echo "would: rules: could not tell what the extractor would move"
@@ -696,9 +700,10 @@ write_import() {
     entry="$INBOX/learnings/$TODAY-migrated-rule-$n.md"
     {
       printf '## [%s] Migrated rule %s\n' "$TODAY" "$n"
-      printf -- '- **Symptom:** the private knowledge copy (%s/%s) holds an authored line the committed copy (%s/) lacks: %s\n' "$LEGACY" "$rel" "$DIR" "$line"
+      # No edition path: submitted as a remark, this text is committed knowledge.
+      printf -- "- **Symptom:** the private copy's %s holds an authored line the committed copy (%s/) lacks: %s\n" "$rel" "$DIR" "$line"
       printf -- '- **Root cause:** written into the private copy before the project knowledge moved to the committed directory.\n'
-      printf -- '- **Fix pattern:** /generate-knowledge writes the rule into %s/%s, or drops it when the committed copy already says it.\n' "$DIR" "$rel"
+      printf -- '- **Fix pattern:** the knowledge refresh makes it a rule file in %s/%s/, or drops it when the committed knowledge already says it.\n' "$DIR" "$RULESD"
       printf -- '- **Files touched:** %s/%s\n' "$DIR" "$rel"
       printf -- '- **Tags:** migration\n'
       printf '%s\n' "$mark"

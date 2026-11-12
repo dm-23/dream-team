@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Dream Team — moves the rules a person authored out of the generated
 # knowledge files into rule files, one per rule, under <knowledge-dir>/rules/
-# (the format is templates/rule.md).
+# (knowledge.rulesDir; the format is templates/rule.md).
 #
 #   bash <team-root>/tools/extract-rules.sh [--dry-run] <knowledge-dir>
 #
-# It reads every *.md of the directory outside rules/ and proposals/, topic
-# directories included, in byte order of their paths. An authored line is one
-# that contains "— source: learnings " or ends "— source: user" (a trailing
-# CR ignored), or, in REVIEW-CHECKLIST.md, any "- " line under
+# It reads every *.md of the directory outside rules/ and proposals/
+# (knowledge.proposalsDir), topic directories included, in byte order of their
+# paths. A heading line ("# " or "## ") is never authored. Any other line is
+# authored when it contains "— source: learnings " or ends "— source: user" (a
+# trailing CR ignored), or, in REVIEW-CHECKLIST.md, any "- " line under
 # "## Accepted exceptions" other than "- none". Its text is the line without
 # the list marker ("- ", "<n>. "), the trailing CR and the source suffix. A
 # line whose text is empty is left where it is, unextracted (the shape check,
@@ -83,13 +84,23 @@ REQUIRED="$(tr -d '\r' < "$M" | awk '
       for (i = 1; i <= n; i++) { v = a[i]; gsub(/^[ \t]*"|"[ \t]*$/, "", v); if (v != "") print v }
       if (done) exit }')"
 [ -n "$REQUIRED" ] || { echo "extract-rules: no knowledge.required in $M" >&2; exit 2; }
+# knowledge.rulesDir and knowledge.proposalsDir: string keys of the block.
+value_in() {
+  tr -d '\r' < "$M" | awk -v k="$1" '
+    index($0, "  \"knowledge\": {") == 1 { f = 1; next }
+    f && /^  }/ { exit }
+    f && index($0, "    \"" k "\":") == 1 { sub(/^[^:]*:[ \t]*"/, ""); sub(/".*$/, ""); print; exit }'
+}
+RULESD="$(value_in rulesDir)"; RULESD="${RULESD%/}"
+PROPD="$(value_in proposalsDir)"; PROPD="${PROPD%/}"
+[ -n "$RULESD" ] && [ -n "$PROPD" ] || { echo "extract-rules: knowledge.rulesDir or knowledge.proposalsDir is missing from $M; update the team" >&2; exit 2; }
 
 TMP="$(mktemp -d)" || exit 2
 trap 'rm -rf "$TMP"' EXIT
 TODAY="$(date +%Y-%m-%d)"
 US=$'\037'
 
-mapfile -t FILES < <(find "$DIR" \( -path "$DIR/rules" -o -path "$DIR/proposals" \) -prune -o -type f -name '*.md' -print 2>/dev/null | sort)
+mapfile -t FILES < <(find "$DIR" \( -path "$DIR/$RULESD" -o -path "$DIR/$PROPD" \) -prune -o -type f -name '*.md' -print 2>/dev/null | sort)
 
 : > "$TMP/records"; : > "$TMP/deletions"
 if [ "${#FILES[@]}" -gt 0 ]; then
@@ -215,7 +226,7 @@ while IFS="$US" read -r kind title rule check zone exc bel src; do
   i=1
   while :; do
     if [ "$i" = 1 ]; then name="$base.md"; else name="$base-$i.md"; fi
-    if [ -e "$DIR/rules/$name" ] || [ -n "${taken[$name]:-}" ]; then i=$((i + 1)); continue; fi
+    if [ -e "$DIR/$RULESD/$name" ] || [ -n "${taken[$name]:-}" ]; then i=$((i + 1)); continue; fi
     taken[$name]=1; break
   done
   {
@@ -238,7 +249,7 @@ if [ "$N" = 0 ]; then
   echo "${pfx}rules: nothing to extract"
   exit 0
 fi
-line="rules: extracted $N ($R rules, $Z critical zones, $E exceptions) into $DIR/rules"
+line="rules: extracted $N ($R rules, $Z critical zones, $E exceptions) into $DIR/$RULESD"
 if [ "$dry" = 1 ]; then
   echo "$pfx$line"
   exit 0
@@ -266,9 +277,9 @@ while IFS= read -r rel; do
 done < "$TMP/dfiles"
 
 # The rule files first, then the sources.
-mkdir -p "$DIR/rules" || werr "create $DIR/rules/"
+mkdir -p "$DIR/$RULESD" || werr "create $DIR/$RULESD/"
 while IFS= read -r name; do
-  mv -- "$TMP/rules/$name" "$DIR/rules/$name" || werr "write $DIR/rules/$name"
+  mv -- "$TMP/rules/$name" "$DIR/$RULESD/$name" || werr "write $DIR/$RULESD/$name"
 done < "$TMP/written"
 while IFS="$(printf '\t')" read -r src f; do
   mv -- "$src" "$f" || werr "rewrite $f"

@@ -15,7 +15,8 @@
 #   - rules/ holds at most rulesMaxFiles files.
 #   - No *.md outside rules/ and proposals/, topic directories included, holds
 #     an authored line in a generated file: a line that contains
-#     "— source: learnings " or ends "— source: user". Authored text belongs in
+#     "— source: learnings " or ends "— source: user", a heading line ("# " or
+#     "## ") excepted, as tools/extract-rules.sh never moves one. Authored text belongs in
 #     rules/; a generated file is rewritten and must not carry it.
 #   - No *.md anywhere under <knowledge-dir>, rules/ and proposals/ included,
 #     holds both a line starting "<<<<<<< " and a line starting ">>>>>>> ": a
@@ -168,6 +169,7 @@ while IFS= read -r f; do
   [ -n "$f" ] || continue
   out="$(awk -v path="$f" -v mid="— source: learnings " -v tail="— source: user" '
     { sub(/\r$/, "") }
+    /^##? / { next }
     index($0, mid) > 0 || (length($0) >= length(tail) && substr($0, length($0) - length(tail) + 1) == tail) {
       print path ":" NR ": authored line in a generated file"
     }

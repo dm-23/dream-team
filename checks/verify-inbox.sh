@@ -129,8 +129,26 @@ case="append from stdin to a CRLF entry without a final newline"
 printf -- '- [PROMOTE] keep the rule\n' > "$tmp/promote"
 run_in "$tmp/promote" append learnings/2026-11-02-foo.md -
 expect_rc 0
-{ cat "$tmp/foo.orig"; printf '\r\n'; cat "$tmp/promote"; } > "$tmp/append.want"
+# The appended LF line takes the entry's CRLF.
+{ cat "$tmp/foo.orig"; printf '\r\n- [PROMOTE] keep the rule\r\n'; } > "$tmp/append.want"
 cmp -s "$tmp/append.want" "$OPD/learnings/2026-11-02-foo.md" || fail "appended entry differs: $(od -c "$OPD/learnings/2026-11-02-foo.md" | tail -4)"
+
+case="append to a CRLF entry: CRLF stays, a missing last newline stays missing"
+printf 'one\r\ntwo\nthree' > "$tmp/mixed"
+run_in "$tmp/mixed" append learnings/2026-11-02-foo.md -
+expect_rc 0
+{ cat "$tmp/append.want"; printf 'one\r\ntwo\r\nthree'; } > "$tmp/append2.want"
+cmp -s "$tmp/append2.want" "$OPD/learnings/2026-11-02-foo.md" || fail "second append differs: $(od -c "$OPD/learnings/2026-11-02-foo.md" | tail -4)"
+
+case="append to an LF entry keeps the source's bytes"
+printf '## [2026-11-03] Lf\n- **Tags:** x\n' > "$tmp/lf.src"
+cp "$tmp/lf.src" "$OPD/learnings/2026-11-03-lf.md"
+printf 'a\r\nb\n' > "$tmp/lf.add"
+run_in "$tmp/lf.add" append learnings/2026-11-03-lf.md -
+expect_rc 0
+{ cat "$tmp/lf.src"; cat "$tmp/lf.add"; } > "$tmp/lf.want"
+cmp -s "$tmp/lf.want" "$OPD/learnings/2026-11-03-lf.md" || fail "LF append differs: $(od -c "$OPD/learnings/2026-11-03-lf.md" | tail -4)"
+rm -f "$OPD/learnings/2026-11-03-lf.md"
 
 case="append to a missing entry"
 run_in "$tmp/promote" append learnings/nope.md -

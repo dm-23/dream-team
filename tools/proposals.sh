@@ -14,9 +14,12 @@
 # (knowledge.resolver) and never prints that dir's path.
 #
 # submit
-#   Base: refs/remotes/origin/<branch> when it resolves, else
-#   refs/heads/<branch>; neither is exit 1. A base with nothing under
-#   knowledge.dir is exit 1. An entry that is missing, is not *.md or already
+#   Base: the first of refs/remotes/origin/<branch> and refs/heads/<branch>
+#   that resolves and holds something under knowledge.dir; neither resolves
+#   is exit 1. An origin copy with nothing there (it predates the knowledge
+#   commit) gives way to refs/heads/<branch>, said on standard error; when no
+#   copy holds the knowledge, exit 1, with a fetch hint when origin's was
+#   empty. An entry that is missing, is not *.md or already
 #   carries a [SUBMITTED line is exit 1, all of them listed, nothing written.
 #   Each remark's target is <knowledge.dir>/<proposalsDir>/<entry file name>;
 #   a target the base holds with the same bytes is skipped as already
@@ -231,20 +234,30 @@ dups="$(printf '%s\n' "${NAMES[@]}" | sort | uniq -d | head -n 1)"
 [ -z "$dups" ] || die "$dups is named twice"
 
 # --- the base -----------------------------------------------------------------------
-BASE="" BASESHA=""
+# The first ref that resolves and holds the knowledge dir. An origin copy
+# without it predates the knowledge commit (not pushed or not fetched yet).
+BASE="" BASESHA="" SEEN="" EMPTYORIGIN=""
 for r in "refs/remotes/origin/$BRANCH" "refs/heads/$BRANCH"; do
   s="$(rgit rev-parse -q --verify "$r^{commit}" 2>/dev/null | tr -d '\r')"
-  if [ -n "$s" ]; then BASE="$r"; BASESHA="$s"; break; fi
+  [ -n "$s" ] || continue
+  SEEN="$SEEN${SEEN:+ or }$r"
+  rgit ls-tree -r --name-only "$s" -- "$KPATH" > "$TMP/ktree" 2>/dev/null || die "the tree of $r could not be read"
+  if [ -s "$TMP/ktree" ]; then BASE="$r"; BASESHA="$s"; break; fi
+  case "$r" in refs/remotes/*) EMPTYORIGIN="$r" ;; esac
 done
-if [ -z "$BASE" ]; then
+if [ -z "$SEEN" ]; then
   echo "proposals: no local ref for $BRANCH" >&2
   exit 1
 fi
-rgit ls-tree -r --name-only "$BASESHA" -- "$KPATH" > "$TMP/ktree" 2>/dev/null || die "the tree of $BASE could not be read"
-if [ ! -s "$TMP/ktree" ]; then
-  echo "proposals: $BRANCH has no committed knowledge (nothing under $KPATH/ in $BASE)" >&2
+if [ -z "$BASE" ]; then
+  if [ -n "$EMPTYORIGIN" ]; then
+    echo "proposals: $BRANCH has no committed knowledge (nothing under $KPATH/ in $SEEN); $EMPTYORIGIN may predate the knowledge commit: git fetch origin, then run again" >&2
+  else
+    echo "proposals: $BRANCH has no committed knowledge (nothing under $KPATH/ in $SEEN)" >&2
+  fi
   exit 1
 fi
+[ -z "$EMPTYORIGIN" ] || echo "proposals: $EMPTYORIGIN has nothing under $KPATH/ (it may predate the knowledge commit); the base is $BASE" >&2
 
 # --- the entries ----------------------------------------------------------------------
 : > "$TMP/refused"

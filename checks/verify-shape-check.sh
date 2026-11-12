@@ -87,6 +87,14 @@ run_case "authored user line" 1 "PROJECT-RULES.md:2: authored line in a generate
 mk; printf '%s\n' '# Rules' '- keep it thin — source: user' | sed 's/$/\r/' > "$WORK/k/PROJECT-RULES.md"
 run_case "authored user line, crlf" 1 "PROJECT-RULES.md:2:" "$WORK/k"
 
+# A heading is never an authored line: the extractor skips "# " and "## "
+# lines, so the check must not report one it would never move.
+mk; mk_rule a
+printf '%s\r\n' '# Rules — source: user' '## Critical zones — source: user' 'Plain text.' > "$WORK/k/PROJECT-RULES.md"
+run_case "heading lines with a source suffix" 0 "knowledge shape: ok" "$WORK/k"
+printf '%s\n' '### Deeper — source: user' >> "$WORK/k/PROJECT-RULES.md"
+run_case "a third-level heading is no heading to the extractor" 1 "PROJECT-RULES.md:4: authored line in a generated file" "$WORK/k"
+
 mk; mkdir -p "$WORK/k/backend-architecture"
 printf '%s\n' '# A' 'x' '- a trap — source: learnings 2026-10-01 Foo' > "$WORK/k/backend-architecture/a.md"
 run_case "authored learnings line in a topic" 1 "backend-architecture/a.md:3: authored line in a generated file" "$WORK/k"

@@ -241,6 +241,38 @@ run abort
 rc 0
 on rel
 
+# A remark is a verbatim copy of an inbox entry, never reworded by the
+# refresh: the neutral check skips the proposals dir, and still reads rules/.
+case="c neutral: a remark naming a team path"
+P="$WORK/c3"
+new_fixture "$P"
+mkdir -p "$P/$KD/proposals"
+printf '## [2026-11-01] Migrated rule 1\n- **Symptom:** the copy in .claude/knowledge/PROJECT-RULES.md holds a line\n' > "$P/$KD/proposals/2026-11-01-migrated-rule-1.md"
+g add -A && g commit -q -m "a remark"
+run begin
+rc 0
+work="$(work_from_out)"
+run finish
+rc 0
+on rel
+[ "$(g rev-list --count "rel..$work" | tr -d '\r')" = 1 ] || fail "no commit"
+
+case="c neutral: a rule file naming a team path"
+P="$WORK/c4"
+new_fixture "$P"
+run begin
+rc 0
+work="$(work_from_out)"
+mkdir -p "$P/$KD/rules"
+printf '# Always X\n- Kind: rule\n- Rule: Read .claude/agents/x.md first.\n- Source: lead\n- Added: 2026-11-11\n' > "$P/$KD/rules/x.md"
+run finish
+rc 1
+has 'rules/x.md:3: names a team path'
+on "$work"
+run abort
+rc 0
+on rel
+
 # --- (d) begin refusals ------------------------------------------------------------
 case="d no knowledge dir"
 P="$WORK/d0"

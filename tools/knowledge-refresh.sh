@@ -38,8 +38,9 @@
 #   <knowledge dir>/<knowledge.baselineFile>
 #   with LF endings: commit=<base>, date=<committer date of base, YYYY-MM-DD>,
 #   branch=<branch>. Runs checks/verify-knowledge-shape.sh and
-#   checks/verify-knowledge-neutral.sh of the team root on the knowledge dir;
-#   when one fails, prints their lines and exits 1 (2 when one could not
+#   checks/verify-knowledge-neutral.sh of the team root on the knowledge dir,
+#   the neutral check's lines under <knowledge.proposalsDir>/ dropped (a
+#   remark is a verbatim inbox entry, never reworded); when one fails, prints their lines and exits 1 (2 when one could not
 #   read), staying on the work branch with nothing committed. Then
 #   git add -A -- <knowledge dir> and git commit -- <knowledge dir> with the
 #   subject "knowledge: refresh <branch> to <short base>" and, with
@@ -121,6 +122,7 @@ need() { # <block> <key>
 TRACK="$(need tracking dir)" || exit 2
 MARKER="$(need hooks marker)" || exit 2
 BASELINE_NAME="$(need knowledge baselineFile)" || exit 2
+PROPOSALS="$(need knowledge proposalsDir)" || exit 2
 STATE="$TRACK/.knowledge-refresh"
 
 [ "$(lgit rev-parse --is-inside-work-tree 2>/dev/null | tr -d '\r')" = true ] || die "not inside a git working tree"
@@ -282,7 +284,15 @@ if [ "$cmd" = finish ]; then
     || die "cannot write $BASELINE"
 
   bash "$TEAM_ROOT/checks/verify-knowledge-shape.sh" "$KD" > "$TMP/shape" 2>&1; rs=$?
-  bash "$TEAM_ROOT/checks/verify-knowledge-neutral.sh" "$KD" > "$TMP/neutral" 2>&1; rn=$?
+  bash "$TEAM_ROOT/checks/verify-knowledge-neutral.sh" "$KD" > "$TMP/neutral.all" 2>&1; rn=$?
+  # A remark under the proposals dir is a verbatim copy of an inbox entry,
+  # which the refresh never rewords: its lines are not held against it.
+  if [ "$rn" -eq 1 ]; then
+    awk -v p="$KD/$PROPOSALS/" 'index($0, p) != 1' "$TMP/neutral.all" > "$TMP/neutral"
+    [ -s "$TMP/neutral" ] || rn=0
+  else
+    cp "$TMP/neutral.all" "$TMP/neutral"
+  fi
   if [ "$rs" -ne 0 ] || [ "$rn" -ne 0 ]; then
     [ "$rs" -eq 0 ] || cat "$TMP/shape"
     [ "$rn" -eq 0 ] || cat "$TMP/neutral"

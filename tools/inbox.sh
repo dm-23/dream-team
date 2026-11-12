@@ -32,7 +32,10 @@
 #                          Creates learnings/. Prints the final name.
 #   append <name> <source> appends; a target that does not end in a newline
 #                          first gets one in its own line ending (CRLF when it
-#                          holds a CRLF, else LF). A missing entry is exit 1;
+#                          holds a CRLF, else LF); into a target holding a
+#                          CRLF, every appended line ends in CRLF (a missing
+#                          last newline stays missing), else the source's
+#                          bytes go as they are. A missing entry is exit 1;
 #                          review-exceptions.md is created when absent.
 #   put <name> <source>    replaces the whole file, creating it when absent.
 #   remove <name> ...      removes each; a missing one is exit 1 at the end.
@@ -286,10 +289,21 @@ case "$cmd" in
       { cat "$SRC" > "$target"; } 2>/dev/null || die "$1 could not be written"
       exit 0
     fi
+    crlf=0; ! has_crlf "$target" || crlf=1
     b="$(last_byte "$target")"
     if [ -n "$b" ] && [ "$b" != "0a" ]; then
-      if has_crlf "$target"; then eol='\r\n'; else eol='\n'; fi
+      if [ "$crlf" = 1 ]; then eol='\r\n'; else eol='\n'; fi
       { printf '%b' "$eol" >> "$target"; } 2>/dev/null || die "$1 could not be written"
+    fi
+    if [ "$crlf" = 1 ]; then
+      # The appended lines take the target's CRLF; a missing last newline
+      # stays missing (BINMODE=3: gawk on Windows otherwise drops the CR).
+      nonl=0; [ ! -s "$SRC" ] || [ "$(last_byte "$SRC")" = 0a ] || nonl=1
+      awk -v BINMODE=3 -v nonl="$nonl" '
+        { if (have) printf "%s\r\n", pl; sub(/\r$/, ""); pl = $0; have = 1 }
+        END { if (have) printf "%s%s", pl, (nonl ? "" : "\r\n") }' "$SRC" > "$TMP/append" 2>/dev/null \
+        || die "$1 could not be written"
+      SRC="$TMP/append"
     fi
     { cat "$SRC" >> "$target"; } 2>/dev/null || die "$1 could not be written"
     exit 0

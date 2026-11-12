@@ -187,6 +187,14 @@ if [ -f "$E1" ] && [ -f "$E2" ]; then
   has "$E1" "- Always X $EM source: user"
   has "$E2" "- Never Y $EM source: learnings 2026-10-01 Foo"
   has "$E1" "- **Tags:** migration"
+  # Submitted as a remark, the entry lands in committed knowledge: it names
+  # no team path, and the rule's new home is a rule file.
+  has "$E1" "the private copy's PROJECT-RULES.md holds an authored line"
+  has "$E1" "a rule file in $NEW/rules/"
+  lacks "$E1" "$OLD"
+  mkdir -p "$tmp/c.neutral"; cp "$E1" "$E2" "$tmp/c.neutral/"
+  bash "$ROOT/checks/verify-knowledge-neutral.sh" "$tmp/c.neutral" > "$tmp/c.neutral.out" 2>&1 \
+    || fail "an imported entry names a team path: $(cat "$tmp/c.neutral.out")"
 fi
 [ ! -e "$P/$OPS/LEARNINGS.md" ] || fail "an index file was written"
 # The derived index lists both, and each row's title names its entry file
@@ -683,18 +691,22 @@ mkdir -p "$P/$OPS"
 { printf '# Dream Team Learnings Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n| 2026-10-02 | Lifted One | x |\n| 2026-10-03 | Lifted: Two! | y |\n\n'
   printf '## [2026-10-02] Lifted One\n- **Tags:** x\n\n'
   printf '## [2026-10-03] Lifted: Two!\r\n- **Tags:** y\r\n\r\n'
-  printf '## [2026-10-02] Lifted One\n- **Tags:** z\n'; } > "$P/$OPS/LEARNINGS.md"
+  printf '## [2026-10-02] Lifted One\n- **Tags:** z\n\n'
+  printf '## [2026-10-04] \320\237\321\200\320\270\n- **Tags:** w\n'; } > "$P/$OPS/LEARNINGS.md"
 cp "$P/$OPS/LEARNINGS.md" "$tmp/pq.index"
 K="$(key_of)"; PD="$PROOT/$K"
 run
 expect_rc 0
-has "$tmp/out" "(key $K): moved 3 entries, 0 already there, 0 renamed, 3 lifted from LEARNINGS.md"
+has "$tmp/out" "(key $K): moved 4 entries, 0 already there, 0 renamed, 4 lifted from LEARNINGS.md"
 printf '## [2026-10-02] Lifted One\n- **Tags:** x\n\n' > "$tmp/pq.1"
 printf '## [2026-10-03] Lifted: Two!\r\n- **Tags:** y\r\n\r\n' > "$tmp/pq.2"
-printf '## [2026-10-02] Lifted One\n- **Tags:** z\n' > "$tmp/pq.3"
+printf '## [2026-10-02] Lifted One\n- **Tags:** z\n\n' > "$tmp/pq.3"
+# A title with no ASCII letter or digit has an empty slug: the name says "entry".
+printf '## [2026-10-04] \320\237\321\200\320\270\n- **Tags:** w\n' > "$tmp/pq.4"
 same "$tmp/pq.1" "$PD/learnings/2026-10-02-lifted-one.md"
 same "$tmp/pq.2" "$PD/learnings/2026-10-03-lifted-two.md"
 same "$tmp/pq.3" "$PD/learnings/2026-10-02-lifted-one-2.md"
+same "$tmp/pq.4" "$PD/learnings/2026-10-04-entry.md"
 di="$(ls "$P/$OPS"/dropped-index-*.md 2>/dev/null | head -1)"
 if [ -n "$di" ]; then same "$tmp/pq.index" "$di"; else fail "no dropped-index file: $(ls "$P/$OPS")"; fi
 bk="$(inbox_backup)"
