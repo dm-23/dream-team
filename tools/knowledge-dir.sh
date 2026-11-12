@@ -3,7 +3,7 @@
 # project's knowledge or the operative files, or the project key. See
 # team-manifest.json → knowledge.
 #
-#   bash <team-root>/tools/knowledge-dir.sh project|operative|key     (from the project root)
+#   bash <team-root>/tools/knowledge-dir.sh project|operative|remarks|key     (from the project root)
 #
 # project:   knowledge.dir when it holds a *.md directly inside; otherwise
 #            knowledge.legacyDir when it holds a *.md directly inside other
@@ -18,6 +18,9 @@
 #            replaced by $HOME; it is printed through cygpath -m when cygpath
 #            exists (C:/Users/... on Windows). Results (2)-(4) are
 #            project-root-relative.
+# remarks:   the proposals directory for remarks: knowledge.proposalsDir inside
+#            knowledge.dir when project prints knowledge.dir, else inside
+#            knowledge.operativeDir. Never created.
 # key:       the project key, from the git remote: the slug of the last path
 #            segment of the normalized address, a hyphen, and the first 8
 #            characters of the address's git blob hash. The address is
@@ -32,8 +35,8 @@ set -uo pipefail
 
 which="${1:-}"
 case "$which" in
-  project|operative|key) ;;
-  *) echo "usage: knowledge-dir.sh project|operative|key" >&2; exit 2 ;;
+  project|operative|remarks|key) ;;
+  *) echo "usage: knowledge-dir.sh project|operative|remarks|key" >&2; exit 2 ;;
 esac
 
 TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)" || exit 2
@@ -112,11 +115,13 @@ has_md() { # <dir> [skip-learnings]: a *.md directly inside
   return 1
 }
 
-if [ "$which" = project ]; then
+if [ "$which" = project ] || [ "$which" = remarks ]; then
   DIR="$(need dir)" || exit 2
   if ! has_md "$DIR" && has_md "$LEGACY" skip; then
     DIR="$LEGACY"
+    if [ "$which" = remarks ]; then DIR="$(need operativeDir)" || exit 2; fi
   fi
+  if [ "$which" = remarks ]; then PD="$(need proposalsDir)" || exit 2; DIR="$DIR/$PD"; fi
 else
   OPD="$(need operativeDir)" || exit 2
   DIR=""

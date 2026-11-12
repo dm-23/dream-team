@@ -214,6 +214,31 @@ mkdir -p "$P/proj/$NEW" "$P/proj/$OLD"
 echo x > "$P/proj/$NEW/PROJECT-OVERVIEW.md"; echo x > "$P/proj/$OLD/PROJECT-OVERVIEW.md"
 expect project "$NEW"
 
+# --- remarks: the proposals directory beside the knowledge in use ------------------
+case="remarks beside knowledge.dir"
+make_project
+mkdir -p "$P/proj/$NEW" "$P/proj/$OLD"
+echo x > "$P/proj/$NEW/PROJECT-OVERVIEW.md"; echo x > "$P/proj/$OLD/PROJECT-OVERVIEW.md"
+expect remarks "$NEW/proposals"
+rm "$P/proj/$NEW/PROJECT-OVERVIEW.md"
+expect remarks "$OPS/proposals"
+
+case="remarks beside the legacy directory's operative twin"
+make_project
+mkdir -p "$P/proj/$OLD"
+echo x > "$P/proj/$OLD/PROJECT-OVERVIEW.md"
+expect remarks "$OPS/proposals"
+
+case="remarks in a fresh project"
+make_project
+expect remarks "$NEW/proposals"
+[ ! -e "$P/proj/$NEW" ] || fail "remarks created $NEW"
+
+case="usage names remarks"
+make_project
+(cd "$P/proj" && bash "$P/team/tools/knowledge-dir.sh" bogus >/dev/null 2>"$tmp/err")
+grep -q 'project|operative|remarks|key' "$tmp/err" || fail "usage line is '$(cat "$tmp/err")'"
+
 # --- runtime checks: they find the manifest beside themselves --------------------
 # The team lives at <proj>/.claude/ and the knowledge at <proj>/.dream-team/
 # knowledge, so no manifest sits beside the knowledge directory.
