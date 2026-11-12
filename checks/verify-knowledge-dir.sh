@@ -168,18 +168,18 @@ INTEGRITY="$ROOT/checks/verify-knowledge-integrity.sh"
 make_runtime() {
   n=$((n + 1))
   P="$tmp/r$n"
-  mkdir -p "$P/proj/.claude/checks" "$P/proj/.dream-team/knowledge" "$P/proj/.dream-team-tracking/operative/learnings"
+  mkdir -p "$P/proj/.claude/checks" "$P/proj/.dream-team/knowledge" "$P/proj/.dream-team-tracking/operative/proposals"
   cp "$INBOX" "$INTEGRITY" "$P/proj/.claude/checks/"
   cp "$MANIFEST" "$P/proj/.claude/team-manifest.json"
   OPD="$P/proj/.dream-team-tracking/operative"
 }
-# write_index <dir> <rows>: that many entry files under learnings/, one index
-# row each.
+# write_index <dir> <rows>: that many remarks under proposals/ (the remarks dir
+# of an operative dir), one index row each.
 write_index() {
   local i=1
-  mkdir -p "$1/learnings"
+  mkdir -p "$1/proposals"
   while [ "$i" -le "$2" ]; do
-    printf '## [2026-01-01] e%s\n- **Tags:** x\n' "$i" > "$1/learnings/2026-01-01-e$i.md"
+    printf '## [2026-01-01] e%s\n- **Tags:** x\n' "$i" > "$1/proposals/2026-01-01-e$i.md"
     i=$((i + 1))
   done
 }
@@ -192,12 +192,12 @@ rt_expect() { # <label> <expected-rc> <args...>: run a runtime check from the te
 case="runtime inbox over the row budget"
 make_runtime
 write_index "$OPD" 31
-rt_expect "31 rows" 1 verify-learnings-inbox.sh "$OPD/learnings"
+rt_expect "31 rows" 1 verify-learnings-inbox.sh "$OPD/proposals"
 
 case="runtime inbox within budget"
 make_runtime
 write_index "$OPD" 3
-rt_expect "3 rows" 0 verify-learnings-inbox.sh "$OPD/learnings"
+rt_expect "3 rows" 0 verify-learnings-inbox.sh "$OPD/proposals"
 
 case="runtime integrity on an operative pair"
 make_runtime
@@ -234,7 +234,7 @@ rt_expect "unclassified" 1 verify-knowledge-integrity.sh "$P/backup" "$K"
 # also holds (an edition's capabilities, a legacy backup).
 make_operative_state() {
   write_index "$OPD" 1
-  printf '## [2026-01-01] t1\n- Fix pattern: x\n' > "$OPD/learnings/2026-01-01-t1.md"
+  printf '## [2026-01-01] t1\n- Fix pattern: x\n' > "$OPD/proposals/2026-01-01-t1.md"
   mkdir -p "$OPD/claude" "$OPD/legacy-knowledge-x"
   printf '# Capabilities\n' > "$OPD/claude/CAPABILITIES.md"
   printf '# old\n' > "$OPD/legacy-knowledge-x/PROJECT-OVERVIEW.md"

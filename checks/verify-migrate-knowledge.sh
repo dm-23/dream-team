@@ -8,7 +8,7 @@
 # dir: per-copy entries, entries lifted out of an old LEARNINGS.md, the lines
 # of review-exceptions.md, a second run, the copy from the private copy's
 # remarks dir into the committed one (first sight, --first-commit,
-# --drop-legacy).
+# --drop-legacy, and a remark consumed after it never coming back).
 #
 #   bash checks/verify-migrate-knowledge.sh    (run from anywhere)
 #
@@ -820,11 +820,11 @@ cp "$tmp/rf.old" "$P/$RL/$(rname "$tmp/rf.old" 2026-10-08-old-branch)"
 rm -rf "$tmp/rf.rl"; cp -R "$P/$RL" "$tmp/rf.rl"
 before="$(snap "$P")"; run --drop-legacy --dry-run
 expect_rc 0
-has "$tmp/out" "would: remarks: $RC: 1 copied from $RL, 1 already there"
+has "$tmp/out" "would: remarks: $RC: 1 copied from $RL, 0 already there, 1 copied before"
 [ "$before" = "$(snap "$P")" ] || fail "a dry run changed files"
 run --drop-legacy
 expect_rc 0
-has "$tmp/out" "remarks: $RC: 1 copied from $RL, 1 already there"
+has "$tmp/out" "remarks: $RC: 1 copied from $RL, 0 already there, 1 copied before"
 has "$tmp/out" "note: 1 $UNOTE"
 [ ! -e "$P/$RL" ] || fail "$RL is still there: $(ls "$P/$RL")"
 [ ! -e "$P/$OLD" ] || fail "$OLD is still there"
@@ -834,6 +834,49 @@ if [ -n "$pbk" ]; then diff -r "$tmp/rf.rl" "$pbk" > "$tmp/diff" 2>&1 || fail "t
 else fail "no backup of $RL: $(ls "$P/$OPS")"; fi
 out="$(cd "$P" && bash .claude/tools/knowledge-dir.sh remarks)"
 [ "$out" = "$RC" ] || fail "the resolver prints '$out' as the remarks dir, expected $RC"
+
+case="rl: --drop-legacy does not bring back a remark consumed after the flip"
+new_project rl operative
+run
+expect_rc 0
+committed_copy
+run
+expect_rc 0
+has "$tmp/out" "remarks: $RC: 1 copied from $RL, 0 already there"
+an="$(one_of "$P/$RL" a)"; an="${an##*/}"
+[ -n "$an" ] && [ -f "$P/$RC/$an" ] || fail "the flip did not copy the remark: $(ls "$P/$RC" 2>&1)"
+grep -qxF "remark=$an" "$P/$OPS/.remarks-copied" || fail "the stamp does not name $an: $(cat "$P/$OPS/.remarks-copied" 2>&1)"
+# The refresh consumed it: deleted from the committed remarks dir.
+rm -f "$P/$RC/$an"
+before="$(snap "$P")"; run --drop-legacy --dry-run
+expect_rc 0
+has "$tmp/out" "would: remarks: $RC: 0 copied from $RL, 0 already there, 1 copied before"
+lacks "$tmp/out" "note:"
+[ "$before" = "$(snap "$P")" ] || fail "a dry run changed files"
+run --drop-legacy
+expect_rc 0
+has "$tmp/out" "remarks: $RC: 0 copied from $RL, 0 already there, 1 copied before; $RL removed"
+lacks "$tmp/out" "note:"
+[ ! -e "$P/$RC/$an" ] || fail "the consumed remark came back"
+[ -z "$(untracked "$RC")" ] || fail "untracked files under $RC: $(untracked "$RC")"
+[ ! -e "$P/$RL" ] || fail "$RL is still there: $(ls "$P/$RL")"
+pbk="$(ls -d "$P/$OPS"/legacy-knowledge-*-proposals 2>/dev/null | head -1)"
+[ -n "$pbk" ] && [ -f "$pbk/$an" ] || fail "the backup of $RL lacks $an"
+# A stamp from before the names were recorded: everything is copied, as before.
+case="rl: a stamp without names copies everything"
+new_project rl2 operative
+run
+expect_rc 0
+committed_copy
+run
+expect_rc 0
+an="$(one_of "$P/$RL" a)"; an="${an##*/}"
+printf 'date=2026-10-01\ncopied=1\n' > "$P/$OPS/.remarks-copied"
+rm -f "$P/$RC/$an"
+run --drop-legacy
+expect_rc 0
+has "$tmp/out" "remarks: $RC: 1 copied from $RL, 0 already there; $RL removed"
+[ -f "$P/$RC/$an" ] || fail "a stamp without names skipped $an"
 
 case="rg: knowledge.dir holding only its remarks dir, the knowledge in another edition's"
 # This edition's private copy is gone, so the resolver prints the committed

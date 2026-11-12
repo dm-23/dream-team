@@ -45,7 +45,13 @@
 # The copy: every *.md of operativeDir/<knowledge.proposalsDir> (the remarks
 # accepted while the knowledge was the private copy) is accepted into
 # <knowledge.dir>/<knowledge.proposalsDir> and stays where it is; a stamp,
-# operativeDir/.remarks-copied, records that it was done.
+# operativeDir/.remarks-copied, records that it was done and, one
+# "remark=<name>" line each, which names it carried (the names of earlier
+# stamps kept), so that --drop-legacy does not bring back a remark the
+# refresh consumed since. A stamp without such lines (written before they
+# were recorded) names nothing, and --drop-legacy then copies every remark
+# as before: a consumed one may come back as an untracked file, which the
+# note names, while skipping on a guess could lose a remark never copied.
 # Then, for the project files:
 #   default         the committed copy is tracked in this branch: authored
 #                   lines of the private copy that the committed copy lacks
@@ -73,8 +79,9 @@
 #                   printed. Then the inbox step and the copy.
 #   --drop-legacy   the committed copy is tracked and the resolver's project
 #                   is knowledge.dir: authored lines the remarks dir does not
-#                   hold yet become remarks, the copy runs, then the private
-#                   copy is backed up to
+#                   hold yet become remarks, the copy runs (a remark the
+#                   copy stamp names is skipped: it was carried before),
+#                   then the private copy is backed up to
 #                   operativeDir/legacy-knowledge-<YYYY-MM-DD-HHmm>/ and
 #                   operativeDir/<knowledge.proposalsDir> to that name with
 #                   -proposals appended, each backup checked, and both are
@@ -87,7 +94,10 @@
 # there is no inbox (for --first-commit after the project lines); "project:
 # ..." and the extractor's "rules: ..." line; "remarks: <knowledge.dir>/
 # <knowledge.proposalsDir>: <C> copied from <operativeDir>/
-# <knowledge.proposalsDir>, <D> already there" when the copy runs; the "note:"
+# <knowledge.proposalsDir>, <D> already there" when the copy runs (with
+# ", <S> copied before" when --drop-legacy skipped S remarks the copy stamp
+# names, and "; <operativeDir>/<knowledge.proposalsDir> removed (backup
+# <dir>)" when --drop-legacy removed it); the "note:"
 # line about another edition's directory; and, when `git ls-files --
 # <knowledge.dir>` prints anything, the remarks dir is
 # <knowledge.dir>/<knowledge.proposalsDir> and this run added N > 0 files to
@@ -444,20 +454,25 @@ if [ -n "$inbox_reason" ]; then
 fi
 if [ "$iidle" = 1 ]; then rem_line="remarks: $RD: nothing to move"; else rem_line="remarks: $RD: $IN moved, $IM already there"; fi
 
-# plan_copy: every remark of RL, accepted into RC. Fills $TMP/csrcs; sets CN
-# and CM, and copy_line when there is anything to copy.
-CN=0 CM=0 copy_line=""
-: > "$TMP/csrcs"
+# plan_copy [skip]: every remark of RL, accepted into RC; with "skip", less
+# those the copy stamp names (carried before). Fills $TMP/csrcs; sets CN, CM,
+# CS (skipped) and CSP (its report clause), and copy_line when there is
+# anything to copy.
+CN=0 CM=0 CS=0 CSP="" copy_line=""
+: > "$TMP/csrcs"; : > "$TMP/cnames"
+[ ! -f "$COPIED" ] || tr -d '\r' < "$COPIED" | grep '^remark=' > "$TMP/cnames"
 plan_copy() {
   local f
   if [ -d "$RL" ]; then
     for f in "$RL"/*.md; do
       [ -f "$f" ] && [ ! -L "$f" ] || continue
+      if [ "${1:-}" = skip ] && grep -qxF -- "remark=${f##*/}" "$TMP/cnames"; then CS=$((CS + 1)); continue; fi
       printf '%s\t%s\n' "${f##*/}" "$f" >> "$TMP/csrcs"
     done
   fi
+  [ "$CS" = 0 ] || CSP=", $CS copied before"
   plan_accept "$TMP/csrcs" "$RC"; CN=$PA CM=$PT
-  [ ! -s "$TMP/csrcs" ] || copy_line="remarks: $RC: $CN copied from $RL, $CM already there"
+  [ ! -s "$TMP/csrcs" ] || copy_line="remarks: $RC: $CN copied from $RL, $CM already there$CSP"
 }
 
 # --- 3. the project part, planned --------------------------------------------
@@ -687,8 +702,9 @@ drop)
   BK="$OPS/legacy-knowledge-$NOW"
   [ ! -e "$BK" ] || BK="$BK-$$"
   PBK="$BK-proposals"
-  plan_copy
-  [ ! -d "$RL" ] || copy_line="remarks: $RC: $CN copied from $RL, $CM already there; $RL removed (backup $PBK)"
+  # A remark carried before and consumed since must not come back.
+  plan_copy skip
+  [ ! -d "$RL" ] || copy_line="remarks: $RC: $CN copied from $RL, $CM already there$CSP; $RL removed (backup $PBK)"
   if [ -d "$LEGACY" ] && [ -n "$(project_entries "$LEGACY")" ]; then
     plan_import
     drop_legacy=1
@@ -869,15 +885,17 @@ write_import() {
 
 # carry: the remarks of RL accepted into RC; they stay in RL. Sets CA, the
 # files added, CT, those already there, and copy_line from what was done.
+# The stamp names every remark carried, this run's and earlier runs'.
 CA=0 CT=0
 carry() {
   local b p
   [ -s "$TMP/csrcs" ] || return 0
   set --
-  while IFS="$TAB" read -r b p; do set -- "$@" "$p"; done < "$TMP/csrcs"
+  while IFS="$TAB" read -r b p; do set -- "$@" "$p"; printf 'remark=%s\n' "$b" >> "$TMP/cnames"; done < "$TMP/csrcs"
   accept_into "$RC" "$@"; CA=$AA CT=$AT
-  copy_line="remarks: $RC: $AA copied from $RL, $AT already there"
-  printf 'date=%s\ncopied=%s\n' "$TODAY" "$AA" > "$COPIED" || werr "write $COPIED"
+  copy_line="remarks: $RC: $AA copied from $RL, $AT already there$CSP"
+  { printf 'date=%s\ncopied=%s\n' "$TODAY" "$AA"; LC_ALL=C sort -u "$TMP/cnames"; } > "$TMP/stamp" \
+    && cp -- "$TMP/stamp" "$COPIED" || werr "write $COPIED"
 }
 
 # carry_in <dir>: the entries of a knowledge.dir that holds only its remarks
@@ -951,7 +969,7 @@ drop)
   fi
   if [ -d "$RL" ]; then
     rm -rf -- "$RL" || { echo "migrate-knowledge: could not remove $RL/ (the backup is $PBK/); fix that and run again" >&2; exit 2; }
-    copy_line="remarks: $RC: $CA copied from $RL, $CT already there; $RL removed (backup $PBK)"
+    copy_line="remarks: $RC: $CA copied from $RL, $CT already there$CSP; $RL removed (backup $PBK)"
   fi
   echo "$proj_line"
   [ -z "$copy_line" ] || echo "$copy_line"

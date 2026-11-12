@@ -43,7 +43,10 @@ existing remark's file name in the remarks dir, and the mark line:
 An **exception entry** records a finding the developer accepted as an exception
 (`.claude/skills/team/references/accepted-exceptions.md`). It is two lines, in the file
 `.dream-team-tracking/{context_id}/learnings/YYYY-MM-DD-exception-{slug of the path}.md`, the
-slug being what the transform below makes of the finding's path:
+slug being what the transform below makes of the finding's path; a name already taken there
+(another finding in the same file, the same day) gets the first free `-2`, `-3`, as for any
+entry ("Where an entry lives"), and each one is accepted before the next is written. Its two
+lines:
 
 ```markdown
 ## [YYYY-MM-DD] exception {path}
