@@ -124,6 +124,7 @@ Flag only with a concrete reason. Never demand a micro-optimisation without a me
 - Each file keeps its line endings. A file whose diff shrinks to under half once line endings are ignored was saved with other endings: a finding, since the rewrite hides the real change and conflicts with every later merge.
 - No changed file holds a conflict marker.
 - Excluded is not unchecked: a file left out of line-by-line reading (`PROJECT-RULES.md → ## Generated files`) still gets the check that section names for it, and a generated file changed without its source, or edited by hand, is a finding.
+- A change that touches files under `.dream-team/knowledge/` and any other file is a High finding: "knowledge and product changes in one change: <n> knowledge files beside <m> others; knowledge travels in a change of its own". A change holding only knowledge files is reviewed as documentation and is exempt from this bullet.
 - A change that should have been split is said so, and is reviewed anyway.
 
 ## Severity

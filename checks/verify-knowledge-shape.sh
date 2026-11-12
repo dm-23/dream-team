@@ -17,6 +17,10 @@
 #     an authored line in a generated file: a line that contains
 #     "— source: learnings " or ends "— source: user". Authored text belongs in
 #     rules/; a generated file is rewritten and must not carry it.
+#   - No *.md anywhere under <knowledge-dir>, rules/ and proposals/ included,
+#     holds both a line starting "<<<<<<< " and a line starting ">>>>>>> ": a
+#     merge left conflict markers in it. A lone "=======" (a Markdown heading
+#     underline) never counts. Reported once per file, at the first marker.
 #   - Only when <knowledge-dir>/BASELINE exists (knowledge.baselineFile: a
 #     refresh wrote it, so the knowledge claims to be verified against a
 #     commit): BASELINE holds a "commit=" line of 40 hex digits, a "date=" line
@@ -41,6 +45,7 @@
 # A defect is reported as
 #   <path>: <what is wrong>
 #   <path>:<line>: authored line in a generated file
+#   <path>:<line>: conflict marker
 #   rules: <N> files, the budget is <M>
 #   <path>/BASELINE: no "commit=" line of 40 hex digits   (and date=, branch=)
 #   <path>: no "Covers:" line in its first five lines
@@ -173,6 +178,24 @@ while IFS= read -r f; do
   fi
 done <<EOF
 $FILES
+EOF
+
+# --- conflict markers (every *.md, rules/ and proposals/ included) -------------
+ALLFILES="$(find "$DIR" -type f -name '*.md' 2>/dev/null | sort)" || exit 2
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  out="$(awk -v path="$f" '
+    { sub(/\r$/, "") }
+    index($0, "<<<<<<< ") == 1 { if (!o) o = NR }
+    index($0, ">>>>>>> ") == 1 { c = 1 }
+    END { if (o && c) print path ":" o ": conflict marker" }
+  ' "$f")"
+  if [ -n "$out" ]; then
+    printf '%s\n' "$out"
+    FOUND=1
+  fi
+done <<EOF
+$ALLFILES
 EOF
 
 # --- BASELINE and the Covers lines ---------------------------------------------

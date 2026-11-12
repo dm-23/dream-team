@@ -104,6 +104,25 @@ run_case "sixty rules" 0 "" "$WORK/k"
 
 run_case "missing dir" 2 "" "$WORK/does-not-exist"
 
+# --- conflict markers ---------------------------------------------------------
+mk; mkdir -p "$WORK/k/proposals"
+printf '%s\n' '# Overview' 'one' '<<<<<<< HEAD' 'ours' '=======' 'theirs' '>>>>>>> release/1.0' > "$WORK/k/OVERVIEW.md"
+run_case "conflict markers" 1 "OVERVIEW.md:3: conflict marker" "$WORK/k"
+mk
+printf '%s\r\n' '# T' '<<<<<<< HEAD' 'a' '=======' 'b' '>>>>>>> x' > "$WORK/k/OVERVIEW.md"
+run_case "conflict markers, crlf" 1 "OVERVIEW.md:2: conflict marker" "$WORK/k"
+mk; mkdir -p "$WORK/k/proposals"
+printf '%s\n' '# T' '<<<<<<< HEAD' 'a' '=======' 'b' '>>>>>>> x' > "$WORK/k/proposals/p.md"
+run_case "conflict markers in proposals" 1 "proposals/p.md:2: conflict marker" "$WORK/k"
+mk; mk_rule a
+printf '%s\n' '<<<<<<< HEAD' 'a' '=======' 'b' '>>>>>>> x' >> "$WORK/k/rules/a.md"
+run_case "conflict markers in rules" 1 "rules/a.md:6: conflict marker" "$WORK/k"
+mk
+printf '%s\n' 'Title' '=======' 'text' > "$WORK/k/OVERVIEW.md"
+run_case "setext underline only" 0 "knowledge shape: ok" "$WORK/k"
+printf '%s\n' 'Title' '=======' '<<<<<<< not closed' > "$WORK/k/OVERVIEW.md"
+run_case "opening marker only" 0 "knowledge shape: ok" "$WORK/k"
+
 # --- BASELINE and the Covers lines --------------------------------------------
 # A repository holding src/a.ext and package.json, its knowledge in kb/.
 R="$WORK/repo"; K="$R/kb"

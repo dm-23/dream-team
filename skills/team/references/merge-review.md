@@ -17,6 +17,7 @@ Both hold → merge mode; log `Mode: merge — <the merge commits' count>, "<the
 - **No size gate, no parts.** Step 3's limits do not apply and `review-parts.md` is not read: the carried commits are the bulk and are not read line by line. Log `Size gate: n/a — merge`.
 - **One call.** Handoff → change-reviewer, `mode/phase: merge`, on the same cell as step 3 names, with step 3's `inputs` and `source: <branch>` beside the range. The intent is the pull request title and description; the reviewer reports `Intent coverage: n/a — merge`.
 - **Steps 4 to 7** run as written, with one file. The Verifier votes on the blocking findings as on any others. The page's summary card shows the `Merge:` pointer line where intent coverage would be, and its section 3 is left out.
+- **Knowledge stays the target's.** In a merge of one release branch into another, any difference under `.dream-team/knowledge/` between the merge result and the target branch is a High finding, "the merge changed the target's knowledge". The fix is the command in the README, section "Merging an older release branch into a newer one": `git rm -rfq --ignore-unmatch .dream-team/knowledge && git checkout HEAD -- .dream-team/knowledge`, run during the merge before the commit.
 - **Fix run.** A finding in a conflict resolution is fixed in the merge branch like any other; the fix-run options of step 7 stay.
 
 A merge reviewed again after new pushes (`re-review.md`) runs in merge mode in full, with the earlier findings' statuses added.
