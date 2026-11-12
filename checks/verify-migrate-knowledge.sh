@@ -210,7 +210,7 @@ done < "$tmp/rows"
 [ -f "$P/$CAPS/.legacy-rules-imported" ] || fail "no stamp"
 has "$P/$CAPS/.legacy-rules-imported" "$TODAY"
 has "$P/$CAPS/.legacy-rules-imported" "lines=2"
-(cd "$P" && bash .claude/checks/verify-learnings-inbox.sh "$OPS") > "$tmp/inbox" 2>&1; irc=$?
+(cd "$P" && bash .claude/checks/verify-learnings-inbox.sh "$OPS/learnings") > "$tmp/inbox" 2>&1; irc=$?
 [ "$irc" = 1 ] || fail "inbox check exit $irc, expected 1 (pending marks): $(cat "$tmp/inbox")"
 has "$tmp/inbox" "2 pending marks"
 lacks "$tmp/inbox" "longer than"

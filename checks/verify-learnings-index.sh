@@ -117,39 +117,41 @@ mkdir -p "$tmp/team/tools"; cp "$TOOL" "$tmp/team/tools/"
 (cd "$tmp" && bash team/tools/learnings-index.sh two) > "$tmp/out" 2> "$tmp/err"; rc=$?
 expect_rc 2
 
-# --- the inbox check without an index file ----------------------------------------
+# --- the due check on the remarks dir ----------------------------------------
 inbox() { bash "$INBOX" "$1" > "$tmp/out" 2> "$tmp/err"; rc=$?; }
 
 case="inbox: 31 entry files"
-for i in $(seq 1 31); do entry "$tmp/ops31/learnings/2026-10-$(printf '%02d' $(( (i - 1) % 28 + 1 )))-e$i.md" 2026-10-01 "E$i" x; done
+for i in $(seq 1 31); do entry "$tmp/ops31/2026-10-$(printf '%02d' $(( (i - 1) % 28 + 1 )))-e$i.md" 2026-10-01 "E$i" x; done
 inbox "$tmp/ops31"
 expect_rc 1
 grep -qF "over: the index has 31 rows" "$tmp/out" || fail "$(cat "$tmp/out")"
 
 case="inbox: 3 entries, no mark"
-for i in 1 2 3; do entry "$tmp/ops3/learnings/2026-10-0$i-e$i.md" "2026-10-0$i" "E$i" x; done
+for i in 1 2 3; do entry "$tmp/ops3/2026-10-0$i-e$i.md" "2026-10-0$i" "E$i" x; done
 inbox "$tmp/ops3"
 expect_rc 0
 grep -qxF "learnings inbox: 3 index rows (max $(budget learningsIndexMaxRows)), 3 entries, 0 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
 
 case="inbox: one entry with a mark"
-entry "$tmp/opsm/learnings/2026-10-01-m.md" 2026-10-01 M x
-printf '[PROMOTE] PROJECT-RULES.md — Always X\n' >> "$tmp/opsm/learnings/2026-10-01-m.md"
+entry "$tmp/opsm/2026-10-01-m.md" 2026-10-01 M x
+printf '[PROMOTE] PROJECT-RULES.md — Always X\n' >> "$tmp/opsm/2026-10-01-m.md"
 inbox "$tmp/opsm"
 expect_rc 1
 grep -qF "1 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
 
-case="inbox: a submitted entry with a mark"
-entry "$tmp/opss/learnings/2026-10-01-s.md" 2026-10-01 S x
-printf '[PROMOTE] PROJECT-RULES.md — Always X\n[SUBMITTED 2026-10-02] knowledge/proposals-20261002-101010 as 2026-10-01-s.md\n' >> "$tmp/opss/learnings/2026-10-01-s.md"
-entry "$tmp/opss/learnings/2026-10-02-t.md" 2026-10-02 T x
+case="inbox: a SUBMITTED line no longer exempts the marks"
+entry "$tmp/opss/2026-10-01-s.md" 2026-10-01 S x
+printf '[PROMOTE] PROJECT-RULES.md — Always X\n[SUBMITTED 2026-10-02] knowledge/proposals-20261002-101010 as 2026-10-01-s.md\n' >> "$tmp/opss/2026-10-01-s.md"
 inbox "$tmp/opss"
+expect_rc 1
+grep -qF "1 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
+
+case="inbox: an [EXCEPTION] entry alone"
+mkdir -p "$tmp/opsx"
+printf '## [2026-10-01] exception src/a.ts\n[EXCEPTION] - src/a.ts:12 · a reason\n' > "$tmp/opsx/2026-10-01-exception-1.md"
+inbox "$tmp/opsx"
 expect_rc 0
-grep -qxF "learnings inbox: 2 index rows (max $(budget learningsIndexMaxRows)), 2 entries, 0 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
-(cd "$tmp" && bash "$TOOL" opss/learnings) > "$tmp/out" 2> "$tmp/err"; rc=$?
-expect_rc 0
-has_line "entries: 2"
-has_line "| 2026-10-01 | S | x | opss/learnings/2026-10-01-s.md |"
+grep -qxF "learnings inbox: 1 index rows (max $(budget learningsIndexMaxRows)), 1 entries, 0 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
 
 case="inbox: empty directory"
 mkdir -p "$tmp/opse"
@@ -157,12 +159,15 @@ inbox "$tmp/opse"
 expect_rc 0
 grep -qxF "learnings inbox: ok (no entries yet)" "$tmp/out" || fail "$(cat "$tmp/out")"
 
-case="inbox: a LEARNINGS.md still holding inline entries"
-entry "$tmp/opsl/learnings/2026-10-03-f.md" 2026-10-03 F x
-printf '# Inbox\n\n## Index\n\n| Date | Title | Tags |\n|------|-------|------|\n| 2026-10-01 | A | x |\n\n## [2026-10-01] A\n- **Tags:** x\n\n## [2026-10-02] B\n- **Tags:** x\n' > "$tmp/opsl/LEARNINGS.md"
-inbox "$tmp/opsl"
+case="inbox: a missing directory"
+inbox "$tmp/no-such-remarks"
 expect_rc 0
-grep -qF "learnings inbox: 3 index rows" "$tmp/out" || fail "$(cat "$tmp/out")"
+
+case="inbox: a learnings/ level is not read"
+entry "$tmp/opsn/learnings/2026-10-01-n.md" 2026-10-01 N x
+printf '[PROMOTE] PROJECT-RULES.md — Always X\n' >> "$tmp/opsn/learnings/2026-10-01-n.md"
+inbox "$tmp/opsn"
+expect_rc 0
 
 # --- the integrity check on an inbox without an index file -------------------------
 case="integrity: learnings/ only, inbox"

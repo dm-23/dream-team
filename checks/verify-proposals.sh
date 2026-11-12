@@ -14,7 +14,6 @@ export LC_ALL=C
 TEAM="$(cd "$(dirname "$0")/.." && pwd)"
 TOOL="$TEAM/tools/proposals.sh"
 DRIFT="$TEAM/tools/knowledge-drift.sh"
-INBOXCHECK="$TEAM/checks/verify-learnings-inbox.sh"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/proposals.XXXXXX")" || exit 1
 trap 'rm -rf "$WORK"' EXIT
 export DREAM_TEAM_PROFILE="$WORK/pro file"
@@ -433,15 +432,6 @@ case "$OUT" in *Proposals:*) fail "40: [$OUT]";; esac
 OUT="$(cd "$P" && bash "$DRIFT" --list 2>&1)"
 printf '%s\n' "$OUT" | grep -qxF "proposals${TAB}40" || fail "40 --list: [$OUT]"
 
-# --- (h) the inbox check --------------------------------------------------------
-case="h: the inbox check on a submitted entry"
-mkdir -p "$WORK/ops-h/learnings"
-printf '## [2026-11-01] h\n- **Tags:** x\n[PROMOTE] PROJECT-RULES.md %s Always X\n[SUBMITTED 2026-11-02] knowledge/proposals-20261102-101010 as h.md\n' "$EM" > "$WORK/ops-h/learnings/h.md"
-bash "$INBOXCHECK" "$WORK/ops-h" > "$WORK/h.out" 2>&1; RC=$?
-OUT="$(cat "$WORK/h.out")"; ERR=""
-rc 0
-grep -qF "1 index rows" "$WORK/h.out" || fail "rows: $OUT"
-grep -qF "0 pending marks" "$WORK/h.out" || fail "marks: $OUT"
 
 # --- usage ------------------------------------------------------------------------
 case="usage"

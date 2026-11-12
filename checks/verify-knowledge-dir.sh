@@ -272,12 +272,12 @@ rt_expect() { # <label> <expected-rc> <args...>: run a runtime check from the te
 case="runtime inbox over the row budget"
 make_runtime
 write_index "$OPD" 31
-rt_expect "31 rows" 1 verify-learnings-inbox.sh "$OPD"
+rt_expect "31 rows" 1 verify-learnings-inbox.sh "$OPD/learnings"
 
 case="runtime inbox within budget"
 make_runtime
 write_index "$OPD" 3
-rt_expect "3 rows" 0 verify-learnings-inbox.sh "$OPD"
+rt_expect "3 rows" 0 verify-learnings-inbox.sh "$OPD/learnings"
 
 case="runtime integrity on an operative pair"
 make_runtime

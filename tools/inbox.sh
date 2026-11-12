@@ -342,7 +342,7 @@ case "$cmd" in
 
   check)
     [ "$#" -eq 0 ] || usage
-    run_hidden bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$OP"
+    run_hidden bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$OP/learnings"
     exit $?
     ;;
 
