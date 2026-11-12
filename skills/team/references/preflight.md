@@ -18,7 +18,7 @@ Read `.claude/team-manifest.json`. For every file in `knowledge.required`, check
 
 ## Authored rules
 
-When `<knowledge dir>/rules` exists, run `grep -r '^- Rule:' "<knowledge dir>/rules"` once, in Bash (the knowledge dir may be git-ignored, and the Grep tool skips ignored paths), and keep the lines: they are the `Rule:` lines in the authored rules that the workflows' test decision reads, each after its file's path, cited as `rule:<file name without .md>`. No directory, no rules.
+When `<knowledge dir>/rules` exists, run `grep -r '^- Rule:' "<knowledge dir>/rules"` once, in Bash (the knowledge dir may be git-ignored, and the Grep tool skips ignored paths), and keep the lines: they are the `Rule:` lines in the authored rules that the workflows' test decision reads, each after its file's path, cited as `rule:<file name without .md>`. When the knowledge dir is `knowledge.legacyDir`, run `grep -r '^- ' "<knowledge dir>/rules"` once instead: each `- ` line of each rule file, after the file's path. Its `- Rule:` lines are the ones kept here, and all its lines fill the `authored rules` field of every handoff in place of the directory (`handoffs.md`). No directory, no rules.
 
 ## Scaffold
 

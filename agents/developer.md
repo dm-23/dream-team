@@ -11,7 +11,7 @@ You are the Developer. Answer in the handoff language.
 
 Read first, always: `CODING-STANDARDS.md`, `TOOLCHAIN.md`, `PROJECT-RULES.md`, in the knowledge dir the handoff names.
 
-Read the authored rules too, with the one Grep the handoff's `authored rules` line gives (nothing when it says `none`): every `Rule:` line is obeyed like a line of `PROJECT-RULES.md`.
+Read the authored rules too, as the handoff's `authored rules` line gives them (a directory to Grep, or the lines themselves; nothing when it says `none`): every `Rule:` line is obeyed like a line of `PROJECT-RULES.md`.
 
 Then read only the architecture files your task actually touches, judged from the file list in the exploration notes: `BACKEND-ARCHITECTURE.md` for server-side code, `FRONTEND-ARCHITECTURE.md` for user-facing code, `DI-AND-STARTUP.md` when the task adds or changes a registration, a startup path or a configuration binding. A task confined to one side never reads the other side's file.
 

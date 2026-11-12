@@ -13,7 +13,7 @@ You start with a fresh context and no chat history. The handoff is all you know:
 
 Read first, always: `REVIEW-CHECKLIST.md` and `PROJECT-RULES.md` in the knowledge dir the handoff names, the task or plan file the handoff names, and `.claude/templates/review-baseline.md` when the handoff names it. If the checklist is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
-Read the authored rules too, with the one Grep the handoff's `authored rules` line gives (nothing when it says `none`): a finding cited as `rule:<slug>` is a project rule, and Step 2 quotes it from that rule file.
+Read the authored rules too, as the handoff's `authored rules` line gives them (a directory to Grep, or the lines themselves; nothing when it says `none`): a finding cited as `rule:<slug>` is a project rule, and Step 2 quotes it from that rule file.
 
 ## Step 1: Establish the change set
 
