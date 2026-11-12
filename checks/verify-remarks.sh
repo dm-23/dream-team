@@ -158,6 +158,14 @@ in/two.md" ] || fail "no remarks dir: got '$out'"
 run pending nowhere
 { [ "$rc" -eq 0 ] && [ -z "$out" ]; } || fail "missing dir: rc $rc out '$out'"
 
+case="pending reports a failure to hash"
+mkdir -p "$tmp/failbin"
+printf '#!/bin/sh\nexit 1\n' > "$tmp/failbin/git"
+chmod +x "$tmp/failbin/git"
+out="$(cd "$P/proj" && PATH="$tmp/failbin:$PATH" bash "$P/team/tools/remarks.sh" pending in 2>"$tmp/err")"; rc=$?
+[ "$rc" -eq 2 ] || fail "exit $rc, expected 2"
+case "$(cat "$tmp/err")" in "remarks: "*) ;; *) fail "stderr '$(cat "$tmp/err")'" ;; esac
+
 case="no command and an unknown command"
 make_project
 run

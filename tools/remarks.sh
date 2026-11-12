@@ -85,7 +85,7 @@ if [ "$cmd" = accept ]; then
     name=""
     IFS= read -r name < <(target_name "$f") || true
     [ -n "$name" ] || die "$f: could not hash"
-    if [ -e "$RD/$name" ] && ! cmp -s "$f" "$RD/$name"; then
+    if [ -e "$RD/$name" ] && ! cmp -s -- "$f" "$RD/$name"; then
       die "$name exists with other content"
     fi
     names+=("$name")
@@ -100,7 +100,7 @@ if [ "$cmd" = accept ]; then
     fi
     mkdir -p "$RD" || die "could not create $RD"
     cp -- "$f" "$RD/$name" || die "could not copy $f"
-    cmp -s "$f" "$RD/$name" || die "$name: the copy differs from the source"
+    cmp -s -- "$f" "$RD/$name" || die "$name: the copy differs from the source"
     echo "added: $RD/$name"
   done
   exit 0
@@ -112,11 +112,14 @@ d="${1%/}"
 case "$d" in /*|?:*) die "$d: not project-root-relative" ;; esac
 has_dotdot "$d" && die "$d: a .. segment is not allowed"
 [ -d "$d" ] || exit 0
+list=""
 for f in "$d"/*.md; do
+  [ -L "$f" ] && continue
   [ -f "$f" ] || continue
   name=""
   IFS= read -r name < <(target_name "$f") || true
   [ -n "$name" ] || die "$f: could not hash"
-  [ -f "$RD/$name" ] || printf '%s\n' "$f"
-done | sort
+  [ -f "$RD/$name" ] || list="$list$f"$'\n'
+done
+[ -z "$list" ] || printf '%s' "$list" | sort
 exit 0
