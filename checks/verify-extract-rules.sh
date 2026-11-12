@@ -18,7 +18,6 @@ TOOL="$ROOT/tools/extract-rules.sh"
 SHAPE="$ROOT/checks/verify-knowledge-shape.sh"
 tmp="$(mktemp -d)" || exit 1
 trap 'rm -rf "$tmp"' EXIT
-export DREAM_TEAM_PROFILE="$tmp/profile"   # never the real profile
 status=0
 case=""
 fail() { echo "FAIL [$case]: $*"; status=1; }

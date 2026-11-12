@@ -39,7 +39,7 @@
 # Every output but none ends with one more line when more files are tracked
 # under <knowledge dir>/<knowledge.proposalsDir> than
 # knowledge.budgets.proposalsMaxFiles (remarks waiting for a refresh, see
-# knowledge.proposals):
+# knowledge.proposalsDir):
 #
 #   Proposals: <N> waiting, the budget is <M>: a refresh is due.
 #

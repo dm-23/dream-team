@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Repo-only test of tools/knowledge-drift.sh: every fixture is a fresh
 # repository with committed knowledge, and the tool runs from its root the way
-# a run does. Never touches the real profile: DREAM_TEAM_PROFILE points into
-# the temporary directory.
+# a run does.
 #
 #   verify-knowledge-drift.sh
 #
@@ -14,7 +13,6 @@ TEAM="$(cd "$(dirname "$0")/.." && pwd)"
 TOOL="$TEAM/tools/knowledge-drift.sh"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/knowledge-drift.XXXXXX")" || exit 1
 trap 'rm -rf "$WORK"' EXIT
-export DREAM_TEAM_PROFILE="$WORK/profile"
 export GIT_AUTHOR_NAME=drift GIT_AUTHOR_EMAIL=drift@example.com
 export GIT_COMMITTER_NAME=drift GIT_COMMITTER_EMAIL=drift@example.com
 KD=.dream-team/knowledge

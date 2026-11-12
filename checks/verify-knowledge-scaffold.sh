@@ -37,7 +37,7 @@
 #   2 = a path could not be read
 #   3 = scaffold knowledge and the project is still empty
 # 1 is kept apart from 3 so a caller that only wants "due" tests one code,
-# as the prompt hook does with the learnings inbox check. Writes nothing.
+# as the prompt hook does with the remarks check. Writes nothing.
 set -uo pipefail
 export LC_ALL=C
 

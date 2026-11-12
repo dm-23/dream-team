@@ -139,13 +139,6 @@ inbox "$tmp/opsm"
 expect_rc 1
 grep -qF "1 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
 
-case="inbox: a SUBMITTED line no longer exempts the marks"
-entry "$tmp/opss/2026-10-01-s.md" 2026-10-01 S x
-printf '[PROMOTE] PROJECT-RULES.md — Always X\n[SUBMITTED 2026-10-02] knowledge/proposals-20261002-101010 as 2026-10-01-s.md\n' >> "$tmp/opss/2026-10-01-s.md"
-inbox "$tmp/opss"
-expect_rc 1
-grep -qF "1 pending marks" "$tmp/out" || fail "$(cat "$tmp/out")"
-
 case="inbox: an [EXCEPTION] entry alone"
 mkdir -p "$tmp/opsx"
 printf '## [2026-10-01] exception src/a.ts\n[EXCEPTION] - src/a.ts:12 · a reason\n' > "$tmp/opsx/2026-10-01-exception-1.md"

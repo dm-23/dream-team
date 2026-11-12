@@ -3,7 +3,7 @@
 # repository with a release branch "rel" holding committed knowledge, a fake
 # origin address (never contacted) and the tracking dir excluded from git, in a
 # temporary directory. Case (f) repeats (a) and (b) under a path that holds a
-# space. Never touches the real profile.
+# space.
 #
 #   bash checks/verify-knowledge-refresh.sh    (run from anywhere)
 #
@@ -15,7 +15,6 @@ TEAM="$(cd "$(dirname "$0")/.." && pwd)"
 TOOL="$TEAM/tools/knowledge-refresh.sh"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/refresh.XXXXXX")" || exit 1
 trap 'rm -rf "$WORK"' EXIT
-export DREAM_TEAM_PROFILE="$WORK/profile"
 export GIT_AUTHOR_NAME=refresh GIT_AUTHOR_EMAIL=refresh@example.com
 export GIT_COMMITTER_NAME=refresh GIT_COMMITTER_EMAIL=refresh@example.com
 KD=.dream-team/knowledge
