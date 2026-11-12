@@ -24,7 +24,7 @@ Two things are never entries. A summary of what a run did or what passed is the 
 
 An entry is written only when a run taught something a later run needs: a trap, or a mark asking for a rule or a fact to be written into a knowledge file. A run that taught nothing leaves nothing.
 
-`[PROMOTE]` and `[STALE-CHECK]` lines are consumed by `/generate-knowledge`, which rewrites them to `[PROMOTE RESOLVED YYYY-MM-DD]` / `[STALE-CHECK RESOLVED YYYY-MM-DD]` when it writes the rule or the fact, and then removes the entry unless it is still a trap worth keeping. Regenerating a named file resolves the `[STALE-CHECK]` lines that name it, as before.
+`[PROMOTE]` and `[STALE-CHECK]` lines are consumed by `/generate-knowledge`. While the knowledge is not committed, its triage rewrites them to `[PROMOTE RESOLVED YYYY-MM-DD]` / `[STALE-CHECK RESOLVED YYYY-MM-DD]` when it writes the rule or the fact, and then deletes the remark unless it is still a trap worth keeping; regenerating a named file resolves the `[STALE-CHECK]` lines that name it, as before. Once the knowledge is committed, `/generate-knowledge refresh` deletes every remark it consumes or rejects and names it in its commit body; a remark it keeps stays as it is.
 
 ## Two short forms
 

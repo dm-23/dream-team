@@ -241,7 +241,7 @@ run abort
 rc 0
 on rel
 
-# A remark is a verbatim copy of an inbox entry, never reworded by the
+# A remark is a verbatim copy of a run's entry, never reworded by the
 # refresh: the neutral check skips the proposals dir, and still reads rules/.
 case="c neutral: a remark naming a team path"
 P="$WORK/c3"
@@ -308,6 +308,20 @@ run begin
 rc 1
 unchanged "$before"
 rm "$P/$KD/STRAY.md"
+
+# The lead's own accepted remark, not committed yet: refused like any other
+# untracked file, and the refusal says what to do with it.
+case="d untracked remark under proposals/"
+mkdir -p "$P/$KD/proposals"
+printf '## [2026-11-12] A remark\n- **Tags:** x\n' > "$P/$KD/proposals/2026-11-12-a-remark-abc123.md"
+before="$(snapshot)"
+run begin
+rc 1
+has "commit it with your change"
+has "proposals/2026-11-12-a-remark-abc123.md"
+unchanged "$before"
+on rel
+rm -r "$P/$KD/proposals"
 
 case="d open run marker"
 mkdir -p "$P/.dream-team-tracking"

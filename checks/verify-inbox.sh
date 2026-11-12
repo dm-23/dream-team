@@ -173,15 +173,12 @@ expect_rc 1
 grep -q 'pending: 1 unresolved' "$tmp/out" || fail "no pending line: $(cat "$tmp/out")"
 grep -q 'learnings inbox: due' "$tmp/out" || fail "no due line"
 
-case="backup and verify-backup"
+case="backup"
 run backup .dream-team-tracking/b1
 expect_rc 0
 [ "$(cat "$tmp/out")" = ".dream-team-tracking/b1" ] || fail "backup printed '$(cat "$tmp/out")'"
 cmp -s "$OPD/learnings/2026-11-02-foo.md" "$P/.dream-team-tracking/b1/learnings/2026-11-02-foo.md" || fail "backup copy of foo.md differs"
 cmp -s "$OPD/review-exceptions.md" "$P/.dream-team-tracking/b1/review-exceptions.md" || fail "backup copy of review-exceptions.md differs"
-run verify-backup .dream-team-tracking/b1
-expect_rc 0
-grep -q '^knowledge integrity: ok (inbox: ' "$tmp/out" || fail "verify-backup printed: $(cat "$tmp/out" "$tmp/err")"
 run backup .dream-team-tracking/b1
 expect_rc 1
 

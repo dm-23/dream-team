@@ -20,7 +20,9 @@
 #   refresh is in progress); nothing is tracked under the knowledge dir (the
 #   first generation does not use this tool); HEAD is detached;
 #   git status --porcelain -- <knowledge dir> prints anything (untracked files
-#   included); the run marker (hooks.marker) exists without a state=closed
+#   included, each listed by name; the refusal says that a remark under
+#   <knowledge.proposalsDir> not committed yet is committed with the change,
+#   or alone, or moved aside); the run marker (hooks.marker) exists without a state=closed
 #   line; the work branch exists already. Otherwise records branch and base
 #   (HEAD), runs git switch -c knowledge/refresh-<slug>-<YYYYMMDD-HHmm> at the
 #   same commit, where <slug> is the branch name with every run of characters
@@ -40,7 +42,7 @@
 #   branch=<branch>. Runs checks/verify-knowledge-shape.sh and
 #   checks/verify-knowledge-neutral.sh of the team root on the knowledge dir,
 #   the neutral check's lines under <knowledge.proposalsDir>/ dropped (a
-#   remark is a verbatim inbox entry, never reworded); when one fails, prints their lines and exits 1 (2 when one could not
+#   remark is a verbatim copy of a run's entry, never reworded); when one fails, prints their lines and exits 1 (2 when one could not
 #   read), staying on the work branch with nothing committed. Then
 #   git add -A -- <knowledge dir> and git commit -- <knowledge dir> with the
 #   subject "knowledge: refresh <branch> to <short base>" and, with
@@ -205,8 +207,10 @@ if [ "$cmd" = begin ]; then
     || refuse "nothing is tracked under $KD; the first generation writes the knowledge without this tool"
   BRANCH="$(current_branch)"
   [ -n "$BRANCH" ] || refuse "HEAD is detached; check out the release branch first"
-  ST="$(lgit status --porcelain -- "$KD" 2>/dev/null)" || die "git status failed on $KD"
-  [ -z "$ST" ] || refuse "$KD has uncommitted changes; commit or discard them first:
+  # Every untracked file is listed by name, not its directory, so that the
+  # refusal names a remark the lead accepted but has not committed yet.
+  ST="$(lgit status --porcelain --untracked-files=all -- "$KD" 2>/dev/null)" || die "git status failed on $KD"
+  [ -z "$ST" ] || refuse "$KD has uncommitted changes; commit or discard them first (a remark under $KD/$PROPOSALS that is not committed yet: commit it with your change, or alone, or move it aside):
 $ST"
   if [ -f "$MARKER" ]; then
     tr -d '\r' < "$MARKER" | grep -qx 'state=closed' \
@@ -285,7 +289,7 @@ if [ "$cmd" = finish ]; then
 
   bash "$TEAM_ROOT/checks/verify-knowledge-shape.sh" "$KD" > "$TMP/shape" 2>&1; rs=$?
   bash "$TEAM_ROOT/checks/verify-knowledge-neutral.sh" "$KD" > "$TMP/neutral.all" 2>&1; rn=$?
-  # A remark under the proposals dir is a verbatim copy of an inbox entry,
+  # A remark under the proposals dir is a verbatim copy of a run's entry,
   # which the refresh never rewords: its lines are not held against it.
   if [ "$rn" -eq 1 ]; then
     awk -v p="$KD/$PROPOSALS/" 'index($0, p) != 1' "$TMP/neutral.all" > "$TMP/neutral"

@@ -310,8 +310,8 @@ cp -r "$K" "$P/backup"
 printf '# x\n' > "$K/STRAY.md"
 rt_expect "unclassified" 1 verify-knowledge-integrity.sh "$P/backup" "$K"
 
-# make_operative_state: an inbox with one entry file, beside the machine state
-# an operative dir also holds (an edition's capabilities, a legacy backup).
+# make_operative_state: entry files beside the machine state an operative dir
+# also holds (an edition's capabilities, a legacy backup).
 make_operative_state() {
   write_index "$OPD" 1
   printf '## [2026-01-01] t1\n- Fix pattern: x\n' > "$OPD/learnings/2026-01-01-t1.md"
@@ -320,28 +320,28 @@ make_operative_state() {
   printf '# old\n' > "$OPD/legacy-knowledge-x/PROJECT-OVERVIEW.md"
 }
 
-case="runtime integrity with inbox ignores the operative dir's other entries"
+case="runtime integrity fails the operative dir's other entries"
 make_runtime
 make_operative_state
 cp -r "$OPD" "$P/backup"
-rt_expect "inbox, capabilities and legacy backup" 0 verify-knowledge-integrity.sh "$P/backup" "$OPD" inbox
+rt_expect "capabilities" 1 verify-knowledge-integrity.sh "$P/backup" "$OPD"
 
-case="runtime integrity with inbox fails a lost learnings entry"
+case="runtime integrity ignores a remark removed from proposals/"
 make_runtime
-make_operative_state
-cp -r "$OPD" "$P/backup"
-rm "$OPD/learnings/2026-01-01-t1.md"
-rt_expect "inbox, entry lost" 1 verify-knowledge-integrity.sh "$P/backup" "$OPD" inbox
+K="$P/proj/.dream-team/knowledge"
+printf '# x\n' > "$K/BACKEND-ARCHITECTURE.md"
+mkdir -p "$K/proposals"
+printf '## [2026-01-01] r1\n- **Tags:** x\n' > "$K/proposals/2026-01-01-r1-abc123.md"
+printf '## [2026-01-01] r2\n- **Tags:** x\n' > "$K/proposals/2026-01-01-r2-def456.md"
+cp -r "$K" "$P/backup"
+rm "$K/proposals/2026-01-01-r1-abc123.md"
+rt_expect "remark removed" 0 verify-knowledge-integrity.sh "$P/backup" "$K"
 
-case="runtime integrity with inbox passes when both directories are absent"
+case="runtime integrity refuses a third argument"
 make_runtime
-rt_expect "inbox, both absent" 0 verify-knowledge-integrity.sh "$P/no-backup" "$P/no-operative" inbox
-
-case="runtime integrity without inbox still fails the operative dir's other entries"
-make_runtime
-make_operative_state
-cp -r "$OPD" "$P/backup"
-rt_expect "no inbox, capabilities" 1 verify-knowledge-integrity.sh "$P/backup" "$OPD"
+K="$P/proj/.dream-team/knowledge"
+cp -r "$K" "$P/backup"
+rt_expect "three arguments" 2 verify-knowledge-integrity.sh "$P/backup" "$K" inbox
 
 [ "$status" -eq 0 ] && echo "knowledge dir: ok"
 exit "$status"

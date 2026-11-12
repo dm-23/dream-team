@@ -2,20 +2,14 @@
 # Verifies that a /generate-knowledge shape-work run moved text without losing or
 # altering it.
 #
-#   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox]
+#   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>
 #
-# With the third argument "inbox" (the operative pair), only the learnings
-# inbox is compared: Check 1 over LEARNINGS.md and learnings/, nothing else.
-# Every other entry of either directory -- the capabilities directory of an
-# edition, a legacy-knowledge-* backup, a stamp file -- is ignored, because
-# the operative dir holds machine state the generator never moves. Both
-# directories absent is a pass (there was no inbox to lose); one absent is a
-# failure, as without the argument. Without "inbox" nothing below changes.
+# Exactly two arguments; any other count is a usage error (exit 2) and
+# nothing is compared.
 #
 # The manifest is read from the team root, "$(dirname "$0")/..": the directory that
 # holds the checks and team-manifest.json in a deployment, never beside the
-# knowledge dir, which is called once per directory (project knowledge, then the
-# operative dir). A classified file absent from both the backup and the current
+# knowledge dir. A classified file absent from both the backup and the current
 # dir is a pass: each call sees only the files its directory holds.
 # knowledge.classification is the source of truth for what every knowledge
 # file's verdict should be; this script never guesses a file's classification
@@ -62,7 +56,9 @@
 # knowledge.rulesDir, knowledge.proposalsDir and knowledge.baselineFile: the
 # authored rules, the proposals and the review baseline are written by the
 # team's own tools, not by fix, so they are read from the manifest and exempt
-# from the file sweep and the directory sweep, by name and nothing wider.
+# from the file sweep and the directory sweep, by name and nothing wider. No
+# check reads them on either side: a remark the generator's triage consumed
+# from the proposals dir between the backup and now is not a loss.
 #
 # A line tools/extract-rules.sh moved out of a "subset" file is not lost. A
 # backup line that contains "— source: learnings " or ends "— source: user"
@@ -98,22 +94,17 @@
 # gap is between what the checks prove and what fix promises, not a licence.
 #
 # Exit 0 = every guarantee held. Exit 1 = a guarantee was broken, or the
-# classification needed to check it could not be read. Writes nothing.
+# classification needed to check it could not be read. Exit 2 = not exactly
+# two non-empty arguments. Writes nothing.
 set -uo pipefail
 export LC_ALL=C
 
-backup="${1:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox]}"
-current="${2:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox]}"
-mode="${3:-}"
-case "$mode" in
-  ''|inbox) ;;
-  *) echo "FAIL: unknown third argument '$mode' (usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir> [inbox])" >&2; exit 1 ;;
-esac
-
-if [ "$mode" = inbox ] && [ ! -e "$backup" ] && [ ! -e "$current" ]; then
-  echo "knowledge integrity: ok (inbox: neither directory exists)"
-  exit 0
+if [ "$#" -ne 2 ] || [ -z "$1" ] || [ -z "$2" ]; then
+  echo "usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>" >&2
+  exit 2
 fi
+backup="$1"
+current="$2"
 
 # A missing backup or knowledge dir means nothing was actually compared. Fail
 # loudly instead of silently reporting "ok" having verified nothing: the
@@ -396,13 +387,6 @@ if ! diff -q "$tmp/old-hashes" "$tmp/new-hashes" >/dev/null 2>&1; then
   comm -13 "$tmp/old-hashes" "$tmp/new-hashes" \
     | sed 's/^/  entry present now but not in the backup, hash /' >&2
   status=1
-fi
-
-# The operative pair stops here: nothing else in that directory is the
-# generator's to move, so nothing else is compared or swept.
-if [ "$mode" = inbox ]; then
-  [ $status -eq 0 ] && echo "knowledge integrity: ok (inbox: LEARNINGS.md and learnings/ only)"
-  exit $status
 fi
 
 # --- Check 2: every classified file gets a verdict ----------------------------

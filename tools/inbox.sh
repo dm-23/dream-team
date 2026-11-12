@@ -44,11 +44,9 @@
 #                          older LEARNINGS.md, those that exist, into <dest>:
 #                          under .dream-team-tracking/, not existing yet.
 #                          Prints <dest>.
-#   verify-backup <dest>   checks/verify-knowledge-integrity.sh <dest> <dir>
-#                          inbox.
 #
 # Outside where, the operative dir's path never appears in what this tool
-# prints: the output of the two checks shows it as <inbox>.
+# prints: the output of the check shows it as <inbox>.
 #
 # Exit 0 = done. 1 = a missing name or a refused write (a backup destination
 # that exists). 2 = a bad command, name or source, or a failed write.
@@ -58,12 +56,12 @@ export LC_ALL=C
 TRACK=".dream-team-tracking"
 
 die() { echo "inbox: $*" >&2; exit 2; }
-usage() { die "usage: inbox.sh where|index|list|show|add|append|put|remove|check|backup|verify-backup ..."; }
+usage() { die "usage: inbox.sh where|index|list|show|add|append|put|remove|check|backup ..."; }
 
 cmd="${1:-}"
 [ "$#" -gt 0 ] && shift
 case "$cmd" in
-  where|index|list|show|add|append|put|remove|check|backup|verify-backup) ;;
+  where|index|list|show|add|append|put|remove|check|backup) ;;
   *) usage ;;
 esac
 
@@ -365,13 +363,5 @@ case "$cmd" in
     done
     printf '%s\n' "$dest"
     exit 0
-    ;;
-
-  verify-backup)
-    [ "$#" -eq 1 ] || usage
-    dest="${1%/}"
-    valid_tracking_path "$dest" || die "bad backup '$1': a path under $TRACK/, project-root-relative"
-    run_hidden bash "$TEAM_ROOT/checks/verify-knowledge-integrity.sh" "$dest" "$OP" inbox
-    exit $?
     ;;
 esac

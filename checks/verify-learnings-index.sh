@@ -169,13 +169,13 @@ printf '[PROMOTE] PROJECT-RULES.md — Always X\n' >> "$tmp/opsn/learnings/2026-
 inbox "$tmp/opsn"
 expect_rc 0
 
-# --- the integrity check on an inbox without an index file -------------------------
-case="integrity: learnings/ only, inbox"
+# --- the integrity check on learnings/ without an index file -----------------------
+case="integrity: learnings/ only"
 for d in bk cur; do
   entry "$tmp/int/$d/learnings/2026-10-01-a.md" 2026-10-01 A x
   entry "$tmp/int/$d/learnings/2026-10-02-b.md" 2026-10-02 B y
 done
-bash "$INTEGRITY" "$tmp/int/bk" "$tmp/int/cur" inbox > "$tmp/out" 2> "$tmp/err"; rc=$?
+bash "$INTEGRITY" "$tmp/int/bk" "$tmp/int/cur" > "$tmp/out" 2> "$tmp/err"; rc=$?
 expect_rc 0
 
 [ "$status" -eq 0 ] && echo "learnings index: ok"
