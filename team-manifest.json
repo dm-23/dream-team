@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "5.1.0",
+    "version": "6.0.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -229,13 +229,14 @@
     "record": ".dream-team-tracking/.setup",
     "normalizer": "tools/normalize-status.sh",
     "postUpdate": {
-      "_comment": "Keyed by the version that introduced the step. /team-setup compares the record's lastVersion with team.version and applies every step of every version above it, oldest first, then writes the record; a missing record applies them all. A do step is performed by setup itself; knowledge steps are named in one report line, because /generate-knowledge is a command only the user starts.",
+      "_comment": "Keyed by the version that introduced the step. /team-setup compares the record's lastVersion with team.version and applies every step of every version above it, oldest first, then writes the record; a missing record applies them all. A do step is performed by setup itself; knowledge steps are named in one report line, because /generate-knowledge is a command only the user starts. While nothing is tracked under the knowledge dir the line says /generate-knowledge is due; once the knowledge is committed it is informational, addressed to whoever runs /generate-knowledge refresh.",
       "4.3.0": { "knowledge": "PROJECT-RULES.md (critical zones section)" },
       "4.4.0": { "knowledge": "FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md (design language and its checks)" },
       "4.5.0": { "do": "normalize the first line of every status.md closed in old prose (setup.normalizer)" },
       "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" },
       "5.0.0": { "do": "move the learnings inbox and CAPABILITIES.md out of the edition's knowledge directory (knowledge.migration; step 1b runs it)", "knowledge": "TOOLCHAIN.md (Missing on this machine leaves the file)" },
-      "5.1.0": { "knowledge": "PROJECT-RULES.md REVIEW-CHECKLIST.md (generated files, hot files, change types, accepted exceptions)" }
+      "5.1.0": { "knowledge": "PROJECT-RULES.md REVIEW-CHECKLIST.md (generated files, hot files, change types, accepted exceptions)" },
+      "6.0.0": { "do": "move the learnings inbox to the developer's profile and drop its index file (knowledge.migration; step 1b runs it)", "knowledge": "rule files extracted from authored lines, Covers lines, the baseline" }
     }
   },
   "hooks": {

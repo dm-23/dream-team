@@ -110,7 +110,7 @@ EOF
 EOF
   echo "template" > "$s/templates/t.md"
   echo "#!/usr/bin/env bash" > "$s/tools/a.sh"
-  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh verify-role-consistency.sh; do
+  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh verify-knowledge-shape.sh verify-role-consistency.sh; do
     echo "#!/usr/bin/env bash" > "$s/checks/$c"
   done
   echo "knowledge/" > "$s/.gitignore"
@@ -138,7 +138,8 @@ run_build "$TMP/fx-out" "$FIX"
 want="$TMP/want-files"
 printf '%s\n' .github/agents/alpha.agent.md .github/dream-team/.gitignore \
   .github/dream-team/checks/verify-knowledge-integrity.sh \
-  .github/dream-team/checks/verify-learnings-inbox.sh .github/dream-team/checks/verify-knowledge-scaffold.sh .github/dream-team/checks/verify-knowledge-neutral.sh .github/dream-team/hooks/h \
+  .github/dream-team/checks/verify-learnings-inbox.sh .github/dream-team/checks/verify-knowledge-scaffold.sh .github/dream-team/checks/verify-knowledge-neutral.sh \
+  .github/dream-team/checks/verify-knowledge-shape.sh .github/dream-team/hooks/h \
   .github/dream-team/team-manifest.json .github/dream-team/templates/t.md \
   .github/dream-team/tools/a.sh .github/skills/demo/SKILL.md | sort > "$want"
 (cd "$TMP/fx-out" 2>/dev/null && find . -type f | sed 's|^\./||' | sort) > "$TMP/got-files"
@@ -296,7 +297,7 @@ run_build "$REAL" "$ROOT"
   find skills -type f | sed 's|^|.github/|'
   find templates -type f | sed 's|^|.github/dream-team/|'
   for f in tools/*.sh; do echo ".github/dream-team/$f"; done
-  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh; do
+  for c in verify-knowledge-integrity.sh verify-learnings-inbox.sh verify-knowledge-scaffold.sh verify-knowledge-neutral.sh verify-knowledge-shape.sh; do
     echo ".github/dream-team/checks/$c"
   done
   echo .github/dream-team/team-manifest.json
@@ -347,6 +348,25 @@ checks = {
         and os.path.isfile(os.path.join(out, ".github/dream-team/tools/inbox.sh")),
     "knowledge.persistent": m["knowledge"].get("persistent") == ["learnings/"]
         and "persistentTemplates" not in m["knowledge"],
+    "version 6.0.0": m["team"]["version"] == "6.0.0"
+        and "6.0.0" in m["setup"]["postUpdate"] and "6.0.0" in s["setup"]["postUpdate"],
+    "knowledge tools": all(
+        m["knowledge"].get(k) == v and os.path.isfile(os.path.join(out, ".github/dream-team", v))
+        for k, v in {"learningsIndex": "tools/learnings-index.sh", "ruleExtractor": "tools/extract-rules.sh",
+                     "drift": "tools/knowledge-drift.sh", "proposals": "tools/proposals.sh",
+                     "refresh": "tools/knowledge-refresh.sh"}.items()),
+    "knowledge layout keys": m["knowledge"].get("rulesDir") == "rules"
+        and m["knowledge"].get("proposalsDir") == "proposals"
+        and m["knowledge"].get("baselineFile") == "BASELINE"
+        and m["knowledge"].get("ruleTemplate") == ".github/dream-team/templates/rule.md"
+        and os.path.isfile(os.path.join(out, ".github/dream-team/templates/rule.md")),
+    "knowledge.covers kept": m["knowledge"].get("covers") == s["knowledge"]["covers"],
+    "knowledge budgets kept": all(m["knowledge"]["budgets"].get(k) == s["knowledge"]["budgets"][k]
+        for k in ("rulesMaxFiles", "ruleMaxLines", "driftMarkedPercent", "driftListMaxLines", "proposalsMaxFiles")),
+    "knowledgeShape runtime check": m["checks"].get("knowledgeShape") == "bash checks/verify-knowledge-shape.sh"
+        and os.path.isfile(os.path.join(out, ".github/dream-team/checks/verify-knowledge-shape.sh")),
+    "generator references": all(os.path.isfile(os.path.join(out, ".github/skills/generate-knowledge/references", f))
+        for f in ("proposals.md", "refresh.md")),
     "tracking.dir": m["tracking"]["dir"] == ".dream-team-tracking",
     "tracking.legacyDir": m["tracking"].get("legacyDir") == ".claude-tracking",
     "tracking.migration": m["tracking"].get("migration") == "tools/migrate-tracking.sh",
@@ -357,7 +377,10 @@ checks = {
     "lint regex kept": m["checks"]["stackNeutralityLint"].startswith(
         s["checks"]["stackNeutralityLint"].split('" agents/')[0]),
     "only runtime checks": not {"manifestBudgets", "roleConsistency", "textEncoding",
-                                "copilotPort", "migrateTracking"} & set(m["checks"]),
+                                "copilotPort", "migrateTracking", "migrateKnowledge", "knowledgeDir",
+                                "neutralCheck", "hook", "teamReferences", "frontmatter", "scaffoldCheck",
+                                "extractRules", "learningsIndex", "inbox", "shapeCheck",
+                                "knowledgeDrift", "proposals", "knowledgeRefresh"} & set(m["checks"]),
 }
 bad += [k for k, ok in checks.items() if not ok]
 hooks = json.load(open(os.path.join(out, ".github/hooks/dream-team.json"), encoding="utf-8"))
@@ -392,6 +415,22 @@ start copilot-inbox-profile
 [ -f "$REAL/.github/dream-team/tools/inbox.sh" ] || fail "tools/inbox.sh not in the edition"
 grep -qF '"profileDir": "~/.dream-team",' "$REAL/.github/dream-team/team-manifest.json" \
   || fail "the edition's manifest lost knowledge.profileDir ~/.dream-team"
+finish
+
+start copilot-shared-knowledge
+for f in tools/learnings-index.sh tools/extract-rules.sh tools/knowledge-drift.sh tools/proposals.sh \
+  tools/knowledge-refresh.sh checks/verify-knowledge-shape.sh templates/rule.md; do
+  [ -f "$REAL/.github/dream-team/$f" ] || fail "$f not in the edition"
+done
+for f in proposals.md refresh.md; do
+  [ -f "$REAL/.github/skills/generate-knowledge/references/$f" ] || fail "generator reference $f not in the edition"
+done
+grep -qF '"version": "6.0.0",' "$REAL/.github/dream-team/team-manifest.json" \
+  || fail "the edition's manifest is not version 6.0.0"
+for k in extractRules learningsIndex inbox shapeCheck knowledgeDrift proposals knowledgeRefresh; do
+  grep -qE "^    \"$k\": \"bash checks/" "$REAL/.github/dream-team/team-manifest.json" \
+    && fail "repo-only check key $k left in the edition's manifest"
+done
 finish
 
 start real-drift
