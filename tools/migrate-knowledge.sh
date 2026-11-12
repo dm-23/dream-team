@@ -54,9 +54,16 @@
 #                   private copy stays for branches without knowledge. When
 #                   the resolver's project is knowledge.dir and the copy
 #                   stamp is absent, the copy runs. Nothing tracked: the
-#                   report says what the first commit still needs.
+#                   report says what the first commit still needs (a
+#                   knowledge.dir holding only <knowledge.proposalsDir>/
+#                   counts as absent).
 #   --first-commit  the project files move into knowledge.dir, which must not
-#                   exist yet. This edition's directory moves with one rename;
+#                   exist yet or hold nothing but <knowledge.proposalsDir>/
+#                   (the remarks dir the resolver can print before any
+#                   knowledge is there; its entries go into the directory
+#                   that becomes knowledge.dir before the rename, a name
+#                   there with the same bytes dropped, with other bytes
+#                   refused). This edition's directory moves with one rename;
 #                   another edition's (--from picks it when both hold project
 #                   files) is staged entry by entry in knowledge.dir.migrating,
 #                   which is renamed at the end, so an interrupted run resumes
@@ -101,8 +108,8 @@
 # Exit 0 = done, nothing to do, or a dry run. 1 = refused: a run is open, the
 # run state is still in the legacy tracking directory, a name exists on both
 # sides, an older LEARNINGS.md cannot be split, or the mode's precondition does
-# not hold. 2 = error: bad arguments, the manifest, a symbolic link, or a
-# failed write.
+# not hold. 2 = error: bad arguments, the manifest, a symbolic link (an inbox
+# entry file included), or a failed write.
 set -uo pipefail
 
 usage() { echo "usage: migrate-knowledge.sh [--dry-run] [--first-commit [--from <dir>] | --drop-legacy]" >&2; exit 2; }
@@ -180,7 +187,7 @@ UNTRACKED_TAIL="are untracked: commit them with your next change, or delete them
 
 # --- 1. refusals ---------------------------------------------------------
 links=""
-for p in "$LEGACY" "$LEGACY/learnings" "$DIR" "$STAGE" "$OPS" "$OPS/learnings" "$CAPS" "$RL" "$RC" ${from:+"$from"}; do
+for p in "$LEGACY" "$LEGACY/learnings" "$LEGACY/LEARNINGS.md" "$DIR" "$STAGE" "$OPS" "$OPS/learnings" "$OPS/LEARNINGS.md" "$OPS/review-exceptions.md" "$CAPS" "$RL" "$RC" ${from:+"$from"}; do
   [ ! -L "$p" ] || links="$links $p"
 done
 if [ "$mode" = first ]; then
@@ -230,6 +237,13 @@ project_entries() {
 known_dir() {
   [ "$1" = "$LEGACY" ] && return 0
   printf '%s\n' "$OTHERS" | sed 's|/$||' | grep -qxF -- "$1"
+}
+# knowledge.dir exists and holds anything but <proposalsDir>/: the remarks
+# dir alone, which the resolver can print before any knowledge is there, is
+# no knowledge directory yet.
+dir_present() {
+  [ -e "$DIR" ] || return 1
+  [ -n "$(find "$DIR" -mindepth 1 -maxdepth 1 ! -name "$PROPD" 2>/dev/null | head -1)" ]
 }
 # What tools/knowledge-dir.sh prints for project or remarks, now.
 resolve() {
@@ -336,9 +350,10 @@ plan_accept() {
 inbox_plan() {
   local f src dst h d p s edate etitle eslug nm nonl pidx
   inbox_reason=""
-  : > "$TMP/taken"
+  : > "$TMP/taken"; : > "$TMP/elinks"
   if [ -d "$OPS/learnings" ]; then
     for f in "$OPS/learnings"/*.md; do
+      if [ -L "$f" ]; then echo "  $f" >> "$TMP/elinks"; continue; fi
       [ ! -f "$f" ] || printf '%s\t%s\n' "${f##*/}" "$f" >> "$TMP/taken"
     done
   fi
@@ -346,9 +361,17 @@ inbox_plan() {
   while IFS="$TAB" read -r src dst; do
     case "$dst" in
       "$OPS/LEARNINGS.md") pidx="$src" ;;
-      "$OPS/learnings/"*.md) [ ! -f "$src" ] || printf '%s\t%s\n' "${dst##*/}" "$src" >> "$TMP/taken" ;;
+      "$OPS/learnings/"*.md)
+        if [ -L "$src" ]; then echo "  $src" >> "$TMP/elinks"; continue; fi
+        [ ! -f "$src" ] || printf '%s\t%s\n' "${dst##*/}" "$src" >> "$TMP/taken" ;;
     esac
   done < "$TMP/moves"
+  # tools/remarks.sh refuses a symbolic link; refused here, before any write.
+  if [ -s "$TMP/elinks" ]; then
+    echo "migrate-knowledge: these inbox entries are symbolic links; refusing to touch anything. Replace each with the file it points to and run again:" >&2
+    cat "$TMP/elinks" >&2
+    exit 2
+  fi
   PEXC=0; [ ! -f "$OPS/review-exceptions.md" ] || PEXC=1
 
   # The lift: split_entries of checks/verify-knowledge-integrity.sh, writing
@@ -443,7 +466,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   [ -z "$(git ls-files -- "$DIR" 2>/dev/null | head -1)" ] || tracked=1
 fi
 legacy_project=0; has_project "$LEGACY" && legacy_project=1
-action=none note_line="" SRC="" K=0 do_import=0 drop_legacy=0
+action=none note_line="" SRC="" K=0 do_import=0 drop_legacy=0 pre_props=0 HOLDT=""
 
 # plan_import: the authored lines of the private copy, what the remarks dirs
 # already hold, and what this run writes. Fills $TMP/new (n, rel, line, mark
@@ -535,7 +558,7 @@ plan_import() {
 
 case "$mode" in
 first)
-  if [ -e "$DIR" ]; then
+  if dir_present || [ "$tracked" = 1 ]; then
     if [ "$tracked" = 1 ]; then
       echo "migrate-knowledge: refused — $DIR/ is already committed; run without --first-commit." >&2
     else
@@ -620,6 +643,35 @@ EOF
       [ ! -e "$SRC/$nm" ] || { note_line="note: $SRC/ keeps its operative files for that edition's own migration"; break; }
     done
   fi
+  # knowledge.dir holding only its remarks dir: those remarks go into the
+  # directory that becomes knowledge.dir (HOLDT), before the rename, so they
+  # land where they were and an interrupted run still carries them. A name
+  # already there with the same bytes is dropped; with other bytes, refused.
+  : > "$TMP/hold"; : > "$TMP/conflicts"; pre_props=0
+  if [ -d "$DIR" ]; then
+    pre_props=1
+    if [ "$action" = rename ]; then HOLDT="$LEGACY/$PROPD"; else HOLDT="$STAGE/$PROPD"; fi
+    # What the move puts into HOLDT: its own files, and in the stage path
+    # a <proposalsDir>/ of the source staged before.
+    SRCP=""; [ "$action" != stage ] || [ -z "$SRC" ] || SRCP="$SRC/$PROPD"
+    find "$RC" -mindepth 1 -maxdepth 1 2>/dev/null | LC_ALL=C sort > "$TMP/pre"
+    while IFS= read -r e; do
+      nm="${e##*/}" other=""
+      if [ -e "$HOLDT/$nm" ] || [ -L "$HOLDT/$nm" ]; then other="$HOLDT/$nm"
+      elif [ -n "$SRCP" ] && { [ -e "$SRCP/$nm" ] || [ -L "$SRCP/$nm" ]; }; then other="$SRCP/$nm"; fi
+      if [ -z "$other" ]; then
+        printf 'move\t%s\n' "$e" >> "$TMP/hold"
+      elif [ -f "$e" ] && [ ! -L "$e" ] && [ -f "$other" ] && [ ! -L "$other" ] && cmp -s -- "$e" "$other"; then
+        printf 'same\t%s\n' "$e" >> "$TMP/hold"
+      else
+        echo "  $nm (in $RC/ and ${other%/*}/)" >> "$TMP/conflicts"
+      fi
+    done < "$TMP/pre"
+    if [ -s "$TMP/conflicts" ]; then
+      echo "migrate-knowledge: refused — $DIR/ holds only remarks, and these names exist with other content in the directory that becomes $DIR/. Keep one of each by hand, then run --first-commit again; nothing was moved:" >&2
+      cat "$TMP/conflicts" >&2; exit 1
+    fi
+  fi
   # The remarks of the private copy follow the knowledge into its new directory.
   plan_copy
   ;;
@@ -662,7 +714,7 @@ default)
     # The committed copy is what counts now; a staging directory beside it is
     # an interrupted move from before it was committed.
     [ ! -d "$STAGE" ] || proj_line="$proj_line; an interrupted move left $STAGE/: $DIR/ is committed, so remove it once nothing in it is missing from $DIR/"
-  elif [ -e "$DIR" ]; then
+  elif dir_present; then
     proj_line="$COMMIT_LINE"
   elif [ -d "$STAGE" ]; then
     proj_line="project: waiting for $DIR in the repository; an interrupted --first-commit left $STAGE/: run --first-commit again to finish the move"
@@ -828,11 +880,31 @@ carry() {
   printf 'date=%s\ncopied=%s\n' "$TODAY" "$AA" > "$COPIED" || werr "write $COPIED"
 }
 
+# carry_in <dir>: the entries of a knowledge.dir that holds only its remarks
+# dir, as planned ($TMP/hold), into <dir>; then the emptied knowledge.dir goes,
+# so the rename below can create it.
+carry_in() {
+  local how e
+  [ "$pre_props" = 1 ] || return 0
+  if [ -s "$TMP/hold" ]; then
+    mkdir -p "$1" || werr "create $1/"
+    while IFS="$TAB" read -r how e; do
+      case "$how" in
+        move) mv -- "$e" "$1/${e##*/}" || werr "move $e to $1/" ;;
+        same) rm -f -- "$e" || werr "remove $e (the same bytes are in $1/)" ;;
+      esac
+    done < "$TMP/hold"
+  fi
+  [ ! -d "$RC" ] || rmdir -- "$RC" || werr "remove the emptied $RC/"
+  rmdir -- "$DIR" || werr "remove the emptied $DIR/"
+}
+
 case "$action" in
 rename)
   # One rename: the knowledge directory appears whole or not at all. An empty
   # staging directory without a record is what an earlier start left; it goes.
   [ ! -d "$STAGE" ] || rmdir "$STAGE" 2>/dev/null
+  carry_in "$HOLDT"
   { mkdir -p "$(dirname "$DIR")" && mv -- "$LEGACY" "$DIR"; } \
     || { echo "migrate-knowledge: could not move $LEGACY/ to $DIR/ (a file open elsewhere?); nothing of it was moved; fix that and run again" >&2; exit 2; }
   echo "$proj_line"
@@ -850,6 +922,7 @@ stage)
     mv -- "$e" "$STAGE/${e##*/}" \
       || { echo "migrate-knowledge: could not move $e (read-only or open elsewhere?); fix that and run --first-commit again to finish" >&2; exit 2; }
   done < "$TMP/pentries"
+  carry_in "$HOLDT"
   # The record goes with the staging directory and is removed only once the
   # rename succeeded, so a failed rename resumes from the same source.
   mv -- "$STAGE" "$DIR" || { echo "migrate-knowledge: could not rename $STAGE/ to $DIR/; fix that and run --first-commit again to finish" >&2; exit 2; }

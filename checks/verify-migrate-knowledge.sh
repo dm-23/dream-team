@@ -715,7 +715,7 @@ same "$tmp/rb.4" "$P/$RL/$(rname "$tmp/rb.4" 2026-10-04-entry)"
 di="$(dropped_index)"
 if [ -n "$di" ]; then same "$tmp/rb.index" "$di"; else fail "no dropped-index file: $(ls "$P/$OPS")"; fi
 bk="$(inbox_backup)"
-[ -n "$bk" ] && same "$tmp/rb.index" "$bk/LEARNINGS.md"
+if [ -n "$bk" ]; then same "$tmp/rb.index" "$bk/LEARNINGS.md"; else fail "no inbox backup: $(ls "$P/$OPS")"; fi
 
 case="rb: an unclosed fence refuses"
 new_project rb2
@@ -744,7 +744,7 @@ same "$tmp/rc.2" "$P/$RL/$(rname "$tmp/rc.2" 2026-10-06-exception-lib-b-ts)"
 [ ! -e "$P/$OPS/learnings" ] || fail "exception entries left per copy: $(ls "$P/$OPS/learnings")"
 has "$tmp/out" "remarks: $RL: 2 moved, 0 already there"
 bk="$(inbox_backup)"
-[ -n "$bk" ] && same "$tmp/rc.exc" "$bk/review-exceptions.md"
+if [ -n "$bk" ]; then same "$tmp/rc.exc" "$bk/review-exceptions.md"; else fail "no inbox backup: $(ls "$P/$OPS")"; fi
 before="$(snap "$P")"; run
 expect_rc 0
 has "$tmp/out" "remarks: $RL: nothing to move"
@@ -834,6 +834,119 @@ if [ -n "$pbk" ]; then diff -r "$tmp/rf.rl" "$pbk" > "$tmp/diff" 2>&1 || fail "t
 else fail "no backup of $RL: $(ls "$P/$OPS")"; fi
 out="$(cd "$P" && bash .claude/tools/knowledge-dir.sh remarks)"
 [ "$out" = "$RC" ] || fail "the resolver prints '$out' as the remarks dir, expected $RC"
+
+case="rg: knowledge.dir holding only its remarks dir, the knowledge in another edition's"
+# This edition's private copy is gone, so the resolver prints the committed
+# directory's remarks dir before any knowledge is there.
+new_project rg
+rm -rf "$P/$OLD"
+mkdir -p "$P/$OTHER"
+printf '# Overview\n\nThe other edition.\n' > "$P/$OTHER/PROJECT-OVERVIEW.md"
+printf '# Toolchain\n' > "$P/$OTHER/TOOLCHAIN.md"
+ops_inbox rg
+run
+expect_rc 0
+has "$tmp/out" "remarks: $RC: 2 moved, 0 already there"
+lacks "$tmp/out" "project: moved to"
+lacks "$tmp/out" "note:"
+rm -rf "$tmp/rg.rc"; cp -R "$P/$RC" "$tmp/rg.rc"
+before="$(snap "$P")"; run --first-commit --from "$OTHER" --dry-run
+expect_rc 0
+has "$tmp/out" "would: project: moved to $NEW"
+[ "$before" = "$(snap "$P")" ] || fail "a dry run changed files"
+run --first-commit --from "$OTHER"
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW"
+[ -f "$P/$NEW/PROJECT-OVERVIEW.md" ] && [ -f "$P/$NEW/TOOLCHAIN.md" ] || fail "the move is incomplete: $(cd "$P" && find "$NEW" 2>&1)"
+diff -r "$tmp/rg.rc" "$P/$RC" > "$tmp/diff" 2>&1 || fail "the remarks were not carried: $(head -c 400 "$tmp/diff")"
+[ ! -e "$P/$NEW.migrating" ] && [ ! -e "$P/$NEW/.migrate-source" ] || fail "staging left behind"
+run
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW: run /generate-knowledge, then commit it alone"
+
+case="rh: first commit of this edition's copy, knowledge.dir holding only its remarks dir"
+new_project rh operative
+printf '## [2026-10-09] Early\n- **Tags:** e\n' > "$tmp/rh.early"
+EN="$(rname "$tmp/rh.early" 2026-10-09-early)"
+mkdir -p "$P/$RC"; cp "$tmp/rh.early" "$P/$RC/$EN"
+run --dry-run
+expect_rc 0
+has "$tmp/out" "would: project: waiting for $NEW in the repository; the first knowledge commit is made with --first-commit"
+lacks "$tmp/out" "project: moved to"
+# The same name with other bytes in the directory that becomes knowledge.dir.
+mkdir -p "$P/$OLD/proposals"; printf 'other\n' > "$P/$OLD/proposals/$EN"
+before="$(snap "$P")"; run --first-commit
+expect_rc 1
+has "$tmp/err" "$EN"
+[ "$before" = "$(snap "$P")" ] || fail "a refused first commit changed files"
+# The same name with the same bytes: one file stays.
+cp "$tmp/rh.early" "$P/$OLD/proposals/$EN"
+run --first-commit
+expect_rc 0
+has "$tmp/out" "project: moved to $NEW"
+has "$tmp/out" "remarks: $RC: 1 moved, 0 already there"
+same "$tmp/rh.early" "$P/$RC/$EN"
+same "$tmp/rh.orig/learnings/a.md" "$P/$RC/$(rname "$tmp/rh.orig/learnings/a.md" a)"
+[ "$(nfiles "$P/$RC")" = 2 ] || fail "the remarks dir holds: $(ls "$P/$RC")"
+for f in PROJECT-OVERVIEW.md PROJECT-RULES.md REVIEW-CHECKLIST.md REVIEW-CHECKLIST/security.md; do
+  same "$tmp/rh.orig/$f" "$P/$NEW/$f"
+done
+[ ! -e "$P/$OLD" ] || fail "$OLD still there"
+
+case="ri: the copy fails: every source stays"
+new_project ri
+ops_inbox ri
+printf '## [2026-10-05] Inline\n- **Tags:** i\n' >> "$P/$OPS/LEARNINGS.md"
+printf '# Accepted exceptions\n- src/x.cs %s "x" %s Style %s accepted 2026-10-05: "ok" (c F-1)\n' "$MD" "$MD" "$EM" > "$P/$OPS/review-exceptions.md"
+rm -rf "$tmp/ri.ops"; cp -R "$P/$OPS" "$tmp/ri.ops"
+cp "$P/.claude/tools/remarks.sh" "$tmp/ri.remarks"
+printf '#!/usr/bin/env bash\necho "remarks: injected failure" >&2\nexit 2\n' > "$P/.claude/tools/remarks.sh"
+run
+expect_rc 2
+has "$tmp/err" "injected failure"
+for f in learnings/a.md learnings/b.md LEARNINGS.md review-exceptions.md; do same "$tmp/ri.ops/$f" "$P/$OPS/$f"; done
+bk="$(inbox_backup)"
+if [ -n "$bk" ]; then
+  diff -r "$tmp/ri.ops/learnings" "$bk/learnings" > "$tmp/diff" 2>&1 || fail "the backup of learnings/ differs: $(head -c 400 "$tmp/diff")"
+  same "$tmp/ri.ops/LEARNINGS.md" "$bk/LEARNINGS.md"
+  same "$tmp/ri.ops/review-exceptions.md" "$bk/review-exceptions.md"
+else
+  fail "no inbox backup: $(ls "$P/$OPS")"
+fi
+[ "$(nfiles "$P/$RL")" = 0 ] || fail "something reached the remarks dir: $(ls "$P/$RL")"
+case="ri: the tool restored, a rerun finishes"
+cp "$tmp/ri.remarks" "$P/.claude/tools/remarks.sh"
+run
+expect_rc 0
+has "$tmp/out" "remarks: $RL: 4 moved, 0 already there"
+[ "$(nfiles "$P/$RL")" = 4 ] || fail "the remarks dir holds: $(ls "$P/$RL")"
+for f in learnings LEARNINGS.md review-exceptions.md; do [ ! -e "$P/$OPS/$f" ] || fail "$OPS/$f is still there"; done
+
+case="rj: the copy fails in --drop-legacy: nothing is removed"
+new_project rj operative
+run
+expect_rc 0
+committed_copy
+printf '#!/usr/bin/env bash\necho "remarks: injected failure" >&2\nexit 2\n' > "$P/.claude/tools/remarks.sh"
+before="$(snap "$P/$OLD")$(snap "$P/$RL")"; run --drop-legacy
+expect_rc 2
+has "$tmp/err" "injected failure"
+[ "$before" = "$(snap "$P/$OLD")$(snap "$P/$RL")" ] || fail "the private copy or its remarks changed"
+[ -z "$(ls -d "$P/$OPS"/legacy-knowledge-* 2>/dev/null)" ] || fail "a backup was taken before the copy"
+
+case="rk: a symbolic link among the inbox entries"
+new_project rk
+ops_inbox rk
+printf '## [2026-10-01] Outside\n' > "$tmp/rk.target.md"
+if MSYS=winsymlinks:nativestrict ln -s "$tmp/rk.target.md" "$P/$OPS/learnings/link.md" 2>/dev/null && [ -L "$P/$OPS/learnings/link.md" ]; then
+  before="$(snap "$P")"; run
+  expect_rc 2
+  has "$tmp/err" "symbolic link"
+  has "$tmp/err" "learnings/link.md"
+  [ "$before" = "$(snap "$P")" ] || fail "a refused run changed files"
+else
+  echo "skip [rk: a symbolic link among the inbox entries] ln -s cannot make a link here"
+fi
 
 # --- arguments, outside git, source guards -----------------------------------------
 case="usage"
