@@ -237,7 +237,7 @@
       "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" },
       "5.0.0": { "do": "move the learnings inbox and CAPABILITIES.md out of the edition's knowledge directory (knowledge.migration; step 1b runs it)", "knowledge": "TOOLCHAIN.md (Missing on this machine leaves the file)" },
       "5.1.0": { "knowledge": "PROJECT-RULES.md REVIEW-CHECKLIST.md (generated files, hot files, change types, accepted exceptions)" },
-      "6.0.0": { "do": "move the learnings inbox to the developer's profile and drop its index file (knowledge.migration; step 1b runs it)", "knowledge": "rule files extracted from authored lines, Covers lines, the baseline" }
+      "6.0.0": { "do": "move the learnings inbox into the remarks dir, proposals/ (knowledge.migration; step 1b runs it)", "knowledge": "rule files extracted from authored lines, Covers lines, the baseline" }
     }
   },
   "hooks": {

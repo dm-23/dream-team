@@ -2,43 +2,58 @@
 # Dream Team — moves a project's knowledge out of this edition's own directory
 # (knowledge.legacyDir). The operative files (LEARNINGS.md, learnings/,
 # CAPABILITIES.md) go to knowledge.operativeDir and knowledge.capabilitiesDir;
-# the project files go to knowledge.dir, the committed directory every
-# edition reads. See team-manifest.json → knowledge.
+# the old learnings inbox goes into the remarks dir; the project files go to
+# knowledge.dir, the committed directory every edition reads. See
+# team-manifest.json → knowledge.
 #
 #   bash <team-root>/tools/migrate-knowledge.sh [--dry-run] [--first-commit [--from <dir>] | --drop-legacy]
 #                                                           (from the project root)
 #
-# Every mode moves the operative files first. Then the inbox moves from
-# operativeDir into the developer's profile, <profile root>/<key>/, which all
-# working copies of the repository share (the profile root and the key as
-# tools/knowledge-dir.sh computes them):
-#   - profileDir empty, or no remote (no key): the inbox stays per copy.
-#   - <profile>/learnings is created and a probe file written and removed
-#     there; on any failure the directories this step created are removed
-#     and the inbox stays per copy (exit 0).
-#   - LEARNINGS.md, learnings/ and review-exceptions.md are backed up to
+# The remarks dir is what `tools/knowledge-dir.sh remarks` prints:
+# <knowledge.dir>/<knowledge.proposalsDir> once the resolver's project is
+# knowledge.dir, else <knowledge.operativeDir>/<knowledge.proposalsDir>.
+# Every copy into it is `tools/remarks.sh accept`: a source <name>.md becomes
+# <name>-<hash6>.md (kept as it is when it already ends in its own hash6), a
+# file of that name with the same bytes is "already there", nothing is ever
+# overwritten, staged or committed. Before each copy the resolver must print
+# the directory this script planned for it, or the run stops (exit 2).
+#
+# Every mode moves the operative files first. Then the inbox step (for
+# --first-commit only after the project files moved, so that its remarks dir
+# is <knowledge.dir>/<knowledge.proposalsDir>):
+#   - sources: operativeDir/learnings/*.md, operativeDir/review-exceptions.md
+#     and an older operativeDir/LEARNINGS.md.
+#   - LEARNINGS.md, learnings/ and review-exceptions.md are backed up first to
 #     operativeDir/inbox-backup-<YYYY-MM-DD-HHmm>/.
 #   - The inline entries of an older LEARNINGS.md (each "## [date] title"
 #     body, cut as checks/verify-knowledge-integrity.sh cuts it) become entry
 #     files in learnings/, byte for byte, named <date>-<slug>.md by the rules
 #     of templates/learnings-entry.md ("entry" for an empty slug; -2, -3
-#     when taken); LEARNINGS.md then
-#     moves to operativeDir/dropped-index-<YYYY-MM-DD-HHmm>.md. An unclosed
-#     fence or an inline heading without a date keeps the inbox per copy.
-#   - Every learnings/*.md moves into the profile: a name already there with
-#     the same bytes drops the source; with other bytes it moves under the
-#     first free -2, -3 ... suffix.
-#   - review-exceptions.md moves, or, when the profile has one, the lines it
-#     lacks (whole line, CR ignored) are appended and the source removed.
+#     when taken); LEARNINGS.md then moves to
+#     operativeDir/dropped-index-<YYYY-MM-DD-HHmm>.md. An unclosed fence or an
+#     inline heading without a date refuses the run (exit 1).
+#   - Each line of review-exceptions.md after its first line becomes an entry
+#     file in learnings/ of two lines, "## [<the date after "accepted ">]
+#     exception <path>" (<path>: the line after its leading "- ", up to the
+#     first " · "; today when the line names no date) and "[EXCEPTION] <the
+#     line without its leading "- ">", named <date>-exception-<slug of
+#     path>.md (-2, -3 when taken); review-exceptions.md is then removed.
+#   - Every learnings/*.md is accepted into the remarks dir, and each source
+#     is removed once it is there.
 #   - CAPABILITIES.md, the import stamp, the backups and the
 #     legacy-knowledge-* directories stay in operativeDir.
+# The copy: every *.md of operativeDir/<knowledge.proposalsDir> (the remarks
+# accepted while the knowledge was the private copy) is accepted into
+# <knowledge.dir>/<knowledge.proposalsDir> and stays where it is; a stamp,
+# operativeDir/.remarks-copied, records that it was done.
 # Then, for the project files:
 #   default         the committed copy is tracked in this branch: authored
 #                   lines of the private copy that the committed copy lacks
-#                   become inbox entries (entry files only, written into the
-#                   inbox as the step above left it), once per edition (a stamp in
-#                   capabilitiesDir records it), and the private copy stays
-#                   for branches without knowledge. Nothing tracked: the
+#                   become entry files accepted into the remarks dir, once per
+#                   edition (a stamp in capabilitiesDir records it), and the
+#                   private copy stays for branches without knowledge. When
+#                   the resolver's project is knowledge.dir and the copy
+#                   stamp is absent, the copy runs. Nothing tracked: the
 #                   report says what the first commit still needs.
 #   --first-commit  the project files move into knowledge.dir, which must not
 #                   exist yet. This edition's directory moves with one rename;
@@ -48,28 +63,46 @@
 #                   and knowledge.dir only ever appears complete. Then
 #                   tools/extract-rules.sh moves the authored lines of the
 #                   moved files into knowledge.dir/<knowledge.rulesDir>/ and its line is
-#                   printed.
-#   --drop-legacy   the committed copy is tracked: authored lines the inbox
-#                   does not hold yet become entries, then the private copy is
-#                   backed up under operativeDir, checked, and removed.
-#   --dry-run       prints what a run would do, prefixed "would:"; writes
-#                   nothing, and creates no profile directory.
+#                   printed. Then the inbox step and the copy.
+#   --drop-legacy   the committed copy is tracked and the resolver's project
+#                   is knowledge.dir: authored lines the remarks dir does not
+#                   hold yet become remarks, the copy runs, then the private
+#                   copy is backed up to
+#                   operativeDir/legacy-knowledge-<YYYY-MM-DD-HHmm>/ and
+#                   operativeDir/<knowledge.proposalsDir> to that name with
+#                   -proposals appended, each backup checked, and both are
+#                   removed.
+#   --dry-run       prints what a run would do, each line prefixed "would:";
+#                   writes nothing.
+#
+# Report lines, in this order: "operative: ..."; "remarks: <remarks dir>: <N>
+# moved, <M> already there", or "remarks: <remarks dir>: nothing to move" when
+# there is no inbox (for --first-commit after the project lines); "project:
+# ..." and the extractor's "rules: ..." line; "remarks: <knowledge.dir>/
+# <knowledge.proposalsDir>: <C> copied from <operativeDir>/
+# <knowledge.proposalsDir>, <D> already there" when the copy runs; the "note:"
+# line about another edition's directory; and, when `git ls-files --
+# <knowledge.dir>` prints anything, the remarks dir is
+# <knowledge.dir>/<knowledge.proposalsDir> and this run added N > 0 files to
+# it, "note: <N> new files under <remarks dir> are untracked: commit them
+# with your next change, or delete them".
 #
 # In the default mode and --drop-legacy, an authored line of the private copy
-# is already held, and becomes no entry, when the committed copy holds the
+# is already held, and becomes no remark, when the committed copy holds the
 # whole line (CR ignored) or when its text (the line without the list marker,
 # the source suffix and the CR) is the value of a "- Rule:", "- Check:",
 # "- Zone:" or "- Exception:" line of a file directly inside knowledge.dir/<knowledge.rulesDir>/.
 #
 # Every refusal is decided before the first write, so a refused run leaves the
-# tree as it found it. Moves are byte-exact (mv); a moved file is rewritten
-# only by the extractor after a first commit, which removes its authored lines
-# and keeps every other byte.
+# tree as it found it. Moves are byte-exact (mv), copies are checked (cmp); a
+# moved file is rewritten only by the extractor after a first commit, which
+# removes its authored lines and keeps every other byte.
 #
 # Exit 0 = done, nothing to do, or a dry run. 1 = refused: a run is open, the
 # run state is still in the legacy tracking directory, a name exists on both
-# sides, or the mode's precondition does not hold. 2 = error: bad arguments,
-# the manifest, a symbolic link, or a failed write.
+# sides, an older LEARNINGS.md cannot be split, or the mode's precondition does
+# not hold. 2 = error: bad arguments, the manifest, a symbolic link, or a
+# failed write.
 set -uo pipefail
 
 usage() { echo "usage: migrate-knowledge.sh [--dry-run] [--first-commit [--from <dir>] | --drop-legacy]" >&2; exit 2; }
@@ -121,6 +154,7 @@ LEGACY="$(value_in knowledge legacyDir)";        LEGACY="${LEGACY%/}"; rel_ok kn
 OPS="$(value_in knowledge operativeDir)";        OPS="${OPS%/}";       rel_ok knowledge.operativeDir "$OPS"
 CAPS="$(value_in knowledge capabilitiesDir)";    CAPS="${CAPS%/}";     rel_ok knowledge.capabilitiesDir "$CAPS"
 RULESD="$(value_in knowledge rulesDir)";         RULESD="${RULESD%/}"; rel_ok knowledge.rulesDir "$RULESD"
+PROPD="$(value_in knowledge proposalsDir)";      PROPD="${PROPD%/}";   rel_ok knowledge.proposalsDir "$PROPD"
 TRK="$(value_in tracking dir)";                  TRK="${TRK%/}";       rel_ok tracking.dir "$TRK"
 TRKOLD="$(value_in tracking legacyDir)";         TRKOLD="${TRKOLD%/}"; rel_ok tracking.legacyDir "$TRKOLD"
 OTHERS="$(array_in knowledge otherEditionDirs)"
@@ -129,6 +163,11 @@ TMP="$(mktemp -d)" || exit 2
 trap 'rm -rf "$TMP"' EXIT
 # Per edition: each edition's private copy is imported once, by its own migration.
 STAMP="$CAPS/.legacy-rules-imported"
+# The remarks dir of the private copy and of the committed directory; the
+# copy from the first into the second is made once (the stamp records it).
+RL="$OPS/$PROPD"
+RC="$DIR/$PROPD"
+COPIED="$OPS/.remarks-copied"
 # An interrupted move from another edition's directory, and the source it records.
 STAGE="$DIR.migrating"
 SRCREC="$STAGE/.migrate-source"
@@ -137,10 +176,11 @@ NOW="$(date +%Y-%m-%d-%H%M)"
 TAB="$(printf '\t')"
 CR=$'\r'
 COMMIT_LINE="project: moved to $DIR: run /generate-knowledge, then commit it alone, one commit and one pull request, no other file"
+UNTRACKED_TAIL="are untracked: commit them with your next change, or delete them"
 
 # --- 1. refusals ---------------------------------------------------------
 links=""
-for p in "$LEGACY" "$LEGACY/learnings" "$DIR" "$STAGE" "$OPS" "$OPS/learnings" "$CAPS" ${from:+"$from"}; do
+for p in "$LEGACY" "$LEGACY/learnings" "$DIR" "$STAGE" "$OPS" "$OPS/learnings" "$CAPS" "$RL" "$RC" ${from:+"$from"}; do
   [ ! -L "$p" ] || links="$links $p"
 done
 if [ "$mode" = first ]; then
@@ -152,7 +192,7 @@ if [ -n "$links" ]; then
   echo "migrate-knowledge: a symbolic link:$links; refusing to touch anything. Replace it with a real directory and run again." >&2
   exit 2
 fi
-for p in "$LEGACY" "$DIR" "$STAGE" "$OPS" "$CAPS"; do
+for p in "$LEGACY" "$DIR" "$STAGE" "$OPS" "$CAPS" "$RL" "$RC"; do
   [ ! -e "$p" ] || [ -d "$p" ] || { echo "migrate-knowledge: $p exists but is not a directory" >&2; exit 2; }
 done
 
@@ -191,6 +231,13 @@ known_dir() {
   [ "$1" = "$LEGACY" ] && return 0
   printf '%s\n' "$OTHERS" | sed 's|/$||' | grep -qxF -- "$1"
 }
+# What tools/knowledge-dir.sh prints for project or remarks, now.
+resolve() {
+  local r=""
+  IFS= read -r r < <(bash "$TEAM_ROOT/tools/knowledge-dir.sh" "$1" 2>/dev/null | tr -d '\r')
+  printf '%s' "${r%/}"
+}
+werr() { echo "migrate-knowledge: could not $1 (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
 
 # --- 2. the operative part, planned ----------------------------------------
 : > "$TMP/moves"; : > "$TMP/conflicts"
@@ -217,23 +264,16 @@ fi
 nmoves="$(wc -l < "$TMP/moves" | tr -d ' ')"
 if [ "$nmoves" -gt 0 ]; then ops_line="operative: moved $nmoves entries to $OPS"; else ops_line="operative: nothing to move"; fi
 
-# --- 2b. the profile, planned --------------------------------------------------
-# The profile directory: <profile root>/<key>, by the resolver's rule
-# (tools/knowledge-dir.sh): $DREAM_TEAM_PROFILE, else profileDir with a
-# leading ~ replaced by $HOME; shown through cygpath -m where it exists.
-PROFILE_CFG="$(value_in knowledge profileDir)"
-PDIR="" PSHOW="" KEY="" prof_reason="" pidle=0
-if [ -z "$PROFILE_CFG" ]; then
-  prof_reason="profile disabled"
-elif ! KEY="$(bash "$TEAM_ROOT/tools/knowledge-dir.sh" key 2>/dev/null)" || [ -z "$KEY" ]; then
-  KEY=""; prof_reason="no remote"
+# --- 2b. the inbox, planned ------------------------------------------------------
+# RD, the remarks dir the inbox moves into: the resolver's now (the operative
+# move above changes nothing it reads), or, for a first commit, the committed
+# directory's, because there the inbox moves after the project files.
+if [ "$mode" = first ]; then
+  RD="$RC"
 else
-  PROOT="${DREAM_TEAM_PROFILE:-}"
-  [ -n "$PROOT" ] || case "$PROFILE_CFG" in "~"|"~/"*) PROOT="${HOME:-}${PROFILE_CFG#\~}" ;; *) PROOT="$PROFILE_CFG" ;; esac
-  if [ -n "$PROOT" ]; then PDIR="${PROOT%/}/$KEY"; else prof_reason="profile not writable"; fi
+  RD="$(resolve remarks)"
+  [ -n "$RD" ] || { echo "migrate-knowledge: the remarks dir could not be resolved (tools/knowledge-dir.sh remarks)" >&2; exit 2; }
 fi
-PSHOW="$PDIR"
-if [ -n "$PDIR" ] && command -v cygpath >/dev/null 2>&1; then PSHOW="$(cygpath -m "$PDIR")"; fi
 
 slug() { # the slug of an entry title (templates/learnings-entry.md)
   printf '%s' "$1" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C sed 's/[^a-z0-9][^a-z0-9]*/-/g; s/^-//; s/-$//' | cut -c1-60 | sed 's/-$//'
@@ -241,50 +281,94 @@ slug() { # the slug of an entry title (templates/learnings-entry.md)
 lookup() { # <file> <name>: the path recorded for <name> in a name<TAB>path file
   LC_ALL=C awk -F'\t' -v n="$2" '$1 == n { print $2; exit }' "$1"
 }
+# remark_name <file> <base name>: the name tools/remarks.sh gives <file> in
+# the remarks dir: -<hash6> before .md, hash6 the first six characters of
+# `git hash-object` of its bytes, unless the name already ends in it.
+remark_name() {
+  local stem="${2%.md}" h=""
+  IFS= read -r h < <(git hash-object --no-filters -- "$1" 2>/dev/null | tr -d '\r')
+  [ -n "$h" ] || { echo "migrate-knowledge: could not hash $1" >&2; return 1; }
+  h="${h:0:6}"
+  case "$stem" in *"-$h") printf '%s\n' "$2" ;; *) printf '%s-%s.md\n' "$stem" "$h" ;; esac
+}
+# claim <file> <stem>: the first of <stem>.md, <stem>-2.md ... that no entry
+# file of the inbox ($TMP/taken) holds, recorded and printed; nothing when one
+# of them already holds the same bytes (an earlier, interrupted run wrote it).
+claim() {
+  local i=1 cand other
+  while :; do
+    if [ "$i" = 1 ]; then cand="$2.md"; else cand="$2-$i.md"; fi
+    other="$(lookup "$TMP/taken" "$cand")"
+    if [ -z "$other" ]; then
+      printf '%s\t%s\n' "$cand" "$1" >> "$TMP/taken"; printf '%s\n' "$cand"; return 0
+    fi
+    ! cmp -s "$1" "$other" || return 0
+    i=$((i + 1))
+  done
+}
+# plan_accept <list> <dir>: for each name<TAB>file of <list>, what
+# tools/remarks.sh accept would do in <dir>. Sets PA, the files it adds, and
+# PT, those already there; a name in <dir> with other bytes is a conflict
+# ($TMP/rconf). $TMP/rnames holds what this run adds, so a second source with
+# the same bytes counts as already there.
+: > "$TMP/rnames"; : > "$TMP/rconf"
+plan_accept() {
+  local b p nm
+  PA=0 PT=0
+  while IFS="$TAB" read -r b p; do
+    [ -n "$b" ] || continue
+    nm="$(remark_name "$p" "$b")" || exit 2
+    if [ -e "$2/$nm" ] || [ -L "$2/$nm" ]; then
+      if [ -f "$2/$nm" ] && cmp -s -- "$p" "$2/$nm"; then PT=$((PT + 1)); else echo "  $2/$nm (from $b)" >> "$TMP/rconf"; fi
+    elif grep -qxF -- "$2/$nm" "$TMP/rnames"; then
+      PT=$((PT + 1))
+    else
+      printf '%s\n' "$2/$nm" >> "$TMP/rnames"; PA=$((PA + 1))
+    fi
+  done < "$1"
+}
 
-# profile_plan pending|now: what the step does to the inbox in operativeDir,
-# as it is now or as the operative part above leaves it (pending). Fills
-# $TMP/lifts (split entry, name), $TMP/pmoves (name, name in the profile or
-# empty when the profile holds the same bytes); sets PIDX, PL, PN, PM, PS,
-# PEXC and pidle, or prof_reason when the inbox has to stay per copy.
-profile_plan() {
-  local f src dst h d edate etitle eslug base i cand other nm stem nonl
-  : > "$TMP/inbox"
+# inbox_plan: the inbox as the operative part above leaves it. Fills
+# $TMP/taken (name, where its bytes are now: every entry file the step
+# accepts), $TMP/lifts and $TMP/excs (the file to write, its name in
+# learnings/); sets PEXC, IN, IM and iidle, or inbox_reason when the inbox
+# cannot be read.
+inbox_plan() {
+  local f src dst h d p s edate etitle eslug nm nonl pidx
+  inbox_reason=""
+  : > "$TMP/taken"
   if [ -d "$OPS/learnings" ]; then
     for f in "$OPS/learnings"/*.md; do
-      [ ! -f "$f" ] || printf '%s\t%s\n' "${f##*/}" "$f" >> "$TMP/inbox"
+      [ ! -f "$f" ] || printf '%s\t%s\n' "${f##*/}" "$f" >> "$TMP/taken"
     done
   fi
-  PIDX=""; [ ! -f "$OPS/LEARNINGS.md" ] || PIDX="$OPS/LEARNINGS.md"
-  if [ "$1" = pending ]; then
-    while IFS="$TAB" read -r src dst; do
-      case "$dst" in
-        "$OPS/LEARNINGS.md") PIDX="$src" ;;
-        "$OPS/learnings/"*.md) [ ! -f "$src" ] || printf '%s\t%s\n' "${dst##*/}" "$src" >> "$TMP/inbox" ;;
-      esac
-    done < "$TMP/moves"
-  fi
+  pidx=""; [ ! -f "$OPS/LEARNINGS.md" ] || pidx="$OPS/LEARNINGS.md"
+  while IFS="$TAB" read -r src dst; do
+    case "$dst" in
+      "$OPS/LEARNINGS.md") pidx="$src" ;;
+      "$OPS/learnings/"*.md) [ ! -f "$src" ] || printf '%s\t%s\n' "${dst##*/}" "$src" >> "$TMP/taken" ;;
+    esac
+  done < "$TMP/moves"
   PEXC=0; [ ! -f "$OPS/review-exceptions.md" ] || PEXC=1
 
-  # Step 4, the lift: split_entries of checks/verify-knowledge-integrity.sh,
-  # writing every line as read, so CRs and a missing last newline survive
+  # The lift: split_entries of checks/verify-knowledge-integrity.sh, writing
+  # every line as read, so CRs and a missing last newline survive
   # (BINMODE=3: gawk on Windows otherwise drops the CR of a CRLF line).
-  : > "$TMP/lifts"; PL=0
-  cp "$TMP/inbox" "$TMP/taken"
+  : > "$TMP/lifts"
   rm -rf "$TMP/split"; mkdir -p "$TMP/split"
-  if [ -n "$PIDX" ]; then
-    nonl=0; [ ! -s "$PIDX" ] || [ "$(tail -c 1 "$PIDX" | wc -l | tr -d ' ')" != 0 ] || nonl=1
+  if [ -n "$pidx" ]; then
+    nonl=0; [ ! -s "$pidx" ] || [ "$(tail -c 1 "$pidx" | wc -l | tr -d ' ')" != 0 ] || nonl=1
     LC_ALL=C awk -v BINMODE=3 -v out="$TMP/split" -v nonl="$nonl" '
       { if (have) printf "%s\n", pl > pf; have = 0 }
       /^```/                 { fence = !fence }
       !fence && /^## \[/     { if (f != "") close(f); n++; f = sprintf("%s/entry-%04d", out, n) }
       n > 0                  { pl = $0; pf = f; have = 1 }
       END                    { if (have) printf "%s%s", pl, (nonl ? "" : "\n") > pf; if (fence) exit 2 }
-    ' "$PIDX"
+    ' "$pidx"
     case $? in
       0) ;;
-      2) prof_reason="LEARNINGS.md ends inside a fenced block; balance its fences and run again"; return ;;
-      *) echo "migrate-knowledge: could not read $PIDX" >&2; exit 2 ;;
+      2) inbox_reason="LEARNINGS.md ends inside a fenced block; balance its fences and run again"; return ;;
+      *) echo "migrate-knowledge: could not read $pidx" >&2; exit 2 ;;
     esac
     for f in "$TMP/split"/entry-*; do
       [ -f "$f" ] || continue
@@ -292,62 +376,66 @@ profile_plan() {
       d="${h#"## ["}"; edate="${d%%"]"*}"; etitle="${d#*"]"}"; etitle="${etitle# }"
       case "$edate" in
         [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
-        *) prof_reason="an inline entry of LEARNINGS.md has no date in its heading ($h); fix the heading and run again"; return ;;
+        *) inbox_reason="an inline entry of LEARNINGS.md has no date in its heading ($h); fix the heading and run again"; return ;;
       esac
       # A title with no ASCII letter or digit: "entry", as extract-rules.sh says "rule".
       eslug="$(slug "$etitle")"; [ -n "$eslug" ] || eslug=entry
-      base="$edate-$eslug"; i=1
-      while :; do
-        if [ "$i" = 1 ]; then cand="$base.md"; else cand="$base-$i.md"; fi
-        other="$(lookup "$TMP/taken" "$cand")"
-        if [ -z "$other" ]; then
-          printf '%s\t%s\n' "$cand" "$f" >> "$TMP/taken"; printf '%s\t%s\n' "$f" "$cand" >> "$TMP/lifts"
-          PL=$((PL + 1)); break
-        elif cmp -s "$f" "$other"; then
-          break   # the entry file already holds it
-        fi
-        i=$((i + 1))
-      done
+      nm="$(claim "$f" "$edate-$eslug")"
+      [ -z "$nm" ] || printf '%s\t%s\n' "$f" "$nm" >> "$TMP/lifts"
     done
   fi
 
-  # Step 5, into the profile: the same name with the same bytes is already
-  # there; other bytes move under the first free suffix.
-  : > "$TMP/pmoves"; : > "$TMP/claimed"; PN=0 PM=0 PS=0
-  LC_ALL=C sort "$TMP/taken" > "$TMP/taken.sorted"
-  while IFS="$TAB" read -r nm src; do
-    stem="${nm%.md}"; i=1
-    while :; do
-      if [ "$i" = 1 ]; then cand="$nm"; else cand="$stem-$i.md"; fi
-      if [ -e "$PDIR/learnings/$cand" ]; then other="$PDIR/learnings/$cand"; else other="$(lookup "$TMP/claimed" "$cand")"; fi
-      if [ -z "$other" ]; then
-        printf '%s\t%s\n' "$cand" "$src" >> "$TMP/claimed"; printf '%s\t%s\n' "$nm" "$cand" >> "$TMP/pmoves"
-        if [ "$i" = 1 ]; then PN=$((PN + 1)); else PS=$((PS + 1)); fi
-        break
-      elif cmp -s "$src" "$other"; then
-        printf '%s\t\n' "$nm" >> "$TMP/pmoves"; PM=$((PM + 1)); break
-      fi
-      i=$((i + 1))
-    done
-  done < "$TMP/taken.sorted"
+  # review-exceptions.md: every line after the first, CR and blank lines
+  # aside, becomes an entry of two lines (references/accepted-exceptions.md
+  # of the team skill gives the line's form).
+  : > "$TMP/excs"; : > "$TMP/exclist"
+  rm -rf "$TMP/exc"; mkdir -p "$TMP/exc"
+  if [ "$PEXC" = 1 ]; then
+    LC_ALL=C awk -v BINMODE=3 -v out="$TMP/exc" -v today="$TODAY" '
+      NR == 1 { next }
+      { sub(/\r$/, "") }
+      /^[ \t]*$/ { next }
+      { t = $0; sub(/^- /, "", t)
+        p = t; i = index(p, " · "); if (i) p = substr(p, 1, i - 1)
+        d = today; j = index(t, "accepted ")
+        if (j) { c = substr(t, j + 9, 10); if (c ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) d = c }
+        n++; f = sprintf("%s/exc-%04d", out, n)
+        printf "## [%s] exception %s\n[EXCEPTION] %s\n", d, p, t > f; close(f)
+        printf "%s\t%s\t%s\n", f, d, p }' "$OPS/review-exceptions.md" > "$TMP/exclist" \
+      || { echo "migrate-knowledge: could not read $OPS/review-exceptions.md" >&2; exit 2; }
+    while IFS="$TAB" read -r f d p; do
+      s="$(slug "$p")"; nm="$d-exception"; [ -z "$s" ] || nm="$nm-$s"
+      nm="$(claim "$f" "$nm")"
+      [ -z "$nm" ] || printf '%s\t%s\n' "$f" "$nm" >> "$TMP/excs"
+    done < "$TMP/exclist"
+  fi
 
-  if [ -e "$PDIR/review-exceptions.md" ] && [ ! -f "$PDIR/review-exceptions.md" ]; then
-    prof_reason="profile not writable"; return
-  fi
-  pidle=0
-  [ -n "$PIDX" ] || [ -s "$TMP/taken" ] || [ "$PEXC" = 1 ] || pidle=1
+  iidle=0
+  [ -n "$pidx" ] || [ -s "$TMP/taken" ] || [ "$PEXC" = 1 ] || iidle=1
+  plan_accept "$TMP/taken" "$RD"; IN=$PA IM=$PT
 }
-prof_line_now() {
-  if [ -n "$prof_reason" ]; then
-    prof_line="operative: per-copy $OPS ($prof_reason)"
-  elif [ "$pidle" = 1 ]; then
-    prof_line="operative: $PSHOW (key $KEY): in place"
-  else
-    prof_line="operative: $PSHOW (key $KEY): moved $PN entries, $PM already there, $PS renamed, $PL lifted from LEARNINGS.md"
+inbox_plan
+if [ -n "$inbox_reason" ]; then
+  echo "migrate-knowledge: refused — $inbox_reason; nothing was moved." >&2
+  exit 1
+fi
+if [ "$iidle" = 1 ]; then rem_line="remarks: $RD: nothing to move"; else rem_line="remarks: $RD: $IN moved, $IM already there"; fi
+
+# plan_copy: every remark of RL, accepted into RC. Fills $TMP/csrcs; sets CN
+# and CM, and copy_line when there is anything to copy.
+CN=0 CM=0 copy_line=""
+: > "$TMP/csrcs"
+plan_copy() {
+  local f
+  if [ -d "$RL" ]; then
+    for f in "$RL"/*.md; do
+      [ -f "$f" ] && [ ! -L "$f" ] || continue
+      printf '%s\t%s\n' "${f##*/}" "$f" >> "$TMP/csrcs"
+    done
   fi
+  plan_accept "$TMP/csrcs" "$RC"; CN=$PA CM=$PT
+  [ ! -s "$TMP/csrcs" ] || copy_line="remarks: $RC: $CN copied from $RL, $CM already there"
 }
-[ -n "$prof_reason" ] || profile_plan pending
-prof_line_now
 
 # --- 3. the project part, planned --------------------------------------------
 tracked=0
@@ -355,13 +443,11 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   [ -z "$(git ls-files -- "$DIR" 2>/dev/null | head -1)" ] || tracked=1
 fi
 legacy_project=0; has_project "$LEGACY" && legacy_project=1
-action=none note_line="" SRC=""
+action=none note_line="" SRC="" K=0 do_import=0 drop_legacy=0
 
-# plan_import: the authored lines of the private copy, what the inbox already
-# holds, and what this run writes. Fills $TMP/new (n, rel, line, mark per
-# entry to write); sets K, the number of entries this run writes. No index
-# row is written: the index is printed from the entry files
-# (knowledge.learningsIndex).
+# plan_import: the authored lines of the private copy, what the remarks dirs
+# already hold, and what this run writes. Fills $TMP/new (n, rel, line, mark
+# per entry to write); sets K, the number of entries this run writes.
 plan_import() {
   local f rel d n line rule mark hit
   # Authored lines: they end in "— source: user" or carry
@@ -401,12 +487,11 @@ plan_import() {
     { t = index($0, "\t"); line = substr($0, t + 1)
       if (!(line in c) && !(textof(line) in v) && !(line in seen)) { seen[line] = 1; print } }' "$TMP/committed" "$TMP/rulevals" "$TMP/cand" > "$TMP/kept"
 
-  # The inbox as it will be after the operative move and the profile step
-  # (the profile's entries included): its marks (resolved ones count as
-  # present) with the entry file holding each, and an older index file when
-  # one is still there, read only for the numbering below.
+  # The inbox as it is before this run, and the remarks dirs: their marks
+  # (resolved ones count as present) with the file holding each, and an older
+  # index file when one is still there, read only for the numbering below.
   : > "$TMP/marks"
-  for d in "$OPS/learnings" "$LEGACY/learnings" ${PDIR:+"$PDIR/learnings"}; do
+  for d in "$OPS/learnings" "$LEGACY/learnings" "$RD" "$RL" "$RC"; do
     [ -d "$d" ] || continue
     for f in "$d"/*.md; do
       [ -f "$f" ] || continue
@@ -420,7 +505,7 @@ plan_import() {
   : > "$TMP/index"; [ -z "$IDXSRC" ] || tr -d '\r' < "$IDXSRC" > "$TMP/index"
   # Numbering continues after the highest Migrated rule already present.
   n="$({
-    for d in "$OPS/learnings" "$LEGACY/learnings" ${PDIR:+"$PDIR/learnings"}; do
+    for d in "$OPS/learnings" "$LEGACY/learnings" "$RD" "$RL" "$RC"; do
       [ -d "$d" ] && find "$d" -mindepth 1 -maxdepth 1 -name '*-migrated-rule-*' | sed -n 's/.*-migrated-rule-\([0-9][0-9]*\)[^/]*$/\1/p'
     done
     sed -n 's/^|[^|]*| *Migrated rule \([0-9][0-9]*\) *|.*/\1/p' "$TMP/index"
@@ -439,7 +524,7 @@ plan_import() {
         print s }')"
     mark="[PROMOTE] $rel — $rule"
     hit="$(MK="$mark" LC_ALL=C awk -F'\t' 'BEGIN { m = ENVIRON["MK"] } $1 == m { print $2; exit }' "$TMP/marks")"
-    # Already in the inbox: an earlier run, or an interrupted one, wrote it.
+    # Already a remark: an earlier run, or an interrupted one, wrote it.
     [ -z "$hit" ] || continue
     n=$((n + 1))
     printf '%s\t%s\t%s\t%s\n' "$n" "$rel" "$line" "$mark" >> "$TMP/new"
@@ -535,31 +620,45 @@ EOF
       [ ! -e "$SRC/$nm" ] || { note_line="note: $SRC/ keeps its operative files for that edition's own migration"; break; }
     done
   fi
+  # The remarks of the private copy follow the knowledge into its new directory.
+  plan_copy
   ;;
 drop)
   if [ "$tracked" = 0 ]; then
     echo "migrate-knowledge: refused — nothing under $DIR/ is tracked in this branch, so the private copy in $LEGACY/ is the only knowledge here; nothing was removed." >&2
     exit 1
   fi
+  if [ "$RD" != "$RC" ]; then
+    echo "migrate-knowledge: refused — $DIR/ holds no knowledge file directly inside, so the remarks dir is still $RD/; nothing was removed." >&2
+    exit 1
+  fi
+  BK="$OPS/legacy-knowledge-$NOW"
+  [ ! -e "$BK" ] || BK="$BK-$$"
+  PBK="$BK-proposals"
+  plan_copy
+  [ ! -d "$RL" ] || copy_line="remarks: $RC: $CN copied from $RL, $CM already there; $RL removed (backup $PBK)"
   if [ -d "$LEGACY" ] && [ -n "$(project_entries "$LEGACY")" ]; then
     plan_import
-    BK="$OPS/legacy-knowledge-$(date +%Y-%m-%d-%H%M)"
-    [ ! -e "$BK" ] || BK="$BK-$$"
-    proj_line="project: private copy removed (backup $BK; $K authored lines kept as inbox entries)"
-    action=drop
+    drop_legacy=1
+    proj_line="project: private copy removed (backup $BK; $K authored lines kept as remarks)"
   else
     proj_line="project: in place ($DIR)"
   fi
+  action=drop
   ;;
 default)
   if [ "$tracked" = 1 ]; then
     if [ "$legacy_project" = 1 ] && [ ! -f "$STAMP" ]; then
       plan_import
-      proj_line="project: in place ($DIR); private copy kept for branches without knowledge ($K authored lines kept as inbox entries)"
-      action=import
+      do_import=1
+      proj_line="project: in place ($DIR); private copy kept for branches without knowledge ($K authored lines kept as remarks)"
     else
       proj_line="project: in place ($DIR)"
     fi
+    # The first pass that sees the committed directory as the knowledge
+    # carries the private copy's remarks into it, once.
+    [ -f "$COPIED" ] || [ "$(resolve project)" != "$DIR" ] || plan_copy
+    [ "$do_import" = 0 ] && [ ! -s "$TMP/csrcs" ] || action=import
     # The committed copy is what counts now; a staging directory beside it is
     # an interrupted move from before it was committed.
     [ ! -d "$STAGE" ] || proj_line="$proj_line; an interrupted move left $STAGE/: $DIR/ is committed, so remove it once nothing in it is missing from $DIR/"
@@ -574,6 +673,18 @@ default)
   fi
   ;;
 esac
+
+if [ -s "$TMP/rconf" ]; then
+  echo "migrate-knowledge: refused — these remarks exist with other content than the file that would be copied there; move them aside by hand, then run again; nothing was moved:" >&2
+  cat "$TMP/rconf" >&2
+  exit 1
+fi
+
+# The note on remarks this run adds to a committed knowledge directory.
+untracked_note() { # <files added>
+  [ "$tracked" = 1 ] && [ "$RD" = "$RC" ] && [ "$1" -gt 0 ] || return 0
+  echo "note: $1 new files under $RC $UNTRACKED_TAIL"
+}
 
 # The rule extractor on knowledge.dir once the move is done (a first commit).
 EXTRACT="$TEAM_ROOT/tools/extract-rules.sh"
@@ -590,7 +701,7 @@ extract_rules() {
 # --- dry run ------------------------------------------------------------------
 if [ "$dry" = 1 ]; then
   echo "would: $ops_line"
-  echo "would: $prof_line"
+  [ "$mode" = first ] || echo "would: $rem_line"
   echo "would: $proj_line"
   if [ "$mode" = first ]; then
     # What the extractor would do with the moved files: a copy of them, read
@@ -605,8 +716,12 @@ if [ "$dry" = 1 ]; then
     else
       echo "would: rules: could not tell what the extractor would move"
     fi
+    echo "would: $rem_line"
   fi
+  [ -z "$copy_line" ] || echo "would: $copy_line"
   [ -z "$note_line" ] || echo "would: $note_line"
+  u="$(untracked_note "$((IN + K + CN))")"
+  [ -z "$u" ] || echo "would: $u"
   exit 0
 fi
 
@@ -622,93 +737,95 @@ done < "$TMP/moves"
 [ ! -f "$DIR/${SRCREC##*/}" ] || rm -f -- "$DIR/${SRCREC##*/}"
 echo "$ops_line"
 
-# --- 4b. the profile ------------------------------------------------------------
-# INBOX: where the inbox is once this step is done, and where the import
-# below writes.
-INBOX="$OPS"
-werr() { echo "migrate-knowledge: could not $1 (read-only or open elsewhere?); fix that and run again" >&2; exit 2; }
-profile_act() {
-  local p np probe nm dst f IB DI
-  # The probe; on failure the directories this step created go again, deepest first.
-  : > "$TMP/created"; p="$PDIR/learnings"
-  while [ ! -e "$p" ] && [ ! -L "$p" ]; do
-    printf '%s\n' "$p" >> "$TMP/created"
-    np="$(dirname "$p")"; [ "$np" != "$p" ] || break; p="$np"
-  done
-  probe="$PDIR/learnings/.write-probe-$$"
-  if ! { mkdir -p "$PDIR/learnings" && : > "$probe" && rm -f -- "$probe" && [ ! -e "$probe" ]; } 2>/dev/null; then
-    rm -f -- "$probe" 2>/dev/null
-    while IFS= read -r p; do rmdir -- "$p" 2>/dev/null; done < "$TMP/created"
-    prof_reason="profile not writable"; prof_line_now; return
-  fi
-  profile_plan now
-  prof_line_now
-  [ -z "$prof_reason" ] || return
-  INBOX="$PDIR"
-  [ "$pidle" = 0 ] || return
+# accept_into <dir> <file> ...: tools/remarks.sh accept, once the resolver
+# prints <dir> as the remarks dir; sets AA (added) and AT (already there).
+accept_into() {
+  local d="$1" r
+  shift
+  r="$(resolve remarks)"
+  [ "$r" = "$d" ] || { echo "migrate-knowledge: the remarks dir is now '$r', not $d as planned; nothing more was copied; run again" >&2; exit 2; }
+  bash "$TEAM_ROOT/tools/remarks.sh" accept "$@" > "$TMP/acc" 2> "$TMP/accerr" \
+    || { cat "$TMP/accerr" >&2; echo "migrate-knowledge: could not copy the remarks into $d/; fix that and run again" >&2; exit 2; }
+  AA="$(grep -c '^added: ' "$TMP/acc")"; AT="$(grep -c '^already there: ' "$TMP/acc")"
+}
 
-  # Step 3, the backup.
+# --- 4b. the inbox ----------------------------------------------------------------
+IA=0
+inbox_act() {
+  local IB DI f nm
+  if [ "$iidle" = 1 ]; then echo "$rem_line"; return 0; fi
+  # The backup, before the first write.
   IB="$OPS/inbox-backup-$NOW"; [ ! -e "$IB" ] || IB="$IB-$$"
   mkdir -p "$IB" || werr "create $IB/"
   for nm in LEARNINGS.md learnings review-exceptions.md; do
     [ -e "$OPS/$nm" ] || continue
     { cp -Rp "$OPS/$nm" "$IB/$nm" && diff -r "$OPS/$nm" "$IB/$nm" >/dev/null 2>&1; } || werr "back up $OPS/$nm to $IB/; nothing was moved"
   done
-  # Step 4, the lift, then the index file goes.
+  # The lifted entries and the exception entries become entry files.
+  cat "$TMP/lifts" "$TMP/excs" > "$TMP/gen"
   while IFS="$TAB" read -r f nm; do
     { mkdir -p "$OPS/learnings" && cp -- "$f" "$OPS/learnings/$nm"; } || werr "write $OPS/learnings/$nm"
-  done < "$TMP/lifts"
-  if [ -n "$PIDX" ]; then
+  done < "$TMP/gen"
+  # Every entry file into the remarks dir; the sources go once they are there.
+  set --
+  if [ -d "$OPS/learnings" ]; then
+    for f in "$OPS/learnings"/*.md; do [ ! -f "$f" ] || set -- "$@" "$f"; done
+  fi
+  AA=0 AT=0
+  if [ "$#" -gt 0 ]; then
+    accept_into "$RD" "$@"
+    rm -f -- "$@" || werr "remove the moved entry files from $OPS/learnings/"
+  fi
+  [ ! -d "$OPS/learnings" ] || rmdir "$OPS/learnings" 2>/dev/null
+  if [ -f "$OPS/LEARNINGS.md" ]; then
     DI="$OPS/dropped-index-$NOW.md"; [ ! -e "$DI" ] || DI="$OPS/dropped-index-$NOW-$$.md"
     mv -- "$OPS/LEARNINGS.md" "$DI" || werr "move $OPS/LEARNINGS.md to $DI"
   fi
-  # Step 5, the entry files.
-  while IFS="$TAB" read -r nm dst; do
-    if [ -n "$dst" ]; then
-      mv -- "$OPS/learnings/$nm" "$PDIR/learnings/$dst" || werr "move $OPS/learnings/$nm to $PSHOW/learnings/$dst"
-    else
-      rm -f -- "$OPS/learnings/$nm" || werr "remove $OPS/learnings/$nm (the profile holds the same bytes)"
-    fi
-  done < "$TMP/pmoves"
-  [ ! -d "$OPS/learnings" ] || rmdir "$OPS/learnings" 2>/dev/null
-  # Step 6, review-exceptions.md.
-  if [ "$PEXC" = 1 ]; then
-    f="$PDIR/review-exceptions.md"
-    if [ ! -e "$f" ]; then
-      mv -- "$OPS/review-exceptions.md" "$f" || werr "move $OPS/review-exceptions.md to $PSHOW/"
-    else
-      LC_ALL=C awk -v BINMODE=3 '
-        FILENAME == ARGV[1] { k = $0; sub(/\r$/, "", k); h[k] = 1; next }
-        { k = $0; sub(/\r$/, "", k); if (!(k in h)) { h[k] = 1; print } }' "$f" "$OPS/review-exceptions.md" > "$TMP/exc.add" \
-        || werr "read $OPS/review-exceptions.md"
-      if [ -s "$TMP/exc.add" ]; then
-        if [ -s "$f" ] && [ "$(tail -c 1 "$f" | wc -l | tr -d ' ')" = 0 ]; then printf '\n' >> "$f" || werr "append to $PSHOW/review-exceptions.md"; fi
-        cat "$TMP/exc.add" >> "$f" || werr "append to $PSHOW/review-exceptions.md"
-      fi
-      rm -f -- "$OPS/review-exceptions.md" || werr "remove $OPS/review-exceptions.md"
-    fi
-  fi
+  if [ "$PEXC" = 1 ]; then rm -f -- "$OPS/review-exceptions.md" || werr "remove $OPS/review-exceptions.md"; fi
+  IA=$AA
+  echo "remarks: $RD: $AA moved, $AT already there"
 }
-if [ -z "$prof_reason" ]; then profile_act; fi
-echo "$prof_line"
+[ "$mode" = first ] || inbox_act
 
-# write_import: the planned entries, one file each into the inbox; no index row.
+# write_import: the planned entries, one file each, accepted into the remarks
+# dir; sets KA, the files added.
+KA=0
 write_import() {
   local n rel line mark entry
+  set --
   while IFS="$TAB" read -r n rel line mark; do
-    mkdir -p "$INBOX/learnings" || exit 2
-    entry="$INBOX/learnings/$TODAY-migrated-rule-$n.md"
+    mkdir -p "$OPS/learnings" || werr "create $OPS/learnings/"
+    entry="$OPS/learnings/$TODAY-migrated-rule-$n.md"
     {
       printf '## [%s] Migrated rule %s\n' "$TODAY" "$n"
-      # No edition path: submitted as a remark, this text is committed knowledge.
+      # No edition path: as a remark, this text becomes committed knowledge.
       printf -- "- **Symptom:** the private copy's %s holds an authored line the committed copy (%s/) lacks: %s\n" "$rel" "$DIR" "$line"
       printf -- '- **Root cause:** written into the private copy before the project knowledge moved to the committed directory.\n'
       printf -- '- **Fix pattern:** the knowledge refresh makes it a rule file in %s/%s/, or drops it when the committed knowledge already says it.\n' "$DIR" "$RULESD"
       printf -- '- **Files touched:** %s/%s\n' "$DIR" "$rel"
       printf -- '- **Tags:** migration\n'
       printf '%s\n' "$mark"
-    } > "$entry" || { echo "migrate-knowledge: could not write $entry" >&2; exit 2; }
+    } > "$entry" || werr "write $entry"
+    set -- "$@" "$entry"
   done < "$TMP/new"
+  [ "$#" -gt 0 ] || return 0
+  accept_into "$RD" "$@"; KA=$AA
+  rm -f -- "$@" || werr "remove the migrated entry files from $OPS/learnings/"
+  rmdir "$OPS/learnings" 2>/dev/null
+  return 0
+}
+
+# carry: the remarks of RL accepted into RC; they stay in RL. Sets CA, the
+# files added, CT, those already there, and copy_line from what was done.
+CA=0 CT=0
+carry() {
+  local b p
+  [ -s "$TMP/csrcs" ] || return 0
+  set --
+  while IFS="$TAB" read -r b p; do set -- "$@" "$p"; done < "$TMP/csrcs"
+  accept_into "$RC" "$@"; CA=$AA CT=$AT
+  copy_line="remarks: $RC: $AA copied from $RL, $AT already there"
+  printf 'date=%s\ncopied=%s\n' "$TODAY" "$AA" > "$COPIED" || werr "write $COPIED"
 }
 
 case "$action" in
@@ -720,6 +837,9 @@ rename)
     || { echo "migrate-knowledge: could not move $LEGACY/ to $DIR/ (a file open elsewhere?); nothing of it was moved; fix that and run again" >&2; exit 2; }
   echo "$proj_line"
   extract_rules
+  inbox_act
+  carry
+  [ -z "$copy_line" ] || echo "$copy_line"
   ;;
 stage)
   mkdir -p "$STAGE" || { echo "migrate-knowledge: could not create $STAGE/" >&2; exit 2; }
@@ -737,23 +857,45 @@ stage)
   [ -z "$SRC" ] || rmdir "$SRC" 2>/dev/null
   echo "$proj_line"
   extract_rules
+  inbox_act
+  carry
+  [ -z "$copy_line" ] || echo "$copy_line"
   [ -z "$note_line" ] || echo "$note_line"
   ;;
 drop)
-  write_import
-  { mkdir -p "$BK" && cp -Rp "$LEGACY/." "$BK/" && diff -r "$LEGACY" "$BK" >/dev/null 2>&1; } \
-    || { echo "migrate-knowledge: could not back up $LEGACY/ to $BK/; nothing was removed" >&2; exit 2; }
-  rm -rf -- "$LEGACY" || { echo "migrate-knowledge: could not remove $LEGACY/ (the backup is $BK/); fix that and run again" >&2; exit 2; }
+  [ "$drop_legacy" = 0 ] || write_import
+  carry
+  if [ "$drop_legacy" = 1 ]; then
+    { mkdir -p "$BK" && cp -Rp "$LEGACY/." "$BK/" && diff -r "$LEGACY" "$BK" >/dev/null 2>&1; } \
+      || { echo "migrate-knowledge: could not back up $LEGACY/ to $BK/; nothing was removed" >&2; exit 2; }
+  fi
+  if [ -d "$RL" ]; then
+    { mkdir -p "$PBK" && cp -Rp "$RL/." "$PBK/" && diff -r "$RL" "$PBK" >/dev/null 2>&1; } \
+      || { echo "migrate-knowledge: could not back up $RL/ to $PBK/; nothing was removed" >&2; exit 2; }
+  fi
+  if [ "$drop_legacy" = 1 ]; then
+    rm -rf -- "$LEGACY" || { echo "migrate-knowledge: could not remove $LEGACY/ (the backup is $BK/); fix that and run again" >&2; exit 2; }
+  fi
+  if [ -d "$RL" ]; then
+    rm -rf -- "$RL" || { echo "migrate-knowledge: could not remove $RL/ (the backup is $PBK/); fix that and run again" >&2; exit 2; }
+    copy_line="remarks: $RC: $CA copied from $RL, $CT already there; $RL removed (backup $PBK)"
+  fi
   echo "$proj_line"
+  [ -z "$copy_line" ] || echo "$copy_line"
   ;;
 import)
-  write_import
-  mkdir -p "$CAPS" && printf 'date=%s\nlines=%s\n' "$TODAY" "$K" > "$STAMP" \
-    || { echo "migrate-knowledge: could not write $STAMP" >&2; exit 2; }
+  [ "$do_import" = 0 ] || write_import
+  carry
+  if [ "$do_import" = 1 ]; then
+    mkdir -p "$CAPS" && printf 'date=%s\nlines=%s\n' "$TODAY" "$K" > "$STAMP" \
+      || { echo "migrate-knowledge: could not write $STAMP" >&2; exit 2; }
+  fi
   echo "$proj_line"
+  [ -z "$copy_line" ] || echo "$copy_line"
   ;;
 *)
   echo "$proj_line"
   ;;
 esac
+untracked_note "$((IA + KA + CA))"
 exit 0
