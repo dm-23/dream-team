@@ -186,9 +186,6 @@
       "REVIEW-CHECKLIST.md": "conventions",
       "PROJECT-RULES.md": "conventions"
     },
-    "persistent": [
-      "learnings/"
-    ],
     "learningsEntryTemplate": ".claude/templates/learnings-entry.md",
     "rulesDir": "rules",
     "proposalsDir": "proposals",

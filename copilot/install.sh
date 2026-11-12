@@ -8,10 +8,10 @@
 # then writes. It replaces the team's own files and nothing else: the shared
 # knowledge (.dream-team/knowledge, its rules/, proposals/ and BASELINE
 # included), the private knowledge copy, the operative directory
-# (.dream-team-tracking/operative: CAPABILITIES.md, and the learnings inbox
-# when it stays per copy), the learnings inbox in the developer's profile, run
-# state, consent records, git configuration and every file it did not install
-# are never written, moved or deleted.
+# (.dream-team-tracking/operative: CAPABILITIES.md, and the remarks in
+# proposals/ while the knowledge is the private copy), run state, consent
+# records, git configuration and every file it did not install are never
+# written, moved or deleted.
 #
 #   add              absent in the project               written
 #   unchanged        identical to the build              left alone (adopted into the record)
