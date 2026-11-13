@@ -54,6 +54,34 @@ run_case "manifest" 1 "" "$WORK/k"
 mk; printf '%s\n' 'see .github/agents/x.agent.md' > "$WORK/k/a.md"
 run_case "github agents" 1 "" "$WORK/k"
 
+mk; printf '%s\n' 'see .claude/tools/x.sh and .github/skills/y' > "$WORK/k/a.md"
+run_case "two on a line, the first is named" 1 "a.md:1: names a team path: .claude/tools/" "$WORK/k"
+out="$(bash "$CHECK" "$WORK/k" 2>&1)"
+[ "$(printf '%s\n' "$out" | grep -c .)" = 1 ] || fail "two on a line: more than one report line ($out)"
+
+mk; printf 'ok line\nsee .claude/hooks/x' > "$WORK/k/a.md"
+run_case "last line without a newline" 1 "a.md:2: names a team path: .claude/hooks/" "$WORK/k"
+
+mk; printf '%s\n' 'ok' 'see .claude/checks/x' > "$WORK/k/b file.md"
+printf '%s\n' 'see .claude/agents/x' 'ok' 'see .github/dream-team/tools/y' > "$WORK/k/a.md"
+out="$(bash "$CHECK" "$WORK/k" 2>&1)"; rc=$?
+want="$WORK/k/a.md:1: names a team path: .claude/agents/
+$WORK/k/a.md:3: names a team path: .github/dream-team/
+$WORK/k/b file.md:2: names a team path: .claude/checks/"
+[ "$rc" = 1 ] && [ "$out" = "$want" ] || fail "several files, in order, a space in a name: exit $rc ($out)"
+
+mk; printf 'a\000b .claude/skills/x\n' > "$WORK/k/a.md"
+run_case "a NUL byte in the file" 1 "a.md:1: names a team path: .claude/skills/" "$WORK/k"
+
+# Size: one search per file, never a process per line. 4000 lines took minutes
+# on Git Bash when every line started its own pipeline.
+mk; i=0; while [ "$i" -lt 4000 ]; do echo "- line $i of an ordinary knowledge file"; i=$((i + 1)); done > "$WORK/k/a.md"
+echo 'see .claude/templates/x' >> "$WORK/k/a.md"
+start="$(date +%s)"
+run_case "4000 lines" 1 "a.md:4001: names a team path: .claude/templates/" "$WORK/k"
+took=$(( $(date +%s) - start ))
+[ "$took" -le 20 ] || fail "4000 lines took ${took}s, wanted 20s at most"
+
 run_case "missing dir" 2 "" "$WORK/does-not-exist"
 
 if [ "$FAILS" -gt 0 ]; then exit 1; fi

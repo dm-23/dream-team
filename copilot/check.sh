@@ -344,7 +344,7 @@ checks = {
     "knowledge.legacyDir": m["knowledge"].get("legacyDir") == ".github/dream-team/knowledge",
     "knowledge.capabilitiesDir": m["knowledge"].get("capabilitiesDir", "").endswith("operative/copilot"),
     "no knowledge.persistent": not {"persistent", "persistentTemplates"} & set(m["knowledge"]),
-    "version 6.0.0": m["team"]["version"] == "6.0.0"
+    "version 6.0.1": m["team"]["version"] == "6.0.1"
         and "6.0.0" in m["setup"]["postUpdate"] and "6.0.0" in s["setup"]["postUpdate"],
     "knowledge tools": all(
         m["knowledge"].get(k) == v and os.path.isfile(os.path.join(out, ".github/dream-team", v))
@@ -420,8 +420,8 @@ for f in tools/learnings-index.sh tools/extract-rules.sh tools/knowledge-drift.s
 done
 [ -f "$REAL/.github/skills/generate-knowledge/references/refresh.md" ] \
   || fail "generator reference refresh.md not in the edition"
-grep -qF '"version": "6.0.0",' "$REAL/.github/dream-team/team-manifest.json" \
-  || fail "the edition's manifest is not version 6.0.0"
+grep -qF '"version": "6.0.1",' "$REAL/.github/dream-team/team-manifest.json" \
+  || fail "the edition's manifest is not version 6.0.1"
 for k in extractRules learningsIndex remarks shapeCheck knowledgeDrift knowledgeRefresh; do
   grep -qE "^    \"$k\": \"bash checks/" "$REAL/.github/dream-team/team-manifest.json" \
     && fail "repo-only check key $k left in the edition's manifest"

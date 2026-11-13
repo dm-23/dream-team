@@ -232,5 +232,52 @@ integrity "CRLF, line extracted" 0 "$BC" "$C"
 rm "$C/rules/auth.md"
 integrity "CRLF, line with no rule file" 1 "$BC" "$C"
 
+# --- the integrity check and the Covers lines of a split ---------------------
+# A split gives every topic the patterns of the source's Covers line that its
+# text names and turns the index into "Covers: topics": those lines are new by
+# design and are no moved text.
+BV="$WORK/x-covers-backup"; mkdir -p "$BV"
+printf '%s\n' '# Backend Architecture' 'Covers: src/api/**, src/data/**' '' '## Layout' '- src/api holds the routes' \
+  '' '## Data access' '- src/data holds the queries' > "$BV/BACKEND-ARCHITECTURE.md"
+mk_covers_split() { # <dir>
+  rm -rf "$1"; mkdir -p "$1/backend-architecture"
+  printf '%s\n' '# Backend Architecture' 'Covers: topics' '' '- layout.md — read for the routes' \
+    '- data.md — read for the queries' > "$1/BACKEND-ARCHITECTURE.md"
+  printf '%s\n' '## Layout' 'Covers: src/api/**' '- src/api holds the routes' > "$1/backend-architecture/layout.md"
+  printf '%s\r\n' '## Data access' 'Covers: src/data/**' '- src/data holds the queries' > "$1/backend-architecture/data.md"
+}
+SV="$WORK/x-covers-split"
+mk_covers_split "$SV"
+integrity "split, Covers narrowed per topic" 0 "$BV" "$SV"
+
+# A source that had no Covers line yet (written before the line existed).
+BN="$WORK/x-nocovers-backup"; mkdir -p "$BN"
+grep -v '^Covers:' "$BV/BACKEND-ARCHITECTURE.md" > "$BN/BACKEND-ARCHITECTURE.md"
+integrity "split, the source had no Covers line" 0 "$BN" "$SV"
+
+# A second run over an already split base: nothing changed.
+integrity "split base, unchanged" 0 "$SV" "$SV"
+
+# Only the Covers line is exempt: any other new line in a topic is fabricated.
+mk_covers_split "$SV"
+printf '%s\n' '- src/api also holds the filters' >> "$SV/backend-architecture/layout.md"
+integrity "split, a topic gained a line" 1 "$BV" "$SV"
+
+# Only where the shape check reads it: a Covers line past the fifth line of a
+# topic is text like any other.
+mk_covers_split "$SV"
+printf '%s\n' '## Layout' '- src/api holds the routes' '' '' '' 'Covers: src/api/**' > "$SV/backend-architecture/layout.md"
+integrity "split, Covers past the fifth line" 1 "$BV" "$SV"
+
+# And only one: a second Covers line in the first five is not exempt.
+mk_covers_split "$SV"
+printf '%s\n' '## Layout' 'Covers: src/api/**' 'Covers: lib/**' '- src/api holds the routes' > "$SV/backend-architecture/layout.md"
+integrity "split, two Covers lines in a topic" 1 "$BV" "$SV"
+
+# A lost line is still lost.
+mk_covers_split "$SV"
+printf '%s\n' '## Data access' 'Covers: src/data/**' > "$SV/backend-architecture/data.md"
+integrity "split, a line lost beside the Covers line" 1 "$BV" "$SV"
+
 if [ "$FAILS" -gt 0 ]; then exit 1; fi
 echo "shape check: ok"

@@ -31,6 +31,9 @@
 #     it has one, since a base split by an earlier run keeps its topics there.
 #     The index may legitimately carry descriptive lines the original never
 #     had; only the topic-directory side is held to the no-new-content rule.
+#     The "Covers:" line of the original and of each topic (the first such
+#     line within a file's first five lines) is left out of the comparison:
+#     a split writes it anew, narrowed to what each topic's text names.
 #   - "subset" with no topic directory present -> it was never split, so it
 #     must still be byte-identical to its backup copy. A subset file that
 #     fits its budget and stays one file is not thereby exempt: either it was
@@ -125,6 +128,15 @@ normalize() {
   sed 's/[[:space:]]*$//' "$1" \
     | awk '{ l[NR] = $0 } END { last = NR; while (last > 0 && l[last] == "") last--;
              for (i = 1; i <= last; i++) print l[i] }'
+}
+
+# moved_text <file>: the normalized file without its "Covers:" line, the first
+# line that begins so within the first five, which is where the shape check
+# and the drift tool read it. A split writes that line anew for every topic
+# and for the index, so it is no moved text on either side. Any other line
+# that begins "Covers:" stays and is compared like the rest.
+moved_text() {
+  normalize "$1" | awk 'NR <= 5 && !done && index($0, "Covers:") == 1 { done = 1; next } { print }'
 }
 
 # --- Read knowledge.classification from the manifest --------------------------
@@ -404,14 +416,15 @@ check_split_dir() {
   : > "$tmp/topic-lines"
   for f in "$topic_dir"/*.md; do
     [ -e "$f" ] || continue
-    normalize "$f" >> "$tmp/topic-lines"
+    moved_text "$f" >> "$tmp/topic-lines"
   done
   grep -v '^$' "$tmp/topic-lines" | sort -u > "$tmp/topic-sorted"
   # The original is the backup's index plus whatever its own topic directory
   # already held: a base split by an earlier run keeps its topics there, and
   # a run that applied anything else to it must not be told it fabricated them.
-  { normalize "$origin"
-    for f in "$backup/$name"/*.md; do [ -e "$f" ] && normalize "$f"; done
+  # The Covers line of each is left out on both sides (moved_text).
+  { moved_text "$origin"
+    for f in "$backup/$name"/*.md; do [ -e "$f" ] && moved_text "$f"; done
   } | grep -v '^$' | sort -u > "$tmp/origin-sorted"
 
   # Nothing fabricated: every topic line must trace back to the original.

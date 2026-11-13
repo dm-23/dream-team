@@ -21,7 +21,8 @@
 # every literal Claude-edition directory name in the files it ships, leaves
 # them intact.
 #
-# A trailing CR is ignored, because an editor on Windows adds one.
+# A trailing CR is ignored, because an editor on Windows adds one. A line
+# that names several team paths is reported once, with the first of them.
 #
 # Exit 0 = nothing found (prints "knowledge neutral: ok"). Exit 1 = lines
 # found. Exit 2 = the directory cannot be read. Writes nothing.
@@ -41,16 +42,19 @@ FILES="$(find "$DIR" -type f 2>/dev/null | sort)" || exit 2
 
 while IFS= read -r f; do
   [ -n "$f" ] || continue
-  n=0
-  while IFS= read -r line || [ -n "$line" ]; do
-    n=$((n + 1))
-    line="${line%$'\r'}"
-    m="$(printf '%s\n' "$line" | grep -o -E "$PATTERN" | head -n 1)"
-    if [ -n "$m" ]; then
-      echo "$f:$n: names a team path: $m"
-      FOUND=1
-    fi
-  done < "$f"
+  # One search per file, never a process per line: starting a pipeline for
+  # every line took minutes on a few thousand lines under Git Bash. grep
+  # prints "<line>:<match>" once per match; the first match of a line is the
+  # one reported. No pattern can match a CR, so a trailing one needs no care.
+  hits="$(grep -a -n -o -E -- "$PATTERN" "$f" | F="$f" awk '
+    { i = index($0, ":"); n = substr($0, 1, i - 1)
+      if (n in seen) next
+      seen[n] = 1
+      print ENVIRON["F"] ":" n ": names a team path: " substr($0, i + 1) }')"
+  if [ -n "$hits" ]; then
+    printf '%s\n' "$hits"
+    FOUND=1
+  fi
 done <<EOF
 $FILES
 EOF
