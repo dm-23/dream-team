@@ -5,13 +5,9 @@
 #
 # Builds the edition from this repository (build.sh), compares it with the
 # project and with the project's ownership record, prints the plan, and only
-# then writes. It replaces the team's own files and nothing else: the shared
-# knowledge (.dream-team/knowledge, its rules/, proposals/ and BASELINE
-# included), the private knowledge copy, the operative directory
-# (.dream-team-tracking/operative: CAPABILITIES.md, and the remarks in
-# proposals/ while the knowledge is the private copy), run state, consent
-# records, git configuration and every file it did not install are never
-# written, moved or deleted.
+# then writes. It replaces the team's own files and nothing else: knowledge,
+# learnings, CAPABILITIES.md, run state, consent records, git configuration
+# and every file it did not install are never written, moved or deleted.
 #
 #   add              absent in the project               written
 #   unchanged        identical to the build              left alone (adopted into the record)
@@ -95,7 +91,7 @@ allowed() { # $1 = relative path, $2 = "rec" to accept names from the installed 
   # The file system may be case-insensitive: deny on the lowercased path,
   # allow only on the exact-case path (generated paths are always exact-case).
   case "$(lower "$1")" in
-    .github/dream-team/knowledge|.github/dream-team/knowledge/*|.dream-team/*|"$RECORD_L") return 1 ;;
+    .github/dream-team/knowledge|.github/dream-team/knowledge/*|"$RECORD_L") return 1 ;;
   esac
   case "$1" in
     .github/dream-team/*|.github/hooks/dream-team.json) return 0 ;;

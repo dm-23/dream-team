@@ -15,7 +15,7 @@
 
 ## Phase checklist
 
-- [ ] 0 Preflight (knowledge present, remarks checked: {matched remark titles or "none"})
+- [ ] 0 Preflight (knowledge present, LEARNINGS checked: {matched entry titles or "none"})
 - [ ] 1 Clarification ({N} questions asked / not needed)
 - [ ] 2 Research ({targeted | wide})
 - [ ] 3 Design / diagnosis (quorum: {3/3 | 2/3 | escalated} | advisor: {N consults, M evidence routes}; audit: {build as is | fix first — N fixed, M disputed | rethink | n/a}; design: {brief — N decisions | ux-audit — B/S/C | not user-facing | n/a})
@@ -45,7 +45,6 @@
 - {date} — risks: {…} | none   (Quick Fix only, at the gate)
 - {date} — add-on: {title} — taken | later | dropped   (Quick Fix only, at the gate)
 - {date} — add-on: {title} — opened as {context_id} | kept | dropped   (Quick Fix only, at the closing question)
-- {date} — Remarks added to proposals: {N} ({file names}); left out: {M}   (at the close, when the developer accepted remarks; see the team skill's Closing)
 - {date} — standing: read-only operations — "{the user's words, verbatim}"   (only from an explicit answer or message; see references/operations.md)
 
 ## Verify by hand

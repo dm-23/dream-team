@@ -137,95 +137,58 @@ if command -v powershell.exe >/dev/null 2>&1; then
   case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-powershell "snippet command under PowerShell: $OUT" ;; esac
 fi
 
-# 10. remarks due: only on a /team <task> prompt, only when the check says so
-inbox_project() { # name [new] -> project path with a team root, a manifest and a knowledge dir; "new": the 5.0.0 layout and the resolver
-  local p k r; p="$(project "$1")"
-  k=".claude/knowledge"; r="$k/proposals"
-  [ "${2:-}" != new ] || { k=".dream-team/knowledge"; r="$k/proposals"; }
-  mkdir -p "$p/$k" "$p/$r" "$p/.claude/checks" "$p/.claude/hooks"
+# 10. inbox due: only on a /team <task> prompt, only when the check says so
+inbox_project() { # name LEARNINGS-body -> project path with a team root, a manifest and a knowledge dir
+  local p; p="$(project "$1")"
+  mkdir -p "$p/.claude/knowledge/learnings" "$p/.claude/checks" "$p/.claude/hooks"
   cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
   cp "$ROOT/checks/verify-learnings-inbox.sh" "$p/.claude/checks/"
   cp "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
-  [ "${2:-}" != new ] || { mkdir -p "$p/.claude/tools"; cp "$ROOT/tools/knowledge-dir.sh" "$p/.claude/tools/"; }
+  printf '%s\n' "$2" > "$p/.claude/knowledge/LEARNINGS.md"
   printf '%s' "$p"
 }
 run_deployed() { # CASE PROJECT PROMPT: runs the hook from its deployed place
   OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PROJECT_DIR="$2" bash "$2/.claude/hooks/team-mode-prompt")"; RC=$?
 }
-p="$(inbox_project inbox-due)"
-printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/proposals/2026-10-01-a-trap.md"
+due_body='# Inbox
+
+## Index
+
+| Date | Title | Tags |
+|------|-------|------|
+| 2026-10-01 | A trap | tag |
+'
+p="$(inbox_project inbox-due "$due_body")"
+printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'it words any question'*'Process-notes line that file names'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
-case "$OUT" in *'The remarks are due:'*) ;; *) fail inbox-due "the notice does not say remarks: $OUT" ;; esac
-case "$OUT" in *'learnings inbox is due'*) fail inbox-due "the notice still says learnings inbox: $OUT" ;; esac
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
 run_deployed inbox-due-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-plain "inbox block on a plain prompt: $OUT" ;; esac
 run_deployed inbox-due-status "$p" '"/team status"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-status "inbox block on /team status: $OUT" ;; esac
 
-# 11. remarks clean: silence
-p="$(inbox_project inbox-clean)"
+# 11. inbox clean: silence
+p="$(inbox_project inbox-clean "$due_body")"
 run_deployed inbox-clean "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-clean "expected silence: $OUT"
 
-# 12. the check cannot read its limits (old manifest): silence, never a false "due"
-p="$(inbox_project inbox-old)"
+# 12. inbox check cannot read its limits (old manifest): silence, never a false "due"
+p="$(inbox_project inbox-old "$due_body")"
 sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.claude/team-manifest.json"
-printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/proposals/2026-10-01-a-trap.md"
+printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-old "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
 
-# 12a. the same, with the knowledge in .dream-team/knowledge and the remarks in its
-#      proposals/, found through the resolver; and a project directory with a
-#      space in its name
-entry='## [2026-10-01] A trap
-- **Tags:** tag
-[PROMOTE] PROJECT-RULES.md — do the thing'
-p="$(inbox_project inbox-due-new new)"
-printf '%s\n' "$entry" > "$p/.dream-team/knowledge/proposals/2026-10-01-a-trap.md"
-run_deployed inbox-due-new "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'it words any question'*'Process-notes line that file names'*) ;; *) fail inbox-due-new "expected the inbox block: $OUT" ;; esac
-[ "$RC" = 0 ] || fail inbox-due-new "a project that is not a git repository: hook exit $RC"
-run_deployed inbox-due-new-plain "$p" '"hello"'
-case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-new-plain "inbox block on a plain prompt: $OUT" ;; esac
-p="$(inbox_project inbox-clean-new new)"
-run_deployed inbox-clean-new "$p" '"/team fix the crash"'
-[ -z "$OUT" ] || fail inbox-clean-new "expected silence: $OUT"
-p="$(inbox_project "inbox due space" new)"
-printf '%s\n' "$entry" > "$p/.dream-team/knowledge/proposals/2026-10-01-a-trap.md"
-run_deployed inbox-due-space "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*) ;; *) fail inbox-due-space "expected the inbox block in a directory with a space: $OUT" ;; esac
-
-# 12a2. committed mode: remarks due, but a file under the knowledge dir is tracked,
-#       so the lead's refresh handles them and the hook stays silent. A repository
-#       whose knowledge is not tracked is still private mode.
-p="$(inbox_project inbox-tracked new)"
-printf '%s\n' "$entry" > "$p/.dream-team/knowledge/proposals/2026-10-01-a-trap.md"
-printf '# Overview\n' > "$p/.dream-team/knowledge/PROJECT-OVERVIEW.md"
-git -C "$p" init -q 2>/dev/null
-git -C "$p" add .dream-team/knowledge/PROJECT-OVERVIEW.md
-run_deployed inbox-tracked "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-tracked "inbox block with tracked knowledge: $OUT" ;; esac
-[ "$RC" = 0 ] || fail inbox-tracked "hook exit $RC"
-p="$(inbox_project inbox-git-private new)"
-printf '%s\n' "$entry" > "$p/.dream-team/knowledge/proposals/2026-10-01-a-trap.md"
-git -C "$p" init -q 2>/dev/null
-run_deployed inbox-git-private "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*) ;; *) fail inbox-git-private "expected the inbox block in a repository with untracked knowledge: $OUT" ;; esac
-
 # 12b. scaffold knowledge on a project that has content: only on a /team <task> prompt, only on exit 1
-scaffold_project() { # name [new] -> deployed project with a clean inbox and a scaffold PROJECT-OVERVIEW.md
-  local p k=.claude/knowledge; p="$(inbox_project "$1" "${2:-}")"; [ "${2:-}" != new ] || k=.dream-team/knowledge
+scaffold_project() { # name -> deployed project with a clean inbox and a scaffold PROJECT-OVERVIEW.md
+  local p; p="$(inbox_project "$1" "$due_body")"
   cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p/.claude/checks/"
-  printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-10-28; nothing here is verified against code. Run /generate-knowledge when the code exists.' > "$p/$k/PROJECT-OVERVIEW.md"
+  printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-10-28; nothing here is verified against code. Run /generate-knowledge when the code exists.' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
   printf '%s' "$p"
 }
 p="$(scaffold_project scaffold-due)"; echo hi > "$p/app.txt"
 run_deployed scaffold-due "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*2026-10-28*'references/knowledge-refresh.md'*'it words any question'*'Process-notes line that file names'*) ;; *) fail scaffold-due "expected the scaffold block: $OUT" ;; esac
-p="$(scaffold_project scaffold-due-new new)"; echo hi > "$p/app.txt"
-run_deployed scaffold-due-new "$p" '"/team fix the crash"'
-case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*2026-10-28*'references/knowledge-refresh.md'*'it words any question'*'Process-notes line that file names'*) ;; *) fail scaffold-due-new "expected the scaffold block: $OUT" ;; esac
+case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*2026-10-28*'references/knowledge-refresh.md'*) ;; *) fail scaffold-due "expected the scaffold block: $OUT" ;; esac
 run_deployed scaffold-status "$p" '"/team status"'
 case "$OUT" in *TEAM-KNOWLEDGE-SCAFFOLD*) fail scaffold-status "scaffold block on /team status: $OUT" ;; esac
 run_deployed scaffold-plain "$p" '"hello"'
@@ -258,9 +221,9 @@ expect_silence() { # CASE PROJECT COMMAND
   guard "$1" "$2" "$3"
   [ "$RC" = 0 ] && [ -z "$OUT" ] || fail "$1" "expected silence for '$3', got exit $RC: $OUT"
 }
-toolchain() { # dir command-cell [knowledge-dir]: a TOOLCHAIN.md whose one row has the given Command cell
-  local k="${3:-.claude/knowledge}"; mkdir -p "$1/$k"
-  printf '# Toolchain\n\n| Purpose | Command | Verified | Source | Cost |\n|---------|---------|----------|--------|------|\n| Clean build | %s | yes | README | cheap |\n' "$2" > "$1/$k/TOOLCHAIN.md"
+toolchain() { # dir command-cell: a TOOLCHAIN.md whose one row has the given Command cell
+  mkdir -p "$1/.claude/knowledge"
+  printf '# Toolchain\n\n| Purpose | Command | Verified | Source | Cost |\n|---------|---------|----------|--------|------|\n| Clean build | %s | yes | README | cheap |\n' "$2" > "$1/.claude/knowledge/TOOLCHAIN.md"
 }
 
 p="$(project guard-no-marker)"
@@ -348,17 +311,6 @@ toolchain "$p" '`rm -rf "./tmp dir"/* && echo "a\b"`'
 expect_silence toolchain-escapes "$p" 'rm -rf "./tmp dir"/* && echo "a\b"'
 expect_deny toolchain-escapes-differs "$p" 'rm -rf "./tmp dir"/* && echo "a\c"' 'recursive rm'
 
-# the same exemption with TOOLCHAIN.md in .dream-team/knowledge, found through the
-# resolver, and in a project directory with a space in its name
-p="$(project toolchain-row-exempt-new)"; marker "$p" bug_fix_n_2026-10-20 "5 Implement"; status "$p" bug_fix_n_2026-10-20 "# Status: n"
-toolchain "$p" '`rm -rf ./build/*`' .dream-team/knowledge
-expect_silence toolchain-row-exempt-new "$p" 'rm -rf ./build/*'
-expect_deny toolchain-other-glob-new "$p" 'rm -rf ./out/*' 'recursive rm'
-p="$(project "toolchain row space")"; marker "$p" bug_fix_s_2026-10-20 "5 Implement"; status "$p" bug_fix_s_2026-10-20 "# Status: s"
-toolchain "$p" '`rm -rf ./build/*`' .dream-team/knowledge
-expect_silence toolchain-row-exempt-space "$p" 'rm -rf ./build/*'
-expect_deny toolchain-other-glob-space "$p" 'rm -rf ./out/*' 'recursive rm'
-
 # the launcher reaches the guard, and so does the snippet's command run from the project root
 p="$(project guard-launcher)"; marker "$p" bug_fix_k_2026-10-20 "5 Implement"; status "$p" bug_fix_k_2026-10-20 "# Status: k"
 OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" guard-command 2>&1)"
@@ -388,15 +340,6 @@ mkdir -p "$p/.github/dream-team/knowledge"
 printf '| Purpose | Command |\n|---|---|\n| Clean | `rm -rf ./build/*` |\n' > "$p/.github/dream-team/knowledge/TOOLCHAIN.md"
 copy_guard "$p" 'rm -rf ./build/*'
 [ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-toolchain "expected silence, got exit $RC: $OUT"
-# the same through the resolver: the Copilot team root carries tools/ and the manifest
-p="$(project guard-copilot-new)"; marker "$p" bug_fix_w_2026-10-20 "5 Implement"; status "$p" bug_fix_w_2026-10-20 "# Status: w"
-mkdir -p "$p/.github/dream-team/tools" "$p/.dream-team/knowledge"
-cp "$ROOT/tools/knowledge-dir.sh" "$p/.github/dream-team/tools/"; cp "$ROOT/team-manifest.json" "$p/.github/dream-team/"
-printf '| Purpose | Command |\n|---|---|\n| Clean | `rm -rf ./build/*` |\n' > "$p/.dream-team/knowledge/TOOLCHAIN.md"
-copy_guard "$p" 'rm -rf ./build/*'
-[ "$RC" = 0 ] && [ -z "$OUT" ] || fail guard-copilot-toolchain-new "expected silence, got exit $RC: $OUT"
-copy_guard "$p" 'rm -rf ./out/*'
-case "$OUT" in *'"permissionDecision":"deny"'*'recursive rm'*) ;; *) fail guard-copilot-toolchain-new-deny "exit $RC: $OUT" ;; esac
 
 # the Copilot entry's commands fail open: the CLI denies the call when a
 # pre-tool hook exits non-zero, so a missing or crashing script must exit 0

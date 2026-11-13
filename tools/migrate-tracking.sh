@@ -39,16 +39,14 @@ value_in() {
 }
 NEW="$(value_in tracking dir)"
 OLD="$(value_in tracking legacyDir)"
-# The knowledge this script rewrites is where a project with pre-4.0 run state
-# keeps it: this edition's own directory, not the committed one.
-KNOW="$(value_in knowledge legacyDir)"
+KNOW="$(value_in knowledge dir)"
 for v in "$NEW" "$OLD"; do
   case "$v" in
     ''|*/*|*[!A-Za-z0-9._-]*)
       echo "migrate: tracking.dir and tracking.legacyDir must be plain directory names (got '$v')" >&2; exit 2 ;;
   esac
 done
-[ -n "$KNOW" ] || { echo "migrate: knowledge.legacyDir is missing from the manifest" >&2; exit 2; }
+[ -n "$KNOW" ] || { echo "migrate: knowledge.dir is missing from the manifest" >&2; exit 2; }
 
 for p in "$OLD" "$NEW"; do
   [ ! -L "$p" ] || { echo "migrate: $p is a symbolic link; refusing to touch anything. Replace it with a real directory and run again." >&2; exit 2; }

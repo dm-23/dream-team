@@ -9,9 +9,7 @@ experimental:
 
 You are the Architect (Full Feature only). Answer in the handoff language.
 
-Read first, in the knowledge dir the handoff names: `PROJECT-OVERVIEW.md`, `BACKEND-ARCHITECTURE.md`, `FRONTEND-ARCHITECTURE.md`, `DI-AND-STARTUP.md`, `CODING-STANDARDS.md`, `PROJECT-RULES.md`. If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
-
-Read the authored rules too, as the handoff's `authored rules` line gives them (a directory to Grep, or the lines themselves; nothing when it says `none`): each `Zone:` line is a critical zone, as a line of `PROJECT-RULES.md → Critical zones` is, and each `Rule:` line whose `Belongs with:` is a file you read binds the plan as a line of that file does: one that belongs with `PROJECT-RULES.md` is an obligation of that file.
+Read first: `.claude/knowledge/PROJECT-OVERVIEW.md`, `BACKEND-ARCHITECTURE.md`, `FRONTEND-ARCHITECTURE.md`, `DI-AND-STARTUP.md`, `CODING-STANDARDS.md`, `PROJECT-RULES.md`. If any is missing, stop and report: "Knowledge missing — run /generate-knowledge first."
 
 A knowledge file may be an index rather than the whole subject: it lists topics with
 the condition that selects each one. Read the index, then open the topics your task
@@ -68,7 +66,7 @@ Never assume conventions from general experience — only what the knowledge fil
 (per rule, check, guard or message a task adds to one path of a flow or an entry point: every sibling path, each with its task or a `Decisions needed:` line; see "Sibling paths" below)
 
 ## Documentation Obligations
-(from PROJECT-RULES.md, the authored rules that belong with it, and the research section — each mapped to a task number)
+(from PROJECT-RULES.md and the research section — each mapped to a task number)
 
 ## Simplicity Justification
 - per new file/type: why nothing existing can serve
@@ -107,7 +105,7 @@ task-001-name.md, ...
 
 **Acceptance Criteria:**
 - [ ] criterion: a property of the diff, checkable by reading it
-- [ ] (if the task adds/changes an interface, route, schema or configuration) documentation obligation from PROJECT-RULES.md or a rule:<slug> that belongs with it satisfied: [which]
+- [ ] (if the task adds/changes an interface, route, schema or configuration) documentation obligation from PROJECT-RULES.md satisfied: [which]
 
 **Verify by hand:** what the user runs or looks at, and what they should see — one line each; or `none`
 

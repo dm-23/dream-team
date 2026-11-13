@@ -8,7 +8,6 @@ skills/generate-knowledge/SKILL.md	.claude/PROJECT.md	@KEEP-CLAUDE@PROJECT.md
 skills/generate-knowledge/SKILL.md	.claude/docs	@KEEP-CLAUDE@docs
 skills/generate-knowledge/SKILL.md	`.claude/agents/*.md`	`.github/agents/*.agent.md`
 skills/generate-knowledge/SKILL.md	Do not touch `.claude/agents/`, `.claude/skills/`,	Do not touch `.github/agents/`, `.github/skills/`,
-skills/generate-knowledge/SKILL.md	the project's own documents under `.claude/` are cited	the project's own documents (`@KEEP-CLAUDE@PROJECT.md`, `@KEEP-CLAUDE@docs/`, and the project's files under `.github/`) are cited
 skills/generate-knowledge/SKILL.md	Arguments: `$ARGUMENTS` — file names only	Arguments: the text the user typed after the command — file names only
 skills/generate-knowledge/SKILL.md	One AskUserQuestion call	One question-tool call
 skills/generate-knowledge/SKILL.md	One AskUserQuestion, in the language	One question-tool call, in the language
@@ -36,16 +35,13 @@ skills/team/*	, model from the cell `change_set.designer`
 skills/team/*	; model from the cell `{workflow}.designer`	
 skills/team/*	 Its model is the cell `full_feature.doc-writer`; a documentation-only task	 A documentation-only task
 skills/team/*	The hook says the same on every prompt as `<TEAM-LEGACY-STATE>`	The session hook says the same at session start as `<TEAM-LEGACY-STATE>`
-skills/team/*	 The hook injects the same notice as `<TEAM-INBOX-DUE>` on the prompt that starts a run, in private mode only; it is the same offer, not a second one.	
-skills/team/*	 The hook injects the same notice as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same notice, acted on once as `knowledge-refresh.md` says, not a second one.	
+skills/team/*	 The hook injects the same notice as `<TEAM-INBOX-DUE>` on the prompt that starts a run; it is the same offer, not a second one.	
+skills/team/*	 The hook injects the same notice as `<TEAM-KNOWLEDGE-SCAFFOLD>` on the prompt that starts a run when the project has content; it is the same offer, not a second one.	
 skills/team/*	.claude/skills/team/references/	.github/skills/team/references/
 skills/team/*	.claude/skills/generate-knowledge/SKILL.md	.github/skills/generate-knowledge/SKILL.md
 skills/team/*	one AskUserQuestion	one question-tool call
 skills/team/references/review_changes.md	, model from the cell `review_changes.change-reviewer`	
 skills/team/references/review_changes.md	, model from the cell `review_changes.verifier`	
-skills/team/references/merge-review.md	, on the same cell as step 3 names	
-skills/team/references/re-review.md	, on the same cell as step 3 names	
-skills/team/references/review-parts.md	 on the same cell as the parts	
 skills/team/references/final-pass.md	, model from the cell `<workflow>.change-reviewer`	
 skills/team/references/final-pass.md	, each call on its cell as **Models** says	
 skills/team/references/final-pass.md	**Models.** The Verifier takes `<workflow>.verifier`, where the cell is low / medium / high by the highest Complexity among the tasks the voted findings' paths belong to. The Developer and Tester calls of this pass take their usual cells by the same Complexity; a fix from the gate takes the highest Complexity of the tasks its chosen items' paths belong to. The Reviewer passes after them take `reviewer:final` in Full Feature and `reviewer` elsewhere.\n\n	
@@ -86,15 +82,6 @@ team-manifest.json	    "roleConsistency": "bash checks/verify-role-consistency.s
 team-manifest.json	    "textEncoding": "bash checks/verify-text-encoding.sh",\n	
 team-manifest.json	    "copilotPort": "bash copilot/check.sh",\n	
 team-manifest.json	    "migrateTracking": "bash checks/verify-migrate-tracking.sh",\n	
-team-manifest.json	    "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",\n	
-team-manifest.json	    "extractRules": "bash checks/verify-extract-rules.sh",\n	
-team-manifest.json	    "knowledgeDir": "bash checks/verify-knowledge-dir.sh",\n	
-team-manifest.json	    "learningsIndex": "bash checks/verify-learnings-index.sh",\n	
-team-manifest.json	    "remarks": "bash checks/verify-remarks.sh",\n	
-team-manifest.json	    "neutralCheck": "bash checks/verify-neutral-check.sh",\n	
-team-manifest.json	    "shapeCheck": "bash checks/verify-shape-check.sh",\n	
-team-manifest.json	    "knowledgeDrift": "bash checks/verify-knowledge-drift.sh",\n	
-team-manifest.json	    "knowledgeRefresh": "bash checks/verify-knowledge-refresh.sh",\n	
 team-manifest.json	    "hook": "bash checks/verify-hook.sh",\n	
 team-manifest.json	    "teamReferences": "bash checks/verify-team-references.sh",\n	
 team-manifest.json	    "frontmatter": "bash checks/verify-frontmatter.sh",\n	
@@ -109,8 +96,5 @@ templates/*	.claude/skills/team/references/	.github/skills/team/references/
 team-manifest.json	.claude/skills/team/amendments-resolved.tsv	.github/skills/team/amendments-resolved.tsv
 skills/team/references/amendments.md	`.claude/agents/<role>.md`	`.github/agents/<role>.agent.md`
 skills/team/references/amendments.md	`.claude/skills/team/SKILL.md`	`.github/skills/team/SKILL.md`
-team-manifest.json	"otherEditionDirs": [".github/dream-team/knowledge"]	"otherEditionDirs": ["@KEEP-CLAUDE@knowledge"]
-team-manifest.json	operative/claude"	operative/copilot"
 *	.claude/	.github/dream-team/
 skills/generate-knowledge/SKILL.md	@KEEP-CLAUDE@	.claude/
-team-manifest.json	@KEEP-CLAUDE@	.claude/

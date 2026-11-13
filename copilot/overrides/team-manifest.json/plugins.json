@@ -10,7 +10,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["researcher-explorer", "architect", "developer", "reviewer"],
       "useWhen": "The task depends on a third-party library or framework and the exact current signature, option name, or version-specific behaviour is not visible in this repository. Look it up before designing or writing the call, not after it fails.",
-      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from the project knowledge and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
+      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from .claude/knowledge/ and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
     },
     {
       "capability": "browser-control",

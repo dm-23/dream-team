@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "6.0.1",
+    "version": "4.8.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -115,19 +115,7 @@
     }
   },
   "knowledge": {
-    "dir": ".dream-team/knowledge",
-    "legacyDir": ".claude/knowledge",
-    "otherEditionDirs": [".github/dream-team/knowledge"],
-    "operativeDir": ".dream-team-tracking/operative",
-    "capabilitiesDir": ".dream-team-tracking/operative/claude",
-    "toolchainMissingFile": ".dream-team-tracking/toolchain-missing.md",
-    "resolver": "tools/knowledge-dir.sh",
-    "migration": "tools/migrate-knowledge.sh",
-    "learningsIndex": "tools/learnings-index.sh",
-    "remarks": "tools/remarks.sh",
-    "ruleExtractor": "tools/extract-rules.sh",
-    "drift": "tools/knowledge-drift.sh",
-    "refresh": "tools/knowledge-refresh.sh",
+    "dir": ".claude/knowledge",
     "generator": "/generate-knowledge",
     "required": [
       "PROJECT-OVERVIEW.md",
@@ -142,22 +130,19 @@
       "PROJECT-RULES.md"
     ],
     "budgets": {
-      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. The learnings index is no file: knowledge.learningsIndex prints it from the entry files, one row per entry, the title cut to learningsIndexRowTitleChars and the tags to learningsIndexRowMaxTags, and checks/verify-learnings-inbox.sh reports /generate-knowledge due past learningsIndexMaxRows rows. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more. proposalsMaxFiles: with more files than this under proposalsDir, waiting for a refresh, knowledge.drift says a refresh is due.",
+      "_comment": "Checked at four characters to one token; no tokenizer is available to the skills that read this. A file listed in overrides is measured against its own number instead of the default for its class. LEARNINGS.md is an index whose rows are capped separately, so its override is the deployed template plus learningsIndexMaxRows rows of learningsIndexRowTokens; checks/verify-manifest-budgets.sh enforces that sum. learningsTrapAgeDays: a kept trap older than this, with no mark, is offered for promotion by the generator's triage when the index holds learningsIndexMaxRows minus two rows or more.",
       "indexTokens": 800,
       "topicTokens": 1500,
       "wholeFileTokens": 4000,
+      "learningsIndexRowTokens": 45,
       "learningsIndexRowTitleChars": 80,
       "learningsIndexRowMaxTags": 6,
       "learningsIndexMaxRows": 30,
       "learningsEntryLines": 25,
       "learningsTrapAgeDays": 90,
-      "rulesMaxFiles": 60,
-      "ruleMaxLines": 12,
-      "driftMarkedPercent": 33,
-      "driftListMaxLines": 12,
-      "proposalsMaxFiles": 40,
       "overrides": {
-        "REVIEW-CHECKLIST.md": 14000
+        "REVIEW-CHECKLIST.md": 14000,
+        "LEARNINGS.md": 2000
       }
     },
     "classification": {
@@ -171,26 +156,17 @@
       "TOOLCHAIN.md": "whole",
       "CODING-STANDARDS.md": "subset",
       "REVIEW-CHECKLIST.md": "whole",
-      "PROJECT-RULES.md": "whole"
+      "PROJECT-RULES.md": "whole",
+      "LEARNINGS.md": "subset"
     },
-    "covers": {
-      "_comment": "What each required file's Covers: line declares, and the default knowledge.drift applies to a file, or a topic of its index, that has none. paths = the file describes code at git glob pathspecs and is marked when one of them changed since the baseline commit. conventions = the file describes how code is written, never marked by path.",
-      "PROJECT-OVERVIEW.md": "paths",
-      "BACKEND-ARCHITECTURE.md": "paths",
-      "FRONTEND-ARCHITECTURE.md": "paths",
-      "DI-AND-STARTUP.md": "paths",
-      "TESTING-CONVENTIONS.md": "conventions",
-      "SEARCH-PLAYBOOK.md": "paths",
-      "TOOLCHAIN.md": "paths",
-      "CODING-STANDARDS.md": "conventions",
-      "REVIEW-CHECKLIST.md": "conventions",
-      "PROJECT-RULES.md": "conventions"
+    "persistent": [
+      "LEARNINGS.md",
+      "learnings/"
+    ],
+    "persistentTemplates": {
+      "LEARNINGS.md": ".claude/templates/learnings.md"
     },
     "learningsEntryTemplate": ".claude/templates/learnings-entry.md",
-    "rulesDir": "rules",
-    "proposalsDir": "proposals",
-    "baselineFile": "BASELINE",
-    "ruleTemplate": ".claude/templates/rule.md",
     "environment": {
       "CAPABILITIES.md": {
         "writtenBy": "/team-setup",
@@ -224,14 +200,11 @@
     "record": ".dream-team-tracking/.setup",
     "normalizer": "tools/normalize-status.sh",
     "postUpdate": {
-      "_comment": "Keyed by the version that introduced the step. /team-setup compares the record's lastVersion with team.version and applies every step of every version above it, oldest first, then writes the record; a missing record applies them all. A do step is performed by setup itself; knowledge steps are named in one report line, because /generate-knowledge is a command only the user starts. While nothing is tracked under the knowledge dir the line says /generate-knowledge is due; once the knowledge is committed it is informational, addressed to whoever runs /generate-knowledge refresh.",
+      "_comment": "Keyed by the version that introduced the step. /team-setup compares the record's lastVersion with team.version and applies every step of every version above it, oldest first, then writes the record; a missing record applies them all. A do step is performed by setup itself; knowledge steps are named in one report line, because /generate-knowledge is a command only the user starts.",
       "4.3.0": { "knowledge": "PROJECT-RULES.md (critical zones section)" },
       "4.4.0": { "knowledge": "FRONTEND-ARCHITECTURE.md REVIEW-CHECKLIST.md (design language and its checks)" },
       "4.5.0": { "do": "normalize the first line of every status.md closed in old prose (setup.normalizer)" },
-      "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" },
-      "5.0.0": { "do": "move the learnings inbox and CAPABILITIES.md out of the edition's knowledge directory (knowledge.migration; step 1b runs it)", "knowledge": "TOOLCHAIN.md (Missing on this machine leaves the file)" },
-      "5.1.0": { "knowledge": "PROJECT-RULES.md REVIEW-CHECKLIST.md (generated files, hot files, change types, accepted exceptions)" },
-      "6.0.0": { "do": "move the learnings inbox into the remarks dir, proposals/ (knowledge.migration; step 1b runs it)", "knowledge": "rule files extracted from authored lines, Covers lines, the baseline" }
+      "4.7.0": { "knowledge": "REVIEW-CHECKLIST.md (re-verify learnings-promoted risk items: each needs a reachable sequence)" }
     }
   },
   "hooks": {
@@ -255,7 +228,6 @@
     "learningsEntry": "learnings-entry.md",
     "teamAmendments": "team-amendments.md",
     "reviewBaseline": "review-baseline.md",
-    "rule": "rule.md",
     "interface": "interface",
     "standards": "standards"
   },
@@ -283,7 +255,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["researcher-explorer", "architect", "developer", "reviewer"],
       "useWhen": "The task depends on a third-party library or framework and the exact current signature, option name, or version-specific behaviour is not visible in this repository. Look it up before designing or writing the call, not after it fails.",
-      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from the project knowledge and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
+      "neverUseFor": "Anything about this project's own code, conventions or commands — those come from .claude/knowledge/ and the repository itself. Fetched documentation never overrides an observed project convention; when they disagree, the repository wins and the disagreement is reported."
     },
     {
       "capability": "session-memory",
@@ -296,7 +268,7 @@
       "brokeredBy": "orchestrator",
       "usedBy": ["orchestrator"],
       "useWhen": "At preflight, to recall the user's standing preferences and what earlier sessions concluded about this project. Treat every recollection as a hint to verify, never as a fact.",
-      "neverUseFor": "Storing the team's own learnings. The remarks dir, proposals/, stays the team's one place for project traps on their way to becoming rules: one reviewable file per remark, committed with the change that met it. Never let a recollection outrank the repository or the knowledge files."
+      "neverUseFor": "Storing the team's own learnings. LEARNINGS.md stays the team's one inbox of project traps on their way to becoming rules: it is reviewable, project-scoped and lives beside the code. Never let a recollection outrank the repository or the knowledge files."
     },
     {
       "capability": "instructions-maintenance",
@@ -348,34 +320,19 @@
     "textEncoding": "bash checks/verify-text-encoding.sh",
     "copilotPort": "bash copilot/check.sh",
     "migrateTracking": "bash checks/verify-migrate-tracking.sh",
-    "migrateKnowledge": "bash checks/verify-migrate-knowledge.sh",
-    "extractRules": "bash checks/verify-extract-rules.sh",
-    "knowledgeDir": "bash checks/verify-knowledge-dir.sh",
-    "learningsIndex": "bash checks/verify-learnings-index.sh",
-    "remarks": "bash checks/verify-remarks.sh",
-    "neutralCheck": "bash checks/verify-neutral-check.sh",
-    "shapeCheck": "bash checks/verify-shape-check.sh",
-    "knowledgeDrift": "bash checks/verify-knowledge-drift.sh",
-    "knowledgeRefresh": "bash checks/verify-knowledge-refresh.sh",
     "normalizeStatus": "bash checks/verify-normalize-status.sh",
     "hook": "bash checks/verify-hook.sh",
     "teamReferences": "bash checks/verify-team-references.sh",
     "frontmatter": "bash checks/verify-frontmatter.sh",
     "scaffoldCheck": "bash checks/verify-scaffold-check.sh",
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
-    "knowledgeIntegrityArgs": "<backup-dir> <dir>, in that order and nothing else: the backup's knowledge/ with the resolver's project dir; the files under knowledge.proposalsDir are compared on neither side, as those under knowledge.rulesDir are not, so a remark the triage consumed is no loss; any other argument count is exit 2; exit 0 means every guarantee held",
-    "knowledgeIntegrityRunFrom": "the project root, not .claude/: the path arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp>/knowledge \"$(bash .claude/tools/knowledge-dir.sh project)\"",
+    "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
+    "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp> .claude/knowledge",
     "learningsInbox": "bash checks/verify-learnings-inbox.sh",
-    "learningsInboxArgs": "<remarks-dir>, the directory that holds the entry files directly; exit 0 = inbox clean, 1 = /generate-knowledge is due, 2 = could not read what it needs",
-    "learningsInboxRunFrom": "the project root: bash .claude/checks/verify-learnings-inbox.sh \"$(bash .claude/tools/knowledge-dir.sh remarks)\"",
+    "learningsInboxArgs": "<knowledge-dir>; exit 0 = inbox clean, 1 = /generate-knowledge is due, 2 = could not read what it needs",
+    "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge",
     "knowledgeScaffold": "bash checks/verify-knowledge-scaffold.sh",
     "knowledgeScaffoldArgs": "<project-dir> <knowledge-dir>, in that order; exit 0 = nothing to say, 1 = scaffold knowledge and the project has content (regeneration due), 2 = a path could not be read, 3 = scaffold knowledge and the project is still empty",
-    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, the second the resolver's project dir, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . \"$(bash .claude/tools/knowledge-dir.sh project)\"",
-    "knowledgeNeutral": "bash checks/verify-knowledge-neutral.sh",
-    "knowledgeNeutralArgs": "<knowledge-dir>; exit 0 = no team path named, 1 = lines listed, 2 = unreadable",
-    "knowledgeNeutralRunFrom": "the project root: bash .claude/checks/verify-knowledge-neutral.sh <the resolver's project dir>",
-    "knowledgeShape": "bash checks/verify-knowledge-shape.sh",
-    "knowledgeShapeArgs": "<knowledge-dir>; exit 0 = in shape, 1 = lines listed, 2 = unreadable",
-    "knowledgeShapeRunFrom": "the project root: bash .claude/checks/verify-knowledge-shape.sh \"$(bash .claude/tools/knowledge-dir.sh project)\""
+    "knowledgeScaffoldRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-scaffold.sh . .claude/knowledge"
   }
 }

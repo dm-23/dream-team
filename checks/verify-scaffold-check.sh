@@ -73,7 +73,7 @@ run readme-dir "$p"; expect readme-dir 1 "project: has content" "knowledge: scaf
 # banner reports "unknown" and the byte after the prefix never leaks half-cut.
 p="$(project literal-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on YYYY-MM-DD; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
 run literal-date "$p"; expect literal-date 3 "project: empty" "knowledge: scaffold unknown"
-p="$(project odd-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on 28 \xd0\xbe\xd0\xba\xd1\x82\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8f 2026; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
+p="$(project odd-date)"; scaffold "$p"; printf '> SCAFFOLD — written on an empty project on 28 октября 2026; nothing here is verified against code.\n' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
 run odd-date "$p"; expect odd-date 3 "project: empty" "knowledge: scaffold unknown"
 
 # Mixed state: one file regenerated from code, the others still scaffolds. Any
@@ -89,11 +89,9 @@ run missing-project "$TMP/does-not-exist"
 
 # A scaffold knowledge base, built by hand to the shape /generate-knowledge
 # writes on an empty project, passes verify-knowledge-integrity.sh against a
-# copy of itself, as a /generate-knowledge shape-work run would check it. The
-# knowledge sits at .dream-team/knowledge and the team at .claude/, so the
-# manifest is found beside the check, never beside the knowledge.
-root="$TMP/integrity"; k="$root/.dream-team/knowledge"; mkdir -p "$k/learnings" "$root/.claude/checks"
-cp "$ROOT/team-manifest.json" "$root/.claude/team-manifest.json"; cp "$ROOT/checks/verify-knowledge-integrity.sh" "$root/.claude/checks/"
+# copy of itself, as a /generate-knowledge shape-work run would check it.
+root="$TMP/integrity"; k="$root/.claude/knowledge"; mkdir -p "$k/learnings"
+cp "$ROOT/team-manifest.json" "$root/.claude/team-manifest.json"
 for f in PROJECT-OVERVIEW TESTING-CONVENTIONS SEARCH-PLAYBOOK TOOLCHAIN REVIEW-CHECKLIST PROJECT-RULES; do
   printf '%s\n# %s\n\nnot yet known — empty project\n' "$BANNER" "$f" > "$k/$f.md"
 done
@@ -102,15 +100,15 @@ for f in BACKEND-ARCHITECTURE FRONTEND-ARCHITECTURE DI-AND-STARTUP CODING-STANDA
   mkdir -p "$k/$(printf '%s' "$f" | tr 'A-Z' 'a-z')"
 done
 printf '# Generic card\n\n- Follow the repository structure [declared]\n' > "$k/coding-standards/generic.md"
-printf '## [2026-10-28] A trap\n- **Tags:** x\n' > "$k/learnings/2026-10-28-a-trap.md"
+cp "$ROOT/templates/learnings.md" "$k/LEARNINGS.md"
 cp -r "$k" "$root/backup"
-OUT="$(cd "$root" && bash .claude/checks/verify-knowledge-integrity.sh backup .dream-team/knowledge 2>&1)"; RC=$?
+OUT="$(cd "$root" && bash "$ROOT/checks/verify-knowledge-integrity.sh" backup .claude/knowledge 2>&1)"; RC=$?
 [ "$RC" = 0 ] || fail integrity "integrity check exit $RC on a scaffold base: $OUT"
 
 # The widened origin still catches a fabricated line: one the backup holds in
 # neither its index nor its topic directory.
 printf -- '- Invented after the backup\n' >> "$k/coding-standards/generic.md"
-OUT="$(cd "$root" && bash .claude/checks/verify-knowledge-integrity.sh backup .dream-team/knowledge 2>&1)"; RC=$?
+OUT="$(cd "$root" && bash "$ROOT/checks/verify-knowledge-integrity.sh" backup .claude/knowledge 2>&1)"; RC=$?
 [ "$RC" = 1 ] || fail integrity-fabricated "expected exit 1 for a fabricated topic line, got $RC: $OUT"
 case "$OUT" in *"Invented after the backup"*) ;; *) fail integrity-fabricated "the fabricated line is not named: $OUT" ;; esac
 

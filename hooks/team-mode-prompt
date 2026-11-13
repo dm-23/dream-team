@@ -18,7 +18,7 @@
 #                        Never on a slash command.
 #   <TEAM-MODE-ACTIVE>   a run is open; the message belongs to it. Never on a
 #                        slash command, which is an explicit instruction.
-#   <TEAM-INBOX-DUE>     the remarks are due; emitted only on the prompt
+#   <TEAM-INBOX-DUE>     the learnings inbox is due; emitted only on the prompt
 #                        that starts a run.
 #   <TEAM-KNOWLEDGE-SCAFFOLD>  the knowledge files were written on an empty
 #                        project and the project now has content; emitted only
@@ -82,46 +82,23 @@ fi
 TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
 if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
    && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]+(stop|status|resume)'; then
-  # Where the knowledge lives is the resolver's answer, run from the project root; when it
-  # fails or is missing the hook falls back to the directory it read before it existed.
-  resolve_dir() { # project|remarks FALLBACK -> an absolute directory
-    local d
-    if [ -f "$TEAM_ROOT/tools/knowledge-dir.sh" ]; then
-      d="$(cd "$PROJECT_DIR" 2>/dev/null && bash "$TEAM_ROOT/tools/knowledge-dir.sh" "$1" 2>/dev/null)" || d=""
-    fi
-    case "${d:-}" in
-      "") printf "%s" "$2" ;;
-      *) printf "%s" "$PROJECT_DIR/$d" ;;
-    esac
-  }
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then
-    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$(resolve_dir remarks "$TEAM_ROOT/knowledge/proposals")" 2>/dev/null)"; rc=$?
+    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
-      # Private mode only: once the knowledge is committed, the lead's refresh is what consumes
-      # the remarks, and a developer on a work branch has nothing to do about them. Private
-      # means no file is tracked under knowledge.dir; no repository counts as private.
-      kdir="$(tr -d '\r' < "$TEAM_ROOT/team-manifest.json" 2>/dev/null | awk '
-        index($0, "  \"knowledge\": {") == 1 { f = 1; next }
-        f && /^  }/ { exit }
-        f && index($0, "    \"dir\":") == 1 { sub(/^[^:]*:[ \t]*"/, ""); sub(/".*$/, ""); print; exit }')"
-      [ -n "$kdir" ] || kdir=".dream-team/knowledge"
-      tracked="$(git -C "$PROJECT_DIR" ls-files -- "$kdir" 2>/dev/null | head -1)"
-    fi
-    if [ "$rc" -eq 1 ] && [ -z "$tracked" ]; then
       summary="$(printf '%s\n' "$inbox" | head -1 | sed 's/^learnings inbox: //')"
       summary="$(escape_for_json "$summary")"
       context="${context}<TEAM-INBOX-DUE>\n"
-      context="${context}The remarks are due: ${summary}. In Step 0, before any research, act as .claude/skills/team/references/knowledge-refresh.md says (it words any question), then record the Process-notes line that file names. Never block the run on it.\n"
+      context="${context}The learnings inbox is due: ${summary}. In Step 0, before any research, offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Inbox due: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-INBOX-DUE>\n"
     fi
   fi
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" ]; then
-    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$(resolve_dir project "$TEAM_ROOT/knowledge")" 2>/dev/null)"; rc=$?
+    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
       written="$(printf '%s\n' "$scaffold" | sed -n 's/^knowledge: scaffold //p' | head -1)"
       written="$(escape_for_json "$written")"
       context="${context}<TEAM-KNOWLEDGE-SCAFFOLD>\n"
-      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 act as .claude/skills/team/references/knowledge-refresh.md says (it words any question), then record the Process-notes line that file names. Never block the run on it.\n"
+      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Scaffold knowledge: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-KNOWLEDGE-SCAFFOLD>\n"
     fi
   fi

@@ -1,50 +1,46 @@
 #!/usr/bin/env bash
-# Reports whether a project's remarks need /generate-knowledge.
+# Reports whether a project's learnings inbox needs /generate-knowledge.
 #
-#   verify-learnings-inbox.sh <remarks-dir>
+#   verify-learnings-inbox.sh <knowledge-dir>
 #
-# The remarks dir (the proposals directory inside the knowledge, or inside the
-# operative dir while the knowledge is a legacy private copy; `bash
-# tools/knowledge-dir.sh remarks` prints it) holds one file per remark,
-# directly inside it: *.md. Its index is not a file: knowledge.learningsIndex
-# prints it from the entry files, one row per entry. Three things make the
-# remarks due, each against a limit in knowledge.budgets of the manifest beside
-# the checks directory ("$(dirname "$0")/../team-manifest.json": the team root,
-# which holds the checks and the manifest in a deployment, wherever the remarks
-# themselves live):
+# The inbox is LEARNINGS.md, an index, plus one file per entry under
+# learnings/. Three things make it due, each against a limit in
+# knowledge.budgets of the manifest beside the knowledge dir
+# ("$(dirname <knowledge-dir>)/team-manifest.json", the deployed layout):
 #
 #   - more index rows than learningsIndexMaxRows. The orchestrator reads the
-#     index whole on every run, so its length is a cost every run pays. The
-#     rows are the entry files.
+#     index whole on every run, so its length is a cost every run pays.
 #   - an entry longer than learningsEntryLines.
 #   - an unresolved [PROMOTE] or [STALE-CHECK] mark: a rule or a fact waiting
 #     to be written into a knowledge file. The resolved forms carry RESOLVED
-#     inside the brackets and do not count. An entry whose body is an
-#     [EXCEPTION] line carries no such mark: it counts as an index row only.
+#     inside the brackets and do not count.
 #
-# Fence-aware for the reason checks/verify-knowledge-integrity.sh gives: an
-# entry may document the entry format, marks included, inside a fenced block,
-# and that example is not a mark. An unbalanced fence makes every line below it
-# unreadable, so it is exit 2, never a guess.
+# Entries still inline below the index -- a deployment that fix has not
+# migrated -- are measured the same way as entry files.
+#
+# Fence-aware for the reason checks/verify-knowledge-integrity.sh gives: the
+# template documents the entry format, marks included, inside a fenced block
+# every deployed LEARNINGS.md carries, and that example is not an entry. An
+# unbalanced fence makes every line below it unreadable, so it is exit 2,
+# never a guess.
 #
 # The manifest is read structurally, never with a JSON parser, with the
 # scoping and ambiguity rules checks/verify-manifest-budgets.sh explains: a
 # key only counts nested under "knowledge", and a manifest with more than one
 # block of that name is refused. A manifest that predates the two keys is
 # exit 2 as well: a limit that cannot be read is not a limit, and reporting
-# the remarks clean against it would be the one wrong answer.
+# the inbox clean against it would be the one wrong answer.
 #
-# Exit 0 = remarks clean, no entries yet, or no such directory. Exit 1 =
-# /generate-knowledge all is due; the report says why. Exit 2 = the manifest,
-# a limit or a file could not be read. Writes nothing.
+# Exit 0 = inbox clean, or no LEARNINGS.md yet. Exit 1 = /generate-knowledge
+# all is due; the report says why. Exit 2 = the manifest, a limit or a file
+# could not be read. Writes nothing.
 set -uo pipefail
 export LC_ALL=C
 
-current="${1:?usage: verify-learnings-inbox.sh <remarks-dir>}"
-# No directory is no remarks: nothing has been accepted yet.
-[ -d "$current" ] || { echo "learnings inbox: ok (no entries yet)"; exit 0; }
+current="${1:?usage: verify-learnings-inbox.sh <knowledge-dir>}"
+[ -d "$current" ] || { echo "FAIL: knowledge dir not found: $current" >&2; exit 2; }
 
-manifest="$(cd "$(dirname "$0")/.." && pwd)/team-manifest.json"
+manifest="$(dirname "$current")/team-manifest.json"
 [ -f "$manifest" ] || { echo "FAIL: manifest not found at $manifest (needed to read knowledge.budgets)" >&2; exit 2; }
 
 tmp="$(mktemp -d)"
@@ -104,10 +100,9 @@ read_budget() {
 max_rows="$(read_budget learningsIndexMaxRows)" || exit 2
 max_lines="$(read_budget learningsEntryLines)" || exit 2
 
-nfiles=0
-for f in "$current"/*.md; do [ -f "$f" ] && nfiles=$((nfiles + 1)); done
-if [ "$nfiles" -eq 0 ]; then
-  echo "learnings inbox: ok (no entries yet)"
+log="$current/LEARNINGS.md"
+if [ ! -f "$log" ]; then
+  echo "learnings inbox: ok (no LEARNINGS.md yet)"
   exit 0
 fi
 
@@ -118,33 +113,61 @@ fence_fail() {
   exit 2
 }
 
-# measure <file> <label>: one line, "<label>\t<lines>\t<pending marks>". The
-# whole file is one entry. Trailing blank lines are not counted.
+# Index rows: table lines under "## Index", outside fences, minus the header
+# row; separator rows are not counted. Any "## " heading ends the index, an
+# inline entry's included.
+tr -d '\r' < "$log" | awk '
+  /^```/ { fence = !fence; next }
+  fence  { next }
+  /^## / { inindex = ($0 ~ /^## Index[[:space:]]*$/); next }
+  inindex && /^\|/ {
+    if ($0 ~ /^\|[-:| ]+$/) next
+    rows++
+  }
+  END { if (fence) exit 2; print (rows > 0 ? rows - 1 : 0) }
+' > "$tmp/rows" || fence_fail "$log"
+
+# measure <file> <log|file> <label>: one line per entry,
+# "<label>\t<lines>\t<pending marks>". In log mode an entry starts at a
+# "## [" heading outside a fence and ends at the next "## " heading; in file
+# mode the whole file is one entry. Trailing blank lines are not counted.
 measure() {
-  tr -d '\r' < "$1" | awk -v label="$2" '
+  tr -d '\r' < "$1" | awk -v mode="$2" -v label="$3" '
+    function flush() {
+      if (open) {
+        while (n > 0 && blank[n]) n--
+        printf "%s\t%d\t%d\n", name, n, marks
+      }
+      open = 0; n = 0; marks = 0
+    }
     {
       isfence = ($0 ~ /^```/)
-      n++
-      blank[n] = ($0 ~ /^[[:space:]]*$/)
-      if (!fence && !isfence && $0 ~ /^[[:space:]]*(- )?\[(PROMOTE|STALE-CHECK)\]/) marks++
+      if (mode == "log" && !fence && !isfence && $0 ~ /^## /) {
+        flush()
+        if ($0 ~ /^## \[/) { open = 1; name = label ": " $0 }
+      }
+      if (mode == "file" && NR == 1) { open = 1; name = label }
+      if (open) {
+        n++
+        blank[n] = ($0 ~ /^[[:space:]]*$/)
+        if (!fence && !isfence && $0 ~ /^[[:space:]]*(- )?\[(PROMOTE|STALE-CHECK)\]/) marks++
+      }
       if (isfence) fence = !fence
     }
-    END {
-      if (fence) exit 2
-      while (n > 0 && blank[n]) n--
-      printf "%s\t%d\t%d\n", label, n, marks + 0
-    }
+    END { flush(); if (fence) exit 2 }
   '
 }
 
 : > "$tmp/entries"
-for f in "$current"/*.md; do
-  [ -f "$f" ] || continue
-  measure "$f" "$(basename "$f")" >> "$tmp/entries" || fence_fail "$f"
-done
+measure "$log" log "LEARNINGS.md" >> "$tmp/entries" || fence_fail "$log"
+if [ -d "$current/learnings" ]; then
+  for f in "$current"/learnings/*.md; do
+    [ -e "$f" ] || continue
+    measure "$f" file "learnings/$(basename "$f")" >> "$tmp/entries" || fence_fail "$f"
+  done
+fi
 
-# One index row per entry file.
-rows="$nfiles"
+rows="$(cat "$tmp/rows")"
 entries="$(wc -l < "$tmp/entries" | tr -d ' ')"
 awk -F'\t' -v max="$max_lines" '$2 > max' "$tmp/entries" > "$tmp/long"
 long="$(wc -l < "$tmp/long" | tr -d ' ')"

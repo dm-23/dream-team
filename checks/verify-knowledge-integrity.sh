@@ -4,13 +4,8 @@
 #
 #   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>
 #
-# Exactly two arguments; any other count is a usage error (exit 2) and
-# nothing is compared.
-#
-# The manifest is read from the team root, "$(dirname "$0")/..": the directory that
-# holds the checks and team-manifest.json in a deployment, never beside the
-# knowledge dir. A classified file absent from both the backup and the current
-# dir is a pass: each call sees only the files its directory holds.
+# The manifest is read at "$(dirname <knowledge-dir>)/team-manifest.json",
+# the deployed layout (.claude/knowledge/ beside .claude/team-manifest.json).
 # knowledge.classification is the source of truth for what every knowledge
 # file's verdict should be; this script never guesses a file's classification
 # from directory structure. Missing manifest or missing/empty classification
@@ -21,8 +16,8 @@
 # candidates in the manifest itself would reintroduce the exact defect this
 # script exists to catch in the knowledge directory.
 #
-# For every file in knowledge.classification (LEARNINGS.md, which Check 1
-# owns, is skipped should an older manifest still classify it):
+# For every file in knowledge.classification (other than LEARNINGS.md, which
+# Check 1 owns):
 #   - "subset" with a topic directory present  -> Check 2, both directions:
 #     nothing in the topic directory is absent from the backup original
 #     (nothing fabricated), and nothing in the backup original is absent from
@@ -31,9 +26,6 @@
 #     it has one, since a base split by an earlier run keeps its topics there.
 #     The index may legitimately carry descriptive lines the original never
 #     had; only the topic-directory side is held to the no-new-content rule.
-#     The "Covers:" line of the original and of each topic (the first such
-#     line within a file's first five lines) is left out of the comparison:
-#     a split writes it anew, narrowed to what each topic's text names.
 #   - "subset" with no topic directory present -> it was never split, so it
 #     must still be byte-identical to its backup copy. A subset file that
 #     fits its budget and stays one file is not thereby exempt: either it was
@@ -55,21 +47,7 @@
 # operator could not exempt them by hand either. They are read from the
 # manifest and exempted from the file sweep -- and from that sweep only:
 # nothing else about them is assumed, and a *directory* by the same name is
-# still unclassified. The same goes for the entries the manifest names by
-# knowledge.rulesDir, knowledge.proposalsDir and knowledge.baselineFile: the
-# authored rules, the proposals and the review baseline are written by the
-# team's own tools, not by fix, so they are read from the manifest and exempt
-# from the file sweep and the directory sweep, by name and nothing wider. No
-# check reads them on either side: a remark the generator's triage consumed
-# from the proposals dir between the backup and now is not a loss.
-#
-# A line tools/extract-rules.sh moved out of a "subset" file is not lost. A
-# backup line that contains "— source: learnings " or ends "— source: user"
-# (a trailing CR ignored), and whose text -- the line without that suffix,
-# trailing blanks and its list marker, as the extractor strips it -- equals a
-# "- Rule:", "- Check:", "- Zone:" or "- Exception:" value of a file directly
-# inside <knowledge-dir>/<knowledge.rulesDir>/, is left out of the original
-# before Check 2 compares. Such a line with no matching value is still lost.
+# still unclassified.
 #
 # Check 1: the entries accumulated in the learnings log survive the run. The
 #          invariant is a set equation rather than a presence test: the entries
@@ -97,17 +75,12 @@
 # gap is between what the checks prove and what fix promises, not a licence.
 #
 # Exit 0 = every guarantee held. Exit 1 = a guarantee was broken, or the
-# classification needed to check it could not be read. Exit 2 = not exactly
-# two non-empty arguments. Writes nothing.
+# classification needed to check it could not be read. Writes nothing.
 set -uo pipefail
 export LC_ALL=C
 
-if [ "$#" -ne 2 ] || [ -z "$1" ] || [ -z "$2" ]; then
-  echo "usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>" >&2
-  exit 2
-fi
-backup="$1"
-current="$2"
+backup="${1:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>}"
+current="${2:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>}"
 
 # A missing backup or knowledge dir means nothing was actually compared. Fail
 # loudly instead of silently reporting "ok" having verified nothing: the
@@ -116,7 +89,7 @@ current="$2"
 [ -d "$backup" ] || { echo "FAIL: backup dir not found: $backup" >&2; exit 1; }
 [ -d "$current" ] || { echo "FAIL: knowledge dir not found: $current" >&2; exit 1; }
 
-manifest="$(cd "$(dirname "$0")/.." && pwd)/team-manifest.json"
+manifest="$(dirname "$current")/team-manifest.json"
 [ -f "$manifest" ] || { echo "FAIL: manifest not found at $manifest (needed to read knowledge.classification)" >&2; exit 1; }
 
 status=0
@@ -128,15 +101,6 @@ normalize() {
   sed 's/[[:space:]]*$//' "$1" \
     | awk '{ l[NR] = $0 } END { last = NR; while (last > 0 && l[last] == "") last--;
              for (i = 1; i <= last; i++) print l[i] }'
-}
-
-# moved_text <file>: the normalized file without its "Covers:" line, the first
-# line that begins so within the first five, which is where the shape check
-# and the drift tool read it. A split writes that line anew for every topic
-# and for the index, so it is no moved text on either side. Any other line
-# that begins "Covers:" stays and is compared like the rest.
-moved_text() {
-  normalize "$1" | awk 'NR <= 5 && !done && index($0, "Covers:") == 1 { done = 1; next } { print }'
 }
 
 # --- Read knowledge.classification from the manifest --------------------------
@@ -258,53 +222,13 @@ if [ "$environment_blocks" -eq 1 ]; then
   ' "$tmp/environment-block" > "$tmp/environment-names"
 fi
 
-# --- Read the entries named by rulesDir, proposalsDir and baselineFile --------
-# String values of knowledge, exempt from both sweeps below by name. An absent
-# key exempts nothing.
-: > "$tmp/authored-names"
-for key in rulesDir proposalsDir baselineFile; do
-  sed -n "s/.*\"$key\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$tmp/knowledge-block" \
-    | tr -d '\r' >> "$tmp/authored-names"
-done
-
-# --- The values of the current rule files -------------------------------------
-# What tools/extract-rules.sh wrote: a backup line whose text is one of them
-# was moved, not lost (see the header). Read as tools/migrate-knowledge.sh
-# reads them.
-rules_name="$(sed -n 's/.*"rulesDir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$tmp/knowledge-block" | tr -d '\r' | head -n 1)"
-: > "$tmp/rulevals"
-if [ -n "$rules_name" ] && [ -d "$current/$rules_name" ]; then
-  for f in "$current/$rules_name"/*.md; do
-    [ -f "$f" ] || continue
-    awk '{ sub(/\r$/, "") } sub(/^- (Rule|Check|Zone|Exception):[ \t]*/, "") { sub(/[ \t]+$/, ""); print }' "$f" >> "$tmp/rulevals"
-  done
-fi
-
-# drop_extracted <file>: the lines of <file> in order, but an authored line
-# whose text is a rule value. The text is cut as the extractor's textof cuts it.
-drop_extracted() {
-  awk '
-    BEGIN { u = "— source: user"; l = "— source: learnings " }
-    FILENAME == ARGV[1] { v[$0] = 1; next }
-    { s = $0; sub(/\r$/, "", s); a = 0
-      i = index(s, l)
-      if (i) { s = substr(s, 1, i - 1); a = 1 }
-      else if (length(s) >= length(u) && substr(s, length(s) - length(u) + 1) == u) { s = substr(s, 1, length(s) - length(u)); a = 1 }
-      if (a) {
-        sub(/[ \t]+$/, "", s); sub(/^[ \t]*([-*+]|[0-9]+\.)([ \t]+|$)/, "", s); sub(/^[ \t]+/, "", s)
-        if (s != "" && (s in v)) next
-      }
-      print }' "$tmp/rulevals" "$1"
-}
-
 # --- Check 1: the learnings entries survive the run --------------------------
 # Splits a learnings log into one file per entry under <outdir>.
 #
-# Fence-aware, and that is the whole point of it. The LEARNINGS.md template,
-# retired when the index became derived from the entry files, documented the
-# entry format inside a fenced block whose first line is a literal
-# "## [YYYY-MM-DD] {short-title}". Every LEARNINGS.md deployed from it still
-# carries that example, so a splitter that keyed on "^## \[" alone counted one entry
+# Fence-aware, and that is the whole point of it. templates/learnings.md
+# documents the entry format inside a fenced block whose first line is a
+# literal "## [YYYY-MM-DD] {short-title}". Every deployed LEARNINGS.md carries
+# that example, so a splitter that keyed on "^## \[" alone counted one entry
 # more than exists and failed a *correct* migration -- and the acceptance
 # reacts to a failure by restoring the backup, so the check would have
 # destroyed what it exists to protect.
@@ -416,15 +340,14 @@ check_split_dir() {
   : > "$tmp/topic-lines"
   for f in "$topic_dir"/*.md; do
     [ -e "$f" ] || continue
-    moved_text "$f" >> "$tmp/topic-lines"
+    normalize "$f" >> "$tmp/topic-lines"
   done
   grep -v '^$' "$tmp/topic-lines" | sort -u > "$tmp/topic-sorted"
   # The original is the backup's index plus whatever its own topic directory
   # already held: a base split by an earlier run keeps its topics there, and
   # a run that applied anything else to it must not be told it fabricated them.
-  # The Covers line of each is left out on both sides (moved_text).
-  { moved_text "$origin"
-    for f in "$backup/$name"/*.md; do [ -e "$f" ] && moved_text "$f"; done
+  { normalize "$origin"
+    for f in "$backup/$name"/*.md; do [ -e "$f" ] && normalize "$f"; done
   } | grep -v '^$' | sort -u > "$tmp/origin-sorted"
 
   # Nothing fabricated: every topic line must trace back to the original.
@@ -445,12 +368,10 @@ check_split_dir() {
     : > "$tmp/index-sorted"
   fi
   sort -u "$tmp/topic-sorted" "$tmp/index-sorted" > "$tmp/covered-sorted"
-  # A line the extractor moved into a rule file is not missing.
-  drop_extracted "$tmp/origin-sorted" > "$tmp/origin-kept"
 
-  if comm -23 "$tmp/origin-kept" "$tmp/covered-sorted" | grep -q .; then
+  if comm -23 "$tmp/origin-sorted" "$tmp/covered-sorted" | grep -q .; then
     echo "FAIL: $origin has content missing from $name/ and $index_file:" >&2
-    comm -23 "$tmp/origin-kept" "$tmp/covered-sorted" | sed 's/^/    /' >&2
+    comm -23 "$tmp/origin-sorted" "$tmp/covered-sorted" | sed 's/^/    /' >&2
     status=1
   fi
 }
@@ -469,9 +390,7 @@ check_unsplit_subset() {
     return
   fi
 
-  # The backup without the lines the extractor moved into rule files.
-  normalize "$origin" > "$tmp/unsplit-backup"
-  drop_extracted "$tmp/unsplit-backup" > "$tmp/unsplit-origin"
+  normalize "$origin" > "$tmp/unsplit-origin"
   normalize "$index_file" > "$tmp/unsplit-current"
   if ! diff -q "$tmp/unsplit-origin" "$tmp/unsplit-current" >/dev/null 2>&1; then
     echo "FAIL: $cname was not split and differs from its backup copy at $origin:" >&2
@@ -521,7 +440,6 @@ for f in "$current"/*.md; do
   # Declared under knowledge.environment: describes the machine, written by
   # /team-setup on every run, never classified and never touched by fix.
   grep -qxF "$(basename "$f")" "$tmp/environment-names" && continue
-  grep -qxF "$(basename "$f")" "$tmp/authored-names" && continue
   lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
   if ! grep -qxF "$lower" "$tmp/known-names"; then
     echo "FAIL: $f is not classified in $manifest (knowledge.classification)" >&2
@@ -533,7 +451,6 @@ for dir in "$current"/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
   [ "$name" = "learnings" ] && continue
-  grep -qxF "$name" "$tmp/authored-names" && continue
   if ! grep -qxF "$name" "$tmp/known-names"; then
     echo "FAIL: $dir is not classified in $manifest (knowledge.classification)" >&2
     status=1

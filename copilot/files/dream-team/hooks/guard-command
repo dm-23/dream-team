@@ -3,7 +3,7 @@
 #
 # The Copilot edition's copy of the team's hooks/guard-command; keep the two in
 # step. Differences: the project is the working directory (the hook entry sets
-# cwd to "."), the resolver sits in .github/dream-team/tools/, and the
+# cwd to "."), the knowledge lives in .github/dream-team/knowledge/, and the
 # deny is printed twice -- top-level permissionDecision for the Copilot CLI,
 # hookSpecificOutput.permissionDecision for VS Code.
 #
@@ -24,8 +24,7 @@
 # It acts only inside an open team run: without the marker .dream-team-tracking/.team-mode,
 # or with a marker whose state line reads closed (a run that finished and is
 # collecting feedback), it prints nothing. A command whose whole text equals a Command cell of
-# TOOLCHAIN.md in the project knowledge directory, named by tools/knowledge-dir.sh
-# (.dream-team/knowledge/, or .github/dream-team/knowledge/ before the move; any table; the backticks around the
+# .github/dream-team/knowledge/TOOLCHAIN.md (any table; the backticks around the
 # whole cell stripped once) is exempt. The match is literal, never a prefix.
 #
 # Exit 0 with no output = allowed. The Copilot CLI denies the call when a
@@ -34,13 +33,7 @@
 set -uo pipefail
 
 MARKER="$PWD/.dream-team-tracking/.team-mode"
-resolve_toolchain() {
-  local d=""
-  if [ -f "$PWD/.github/dream-team/tools/knowledge-dir.sh" ]; then
-    d="$(bash "$PWD/.github/dream-team/tools/knowledge-dir.sh" project 2>/dev/null)" || d=""
-  fi
-  if [ -n "$d" ]; then printf "%s" "$PWD/$d/TOOLCHAIN.md"; else printf "%s" "$PWD/.github/dream-team/knowledge/TOOLCHAIN.md"; fi
-}
+TOOLCHAIN="$PWD/.github/dream-team/knowledge/TOOLCHAIN.md"
 
 payload="$(cat 2>/dev/null || true)"
 
@@ -122,7 +115,6 @@ deny_if "$DISCARD_WHY" "$WORKTREE_RE"   # --staged with --worktree or -W still d
 # The exemption: the whole command equals the second cell of a table row in
 # TOOLCHAIN.md, trimmed, with one pair of backticks around the whole cell
 # removed. An escaped pipe \| inside the cell reads as |.
-TOOLCHAIN="$(resolve_toolchain)"
 if [ -f "$TOOLCHAIN" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%$'\r'}"

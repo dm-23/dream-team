@@ -13,16 +13,8 @@ hooks/run-hook.cmd text eol=lf
 hooks/team-mode-prompt text eol=lf
 hooks/guard-command text eol=lf
 tools/migrate-tracking.sh text eol=lf
-tools/knowledge-dir.sh text eol=lf
-tools/migrate-knowledge.sh text eol=lf
-tools/learnings-index.sh text eol=lf
-tools/remarks.sh text eol=lf
-checks/verify-remarks.sh text eol=lf
-tools/extract-rules.sh text eol=lf
 tools/normalize-status.sh text eol=lf
 tools/collect-amendments.sh text eol=lf
-tools/knowledge-drift.sh text eol=lf
-tools/knowledge-refresh.sh text eol=lf
 # copilot/ builds the GitHub Copilot edition; its scripts and awk programs run
 # through bash and awk, which a CRLF checkout breaks the same way.
 copilot/*.sh text eol=lf

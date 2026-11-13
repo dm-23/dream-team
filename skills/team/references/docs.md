@@ -2,7 +2,7 @@
 
 Read first: none.
 
-Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no learnings entry — the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
+Documentation-only work. No Brainstorm, no research pass, no Tester, no Reviewer, no LEARNINGS entry — the DocWriter has its own search tools and verifies its own claims, and there is no toolchain to run against prose. What does not move is the approval gate: nothing is written until the user agrees.
 
 1. Clarify only when the target files or the intent are genuinely ambiguous (≤2 questions).
 2. Establish the file list: which documentation files this touches, by name. Look for yourself if the request does not say.
