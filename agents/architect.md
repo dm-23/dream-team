@@ -66,7 +66,7 @@ Never assume conventions from general experience — only what the knowledge fil
 (per rule, check, guard or message a task adds to one path of a flow or an entry point: every sibling path, each with its task or a `Decisions needed:` line; see "Sibling paths" below)
 
 ## Documentation Obligations
-(from PROJECT-RULES.md and the research section — each mapped to a task number)
+(from PROJECT-RULES.md and the research section — each mapped to a task number; none under `.claude/knowledge/`, see "Knowledge files" below)
 
 ## Simplicity Justification
 - per new file/type: why nothing existing can serve
@@ -87,6 +87,8 @@ task-001-name.md, ...
 **Brief lines.** Each `[diff]` Done-when line of a brief change, untagged or of the answered option, is an acceptance criterion of the task that builds the change, copied verbatim after a `C<n>` tag; each `[hand]` line is a `Verify by hand` line of that task. The brief's `Copy:` lines are written into the task's `Description` exactly; a Developer never composes interface text. One brief line lives in exactly one task.
 
 **Documentation of new code.** A task that documents behaviour another task of this run implements is never parallel-safe with that task: put it after that task in the same batch, or in a later batch. Documentation written before its code describes the plan, and nothing checks it against the code until review.
+
+**Knowledge files.** No task lists a path under `.claude/knowledge/` in `Files`, and `## Documentation Obligations` maps no obligation there, whatever a line of `PROJECT-RULES.md` asks. Those files are the contract every role of this run works by, and only `/generate-knowledge` writes them. When a project rule asks for such an update, write once under `## Documentation Obligations`: `knowledge: left to /generate-knowledge`. A citation of code that a task writes into a project document names the path and the symbol, never a line number.
 
 ## Output 2: `tasks/task-{N}-{short-name}.md`
 
