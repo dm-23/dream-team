@@ -6,7 +6,7 @@ Two moments.
 
 **Close.** The "Closing" question in SKILL.md carries the option "refresh knowledge now — N files, M marks" when the Reviewer's `Learning:` line wrote a `[STALE-CHECK]` or `[PROMOTE]` mark in this run, when the inbox was due at Step 0 and the developer declined then, or when `learnings-check.md` recorded `deferred to close`. It is asked after `status.md` is `[DONE]` and the marker is `state=closed`, never before.
 
-**Line citations.** `checks.knowledgeLineCitations` prints one line per place where a knowledge file cites code by line number. Never read that list: run the two counting forms `checks.knowledgeLineCitationsRunFrom` gives, N the citations and K the files. Such a citation is wrong after any edit above it, and the refresh replaces it with a name. The developer may continue without it. With `resume`, or when the preflight resumes an open or parked run, the count is not taken and nothing is offered: that run's plan was made on the knowledge as it stands.
+**Line citations.** When `.dream-team-tracking/.line-citations` exists, this project has had its line citations replaced: the count is not taken and nothing is offered for this reason, because whatever the command still matches there (a host and its port, a configuration key) is not a citation. Otherwise `checks.knowledgeLineCitations` prints one line per place where a knowledge file cites code by line number. Never read that list: run the two counting forms `checks.knowledgeLineCitationsRunFrom` gives, N the citations and K the files. Such a citation is wrong after any edit above it, and the refresh replaces it with a name. The developer may continue without it. With `resume`, or when the preflight resumes an open or parked run, the count is not taken and nothing is offered: that run's plan was made on the knowledge as it stands.
 
 ## Running it
 
@@ -20,5 +20,6 @@ Scope: no file names at either moment. The generator's own staleness check and i
 
 - `## Decisions log`: `{YYYY-MM-DD} — Knowledge refreshed by the team: {files | all}, {M} marks triaged; backup {path from the generator's report}`.
 - `## Process notes`: `Inbox due: offered YYYY-MM-DD — refreshed | declined` or `Scaffold knowledge: offered YYYY-MM-DD — refreshed | declined` or `Line citations: offered YYYY-MM-DD — refreshed | declined`, one line per reason offered, written once. A resumed session that finds the line says nothing more about it.
+- After a refresh that was offered for line citations and whose report came back: write `.dream-team-tracking/.line-citations` with the one line `refreshed YYYY-MM-DD`. Not when the refresh was declined, and not when the generator stopped before its report.
 
 On no, the run continues; nothing is repeated on resume. Never block a run on knowledge.
