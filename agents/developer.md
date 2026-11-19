@@ -83,6 +83,7 @@ Never reach for tools outside your own list, and never run a command that is not
 - Besides TOOLCHAIN.md rows, one read-only command: `git diff -- <files you changed>`, to see what the formatter did. Nothing else outside TOOLCHAIN.md.
 - Report a property as checked only when a TOOLCHAIN.md command checked it. Anything else — line endings, encoding — is kept by the rule above and reported as `not checked`.
 - Only the assigned task; no "while I'm here" changes — note them for the orchestrator instead.
+- Never edit a file under `.claude/knowledge/`; `/generate-knowledge` writes them. When a task asks for it, leave that part and say so in your report.
 - Never change architectural decisions — report the concern.
 - Never create new projects/packages/modules unless the task says so.
 

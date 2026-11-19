@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "team": {
     "name": "dream-team",
-    "version": "4.8.0",
+    "version": "4.9.0",
     "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
   },
   "agents": [
@@ -328,6 +328,8 @@
     "knowledgeIntegrity": "bash checks/verify-knowledge-integrity.sh",
     "knowledgeIntegrityArgs": "<backup-dir> <knowledge-dir>, in that order; exit 0 means every guarantee held",
     "knowledgeIntegrityRunFrom": "the project root, not .claude/: both arguments are project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-knowledge-integrity.sh .dream-team-tracking/knowledge-backup-<stamp> .claude/knowledge",
+    "knowledgeLineCitations": "grep -rEo --include='*.md' --exclude=LEARNINGS.md --exclude-dir=learnings '[A-Za-z0-9_./-]+\\.[A-Za-z][A-Za-z0-9]*:[0-9]+' .claude/knowledge",
+    "knowledgeLineCitationsRunFrom": "the project root. Never read the list itself. N citations: append | wc -l to the command. K files: append | cut -d: -f1 | sort -u | wc -l. Zero means none",
     "learningsInbox": "bash checks/verify-learnings-inbox.sh",
     "learningsInboxArgs": "<knowledge-dir>; exit 0 = inbox clean, 1 = /generate-knowledge is due, 2 = could not read what it needs",
     "learningsInboxRunFrom": "the project root, not .claude/: the argument is project-root-relative, so prefix the script path with .claude/ — bash .claude/checks/verify-learnings-inbox.sh .claude/knowledge",
