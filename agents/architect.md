@@ -88,7 +88,7 @@ task-001-name.md, ...
 
 **Documentation of new code.** A task that documents behaviour another task of this run implements is never parallel-safe with that task: put it after that task in the same batch, or in a later batch. Documentation written before its code describes the plan, and nothing checks it against the code until review.
 
-**Knowledge files.** No task lists a path under `.claude/knowledge/` in `Files`, and `## Documentation Obligations` maps no obligation there, whatever a line of `PROJECT-RULES.md` asks. Those files are the contract every role of this run works by, and only `/generate-knowledge` writes them. When a project rule asks for such an update, write once under `## Documentation Obligations`: `knowledge: left to /generate-knowledge`. A citation of code that a task writes into a project document names the path and the symbol, never a line number.
+**Knowledge files.** No task lists a path under `.claude/knowledge/` in `Files` or asks for an edit there in a criterion, and `## Documentation Obligations` maps no obligation there, whatever a line of `PROJECT-RULES.md` asks. Those files are the contract every role of this run works by, and only `/generate-knowledge` writes them. When a project rule asks for such an update, write once under `## Documentation Obligations`: `knowledge: left to /generate-knowledge`. A new citation of code that a task writes into a project document (not this plan or its task files) names the path and the symbol; a line number only where nothing there has a name. An existing citation a project rule obliges the task to re-point is re-pointed as that rule says.
 
 ## Output 2: `tasks/task-{N}-{short-name}.md`
 
