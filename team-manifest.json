@@ -208,8 +208,6 @@
     }
   },
   "hooks": {
-    "dir": ".claude/hooks",
-    "settingsSnippet": "hooks/settings-snippet.json",
     "launcher": "hooks/run-hook.cmd",
     "events": [
       "UserPromptSubmit",

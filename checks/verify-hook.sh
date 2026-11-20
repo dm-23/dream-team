@@ -122,20 +122,15 @@ p="$(project launcher)"; marker "$p" bug_fix_l_2026-10-08 "3 Design"; status "$p
 OUT="$(printf '{"prompt":"hello"}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" team-mode-prompt)"
 case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail launcher "launcher output: $OUT" ;; esac
 
-# 9b. the snippet's command as a harness runs it: from the project root, with
-#     CLAUDE_PROJECT_DIR unset. Claude Code runs it under bash; VS Code Copilot
-#     reads the same .claude/settings.json entry, ignores its "shell" field and
-#     runs the command in the Windows default shell, PowerShell. The command
-#     must therefore parse in both, so it carries no bash-only syntax.
-SNIPPET_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*\)",$/\1/p' "$ROOT/hooks/settings-snippet.json" | head -1 | sed 's/\\"/"/g')"
-[ -n "$SNIPPET_CMD" ] || fail snippet-cmd "no command line found in settings-snippet.json"
-mkdir -p "$p/.claude/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
-OUT="$(cd "$p" && printf '{"prompt":"hello"}' | env -u CLAUDE_PROJECT_DIR bash -c "$SNIPPET_CMD" 2>&1)"
-case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-bash "snippet command under bash: $OUT" ;; esac
-if command -v powershell.exe >/dev/null 2>&1; then
-  OUT="$(cd "$p" && printf '{"prompt":"hello"}' | env -u CLAUDE_PROJECT_DIR powershell.exe -NoProfile -NonInteractive -Command "$SNIPPET_CMD" 2>&1)"
-  case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-powershell "snippet command under PowerShell: $OUT" ;; esac
-fi
+# 9b. the command hooks/hooks.json registers, as the harness runs it: under
+#     bash, with CLAUDE_PLUGIN_ROOT naming the plugin directory and
+#     CLAUDE_PROJECT_DIR the project. The directory name carries a space on
+#     purpose: a plugin cache under a user name with a space must still run.
+HOOKS_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*\)",$/\1/p' "$ROOT/hooks/hooks.json" 2>/dev/null | head -1 | sed 's/\\"/"/g')"
+[ -n "$HOOKS_CMD" ] || fail hooks-cmd "no command line found in hooks/hooks.json"
+team="$TMP/team root"; mkdir -p "$team/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$ROOT/hooks/team-mode-prompt" "$team/hooks/"
+OUT="$(cd "$p" && printf '{"prompt":"hello"}' | CLAUDE_PLUGIN_ROOT="$team" CLAUDE_PROJECT_DIR="$p" bash -c "$HOOKS_CMD" 2>&1)"
+case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail hooks-cmd-bash "hooks.json command under bash: $OUT" ;; esac
 
 # 10. inbox due: only on a /team <task> prompt, only when the check says so
 inbox_project() { # name LEARNINGS-body -> project path with a team root, a manifest and a knowledge dir
@@ -311,15 +306,15 @@ toolchain "$p" '`rm -rf "./tmp dir"/* && echo "a\b"`'
 expect_silence toolchain-escapes "$p" 'rm -rf "./tmp dir"/* && echo "a\b"'
 expect_deny toolchain-escapes-differs "$p" 'rm -rf "./tmp dir"/* && echo "a\c"' 'recursive rm'
 
-# the launcher reaches the guard, and so does the snippet's command run from the project root
+# the launcher reaches the guard, and so does the command hooks.json registers
 p="$(project guard-launcher)"; marker "$p" bug_fix_k_2026-10-20 "5 Implement"; status "$p" bug_fix_k_2026-10-20 "# Status: k"
 OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" guard-command 2>&1)"
 case "$OUT" in *'"permissionDecision": "deny"'*'force push'*) ;; *) fail guard-launcher "launcher output: $OUT" ;; esac
-GUARD_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*guard-command\)",$/\1/p' "$ROOT/hooks/settings-snippet.json" | head -1)"
-[ -n "$GUARD_CMD" ] || fail guard-snippet "no guard-command entry in settings-snippet.json"
-mkdir -p "$p/.claude/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$GUARD" "$p/.claude/hooks/" 2>/dev/null
-OUT="$(cd "$p" && printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | env -u CLAUDE_PROJECT_DIR bash -c "$GUARD_CMD" 2>&1)"
-case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail guard-snippet "snippet guard command under bash: $OUT" ;; esac
+GUARD_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*guard-command\)",$/\1/p' "$ROOT/hooks/hooks.json" 2>/dev/null | head -1 | sed 's/\\"/"/g')"
+[ -n "$GUARD_CMD" ] || fail guard-hooks-json "no guard-command entry in hooks/hooks.json"
+team="$TMP/guard team root"; mkdir -p "$team/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$GUARD" "$team/hooks/" 2>/dev/null
+OUT="$(cd "$p" && printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PLUGIN_ROOT="$team" CLAUDE_PROJECT_DIR="$p" bash -c "$GUARD_CMD" 2>&1)"
+case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail guard-hooks-json "hooks.json guard command under bash: $OUT" ;; esac
 
 # the Copilot edition's copy: the same patterns and exemption, the project as
 # the working directory, its knowledge under .github/dream-team/, both deny forms
