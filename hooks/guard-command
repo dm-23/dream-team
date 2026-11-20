@@ -35,6 +35,10 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 MARKER="${PROJECT_DIR}/.dream-team-tracking/.team-mode"
 TOOLCHAIN="${PROJECT_DIR}/.claude/knowledge/TOOLCHAIN.md"
 
+# An old in-project install (the team cloned or copied into .claude/) still has
+# its own guard wired in the project; this one stays silent beside it.
+[ ! -f "${PROJECT_DIR}/.claude/team-manifest.json" ] || exit 0
+
 payload="$(cat 2>/dev/null || true)"
 
 [ -f "$MARKER" ] || exit 0

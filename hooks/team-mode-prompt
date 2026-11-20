@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Dream Team — UserPromptSubmit hook.
 #
-# Six things the harness can tell the model deterministically, which prose
+# Seven things the harness can tell the model deterministically, which prose
 # at the top of a long skill cannot guarantee:
 #
+#   <TEAM-OLD-INSTALL>   the project still carries an in-project install of the
+#                        team under .claude/, whose own hooks answer every
+#                        prompt. Emitted alone, and only on a prompt that starts
+#                        with one of the team's commands; on any other prompt
+#                        the hook is silent while that install exists.
 #   <TEAM-LEGACY-STATE>  the project's run state is still in the directory
 #                        teams before 4.0.0 used; /team must not start a run.
 #                        Emitted on every prompt, slash commands included,
@@ -59,6 +64,35 @@ read_field() {
   sed -n "s/^$1=//p" "$MARKER" 2>/dev/null | head -1 | tr -d '\r'
 }
 
+emit() {
+  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "UserPromptSubmit",\n    "additionalContext": "%s"\n  },\n  "suppressOutput": true\n}\n' "$1"
+}
+
+# The team root is the directory that holds team-manifest.json: the plugin's
+# directory, which the harness names in CLAUDE_PLUGIN_ROOT. Run by hand, or by
+# a harness that does not export it, the hook falls back to its own place.
+TEAM_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
+if [ -z "$TEAM_ROOT" ] || [ ! -d "$TEAM_ROOT" ]; then
+  TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+fi
+TEAM_ROOT_JSON="$(escape_for_json "$TEAM_ROOT")"
+
+# The prompt starts with one of the team's commands, short or qualified.
+team_cmd=0
+if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/(dream-team:|team([[:space:]"\\-]|$)|generate-knowledge)'; then
+  team_cmd=1
+fi
+
+# An old in-project install (the team cloned or copied into .claude/) is still
+# in charge of its project: its own hooks are wired there and answer every
+# prompt. This hook stays out of its way, so nothing is said twice, and speaks
+# only when the developer reaches for the team.
+if [ -f "${PROJECT_DIR}/.claude/team-manifest.json" ]; then
+  [ "$team_cmd" -eq 1 ] || exit 0
+  emit "<TEAM-OLD-INSTALL>\nThis project still carries an in-project install of the Dream Team under .claude/, and that install is in charge here: its own commands and hooks answer this prompt. The team is now a plugin. /dream-team:team-setup, typed once with the prefix, removes the old install after one question and keeps the project's knowledge and run state. Say this in one line; remove nothing yourself.\n</TEAM-OLD-INSTALL>"
+  exit 0
+fi
+
 context=""
 
 if [ -d "$LEGACY" ]; then
@@ -79,26 +113,29 @@ fi
 # nothing verified. Exit 1 only: a scaffold on a still-empty project (exit 3)
 # is the preflight's to mention, and the hook speaks only for the state change
 # the orchestrator would otherwise not see.
-TEAM_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
-if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]' \
-   && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/team[[:space:]]+(stop|status|resume)'; then
+#
+# The command is /team or /dream-team:team, whichever the developer typed. The
+# knowledge is the project's; the checks and the reference are the team's.
+KNOWLEDGE="${PROJECT_DIR}/.claude/knowledge"
+if [ ! -d "$LEGACY" ] && printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/(dream-team:)?team[[:space:]]' \
+   && ! printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/(dream-team:)?team[[:space:]]+(stop|status|resume)'; then
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-learnings-inbox.sh" ]; then
-    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
+    inbox="$(bash "$TEAM_ROOT/checks/verify-learnings-inbox.sh" "$KNOWLEDGE" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
       summary="$(printf '%s\n' "$inbox" | head -1 | sed 's/^learnings inbox: //')"
       summary="$(escape_for_json "$summary")"
       context="${context}<TEAM-INBOX-DUE>\n"
-      context="${context}The learnings inbox is due: ${summary}. In Step 0, before any research, offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Inbox due: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}The learnings inbox is due: ${summary}. In Step 0, before any research, offer the refresh as ${TEAM_ROOT_JSON}/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Inbox due: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-INBOX-DUE>\n"
     fi
   fi
   if [ -n "$TEAM_ROOT" ] && [ -f "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" ]; then
-    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$TEAM_ROOT/knowledge" 2>/dev/null)"; rc=$?
+    scaffold="$(bash "$TEAM_ROOT/checks/verify-knowledge-scaffold.sh" "$PROJECT_DIR" "$KNOWLEDGE" 2>/dev/null)"; rc=$?
     if [ "$rc" -eq 1 ]; then
       written="$(printf '%s\n' "$scaffold" | sed -n 's/^knowledge: scaffold //p' | head -1)"
       written="$(escape_for_json "$written")"
       context="${context}<TEAM-KNOWLEDGE-SCAFFOLD>\n"
-      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 offer the refresh as .claude/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Scaffold knowledge: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
+      context="${context}The knowledge files are scaffolds written on an empty project on ${written}, and the project now has content. In Step 0 offer the refresh as ${TEAM_ROOT_JSON}/skills/team/references/knowledge-refresh.md describes (one AskUserQuestion: refresh now / continue), then record \\\"Scaffold knowledge: offered YYYY-MM-DD — <answer>\\\" in status.md → Process notes. Never block the run on it.\n"
       context="${context}</TEAM-KNOWLEDGE-SCAFFOLD>\n"
     fi
   fi
@@ -140,7 +177,7 @@ if [ "$slash" -eq 0 ] && [ -f "$MARKER" ]; then
       [ -z "$parent" ] || parent_clause="; parent $(escape_for_json "$parent")"
       context="${context}<TEAM-MODE-CLOSED>\n"
       context="${context}Run ${cid} closed ${closed_on} with result ${result}; ${verify_open} Verify by hand lines open${parent_clause}. The run is not open, but this message arrives in its project right after it: treat it as feedback on that run, not as a standalone request.\n"
-      context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\"). 2. Read .dream-team-tracking/${cid}/status.md and .claude/skills/team/references/follow-up.md, and follow follow-up.md: it says which messages update the closed run, which open a linked run, which start a new task, and which are not about the run at all. 3. Stay in the orchestrator role. If the marker lacks a state=closed line, rewrite it to the closed form the team skill describes before anything else.\n"
+      context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"dream-team:team\\\"). 2. Read .dream-team-tracking/${cid}/status.md and ${TEAM_ROOT_JSON}/skills/team/references/follow-up.md, and follow follow-up.md: it says which messages update the closed run, which open a linked run, which start a new task, and which are not about the run at all. 3. Stay in the orchestrator role. If the marker lacks a state=closed line, rewrite it to the closed form the team skill describes before anything else.\n"
       context="${context}Handle directly, without the workflow: a request to stop team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
       context="${context}</TEAM-MODE-CLOSED>"
     else
@@ -149,7 +186,7 @@ if [ "$slash" -eq 0 ] && [ -f "$MARKER" ]; then
       context="${context}<TEAM-MODE-ACTIVE>\n"
       context="${context}Dream Team mode is ON for this project. Run: ${cid}. Workflow: ${wf}. Last recorded phase: ${ph}.\n"
       context="${context}Treat the user's message as input to that run, not as a standalone request.\n"
-      context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"team\\\") and read .dream-team-tracking/${cid}/status.md before answering.\n"
+      context="${context}1. If the team skill is not already loaded in this session, invoke it now (Skill tool, name \\\"dream-team:team\\\") and read .dream-team-tracking/${cid}/status.md before answering.\n"
       context="${context}2. Continue the existing run from its first unchecked phase. Never restart it and never open a second run in parallel.\n"
       context="${context}3. Stay in the orchestrator role: no production code, no tests, no build or test commands of your own — those belong to the Developer, Tester and Reviewer subagents.\n"
       context="${context}Handle directly, without the workflow: a request to stop or pause team mode (delete .dream-team-tracking/.team-mode, confirm in one line), and questions about the run's own status.\n"
@@ -160,4 +197,4 @@ fi
 
 [ -n "$context" ] || exit 0
 
-printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "UserPromptSubmit",\n    "additionalContext": "%s"\n  },\n  "suppressOutput": true\n}\n' "$context"
+emit "$context"

@@ -133,17 +133,19 @@ OUT="$(cd "$p" && printf '{"prompt":"hello"}' | CLAUDE_PLUGIN_ROOT="$team" CLAUD
 case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail hooks-cmd-bash "hooks.json command under bash: $OUT" ;; esac
 
 # 10. inbox due: only on a /team <task> prompt, only when the check says so
-inbox_project() { # name LEARNINGS-body -> project path with a team root, a manifest and a knowledge dir
+# The team root (hooks, checks, manifest) is a directory of its own, "<project>.team",
+# as a plugin's is; the project holds only its knowledge and its run state.
+inbox_project() { # name LEARNINGS-body -> project path with a knowledge dir; its team root is "<path>.team"
   local p; p="$(project "$1")"
-  mkdir -p "$p/.claude/knowledge/learnings" "$p/.claude/checks" "$p/.claude/hooks"
-  cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
-  cp "$ROOT/checks/verify-learnings-inbox.sh" "$p/.claude/checks/"
-  cp "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
+  mkdir -p "$p/.claude/knowledge/learnings" "$p.team/checks" "$p.team/hooks"
+  cp "$ROOT/team-manifest.json" "$p.team/team-manifest.json"
+  cp "$ROOT/checks/verify-learnings-inbox.sh" "$p.team/checks/"
+  cp "$ROOT/hooks/team-mode-prompt" "$ROOT/hooks/guard-command" "$p.team/hooks/"
   printf '%s\n' "$2" > "$p/.claude/knowledge/LEARNINGS.md"
   printf '%s' "$p"
 }
-run_deployed() { # CASE PROJECT PROMPT: runs the hook from its deployed place
-  OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PROJECT_DIR="$2" bash "$2/.claude/hooks/team-mode-prompt")"; RC=$?
+run_deployed() { # CASE PROJECT PROMPT: runs the hook from the team root, as the harness does
+  OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PLUGIN_ROOT="$2.team" CLAUDE_PROJECT_DIR="$2" bash "$2.team/hooks/team-mode-prompt")"; RC=$?
 }
 due_body='# Inbox
 
@@ -157,10 +159,38 @@ p="$(inbox_project inbox-due "$due_body")"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due "$p" '"/team fix the crash"'
 case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
+# the reference is named under the team root, never under the project's .claude/
+case "$OUT" in *"${p##*/}.team/skills/team/references/knowledge-refresh.md"*) ;; *) fail inbox-due-root "reference not named under the team root: $OUT" ;; esac
+case "$OUT" in *'.claude/skills/'*) fail inbox-due-root "reference still named under .claude/: $OUT" ;; esac
 run_deployed inbox-due-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-plain "inbox block on a plain prompt: $OUT" ;; esac
 run_deployed inbox-due-status "$p" '"/team status"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-status "inbox block on /team status: $OUT" ;; esac
+# the qualified command name starts a run too, and its status form does not
+run_deployed full-name "$p" '"/dream-team:team fix the crash"'
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*) ;; *) fail full-name "no inbox block on /dream-team:team <task>: $OUT" ;; esac
+run_deployed full-name-status "$p" '"/dream-team:team status"'
+case "$OUT" in *TEAM-INBOX-DUE*) fail full-name-status "inbox block on /dream-team:team status: $OUT" ;; esac
+# without CLAUDE_PLUGIN_ROOT the hook finds the team root from its own place and prints no rootless path
+OUT="$(printf '{"prompt":"/team fix the crash"}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p.team/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-INBOX-DUE*"${p##*/}.team/skills/team/references/knowledge-refresh.md"*) ;; *) fail no-env "no inbox block, or no team root in it, without CLAUDE_PLUGIN_ROOT: $OUT" ;; esac
+case "$OUT" in *' /skills/'*|*' /checks/'*) fail no-env "a path with an empty team root: $OUT" ;; esac
+
+# 10b. an old in-project install is still in charge of its project: the plugin's
+#      hooks stay out of its way. The prompt hook says so once the developer
+#      reaches for the team, and is silent otherwise, an open run included; the
+#      guard denies nothing, because the old install's own guard still does.
+p="$(inbox_project old-install "$due_body")"; marker "$p" bug_fix_o_2026-11-20 "5 Implement"; status "$p" bug_fix_o_2026-11-20 "# Status: o"
+cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
+run_deployed old-install-plain "$p" '"hello"'
+[ -z "$OUT" ] || fail old-install-plain "expected silence beside an old install: $OUT"
+run_deployed old-install-team "$p" '"/team fix the crash"'
+case "$OUT" in *TEAM-OLD-INSTALL*'/dream-team:team-setup'*) ;; *) fail old-install-team "no old-install block on /team: $OUT" ;; esac
+case "$OUT" in *TEAM-MODE-ACTIVE*|*TEAM-INBOX-DUE*) fail old-install-team "another block beside the old-install block: $OUT" ;; esac
+run_deployed old-install-full "$p" '"/dream-team:team fix the crash"'
+case "$OUT" in *TEAM-OLD-INSTALL*) ;; *) fail old-install-full "no old-install block on /dream-team:team: $OUT" ;; esac
+OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PLUGIN_ROOT="$p.team" CLAUDE_PROJECT_DIR="$p" bash "$p.team/hooks/guard-command" 2>&1)"
+[ -z "$OUT" ] || fail old-install-guard "the plugin's guard spoke beside an old install: $OUT"
 
 # 11. inbox clean: silence
 p="$(inbox_project inbox-clean "$due_body")"
@@ -169,7 +199,7 @@ run_deployed inbox-clean "$p" '"/team fix the crash"'
 
 # 12. inbox check cannot read its limits (old manifest): silence, never a false "due"
 p="$(inbox_project inbox-old "$due_body")"
-sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.claude/team-manifest.json"
+sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p.team/team-manifest.json"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-old "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
@@ -177,7 +207,7 @@ run_deployed inbox-old "$p" '"/team fix the crash"'
 # 12b. scaffold knowledge on a project that has content: only on a /team <task> prompt, only on exit 1
 scaffold_project() { # name -> deployed project with a clean inbox and a scaffold PROJECT-OVERVIEW.md
   local p; p="$(inbox_project "$1" "$due_body")"
-  cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p/.claude/checks/"
+  cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p.team/checks/"
   printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-10-28; nothing here is verified against code. Run /generate-knowledge when the code exists.' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
   printf '%s' "$p"
 }
