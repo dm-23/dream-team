@@ -85,15 +85,31 @@ fi
 
 # An old in-project install (the team cloned or copied into .claude/) is still
 # in charge of its project: its own hooks are wired there and answer every
-# prompt. This hook stays out of its way, so nothing is said twice, and speaks
-# only when the developer reaches for the team.
+# prompt. Two cases, told apart by where this script itself sits.
+#
+# Run from the plugin, beside such an install: stay out of its way, so nothing
+# is said twice, and speak only when the developer reaches for the team. The
+# command that removes the install gets no block at all: telling it to remove
+# nothing would contradict the one thing it is there to do.
+#
+# Run as that install's own copy, updated in place to a version that is a
+# plugin (a pull inside .claude/): this is the only hook the project has, so
+# it keeps working, and a team command is told how to move to the plugin.
+in_project_note=""
 if [ -f "${PROJECT_DIR}/.claude/team-manifest.json" ]; then
-  [ "$team_cmd" -eq 1 ] || exit 0
-  emit "<TEAM-OLD-INSTALL>\nThis project still carries an in-project install of the Dream Team under .claude/, and that install is in charge here: its own commands and hooks answer this prompt. The team is now a plugin. /dream-team:team-setup, typed once with the prefix, removes the old install after one question and keeps the project's knowledge and run state. Say this in one line; remove nothing yourself.\n</TEAM-OLD-INSTALL>"
-  exit 0
+  if [ -n "$TEAM_ROOT" ] && [ "$TEAM_ROOT" -ef "${PROJECT_DIR}/.claude" ]; then
+    if [ "$team_cmd" -eq 1 ]; then
+      in_project_note="<TEAM-OLD-INSTALL>\nThe Dream Team copy inside this project's .claude/ was updated to a version that runs only as a plugin: its prompts can no longer find their own files there. Start no run and continue none from this copy. Tell the user, in one line, to install the Dream Team plugin (the README's Install section), reopen the session and run /dream-team:team-setup, which removes this copy and keeps the project's knowledge and run state.\n</TEAM-OLD-INSTALL>\n"
+    fi
+  else
+    [ "$team_cmd" -eq 1 ] || exit 0
+    if printf '%s' "$payload" | grep -qE '"prompt"[[:space:]]*:[[:space:]]*"([[:space:]]|\\[ntr])*/dream-team:team-setup([[:space:]"\\]|$)'; then exit 0; fi
+    emit "<TEAM-OLD-INSTALL>\nThis project still carries an in-project install of the Dream Team under .claude/, and that install is in charge here: its hooks answer every prompt and the short command names run its copy. The team is now a plugin. Start no run and continue none through the plugin's commands in this project until the old install is gone. /dream-team:team-setup, typed once with the prefix, removes it after one question and keeps the project's knowledge and run state. Say this in one line; remove nothing yourself.\n</TEAM-OLD-INSTALL>"
+    exit 0
+  fi
 fi
 
-context=""
+context="$in_project_note"
 
 if [ -d "$LEGACY" ]; then
   context="${context}<TEAM-LEGACY-STATE>\n"

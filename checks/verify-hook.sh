@@ -191,6 +191,25 @@ run_deployed old-install-full "$p" '"/dream-team:team fix the crash"'
 case "$OUT" in *TEAM-OLD-INSTALL*) ;; *) fail old-install-full "no old-install block on /dream-team:team: $OUT" ;; esac
 OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PLUGIN_ROOT="$p.team" CLAUDE_PROJECT_DIR="$p" bash "$p.team/hooks/guard-command" 2>&1)"
 [ -z "$OUT" ] || fail old-install-guard "the plugin's guard spoke beside an old install: $OUT"
+# the command that removes the old install must not be told to remove nothing
+run_deployed old-install-setup "$p" '"/dream-team:team-setup"'
+[ -z "$OUT" ] || fail old-install-setup "a block on the prompt that removes the old install: $OUT"
+case "$(run_deployed x "$p" '"/dream-team:team fix the crash"'; printf '%s' "$OUT")" in *'no run'*) ;; *) fail old-install-no-run "the block does not say to start no run through the plugin" ;; esac
+
+# 10c. the in-project copy itself, updated in place to a version that is a
+#      plugin (a pull inside .claude/): its hooks are the project's only ones,
+#      so they must keep working, the guard above all, and the prompt hook says
+#      what to do when the developer reaches for the team.
+p="$(project in-project)"; marker "$p" bug_fix_i_2026-11-20 "5 Implement"; status "$p" bug_fix_i_2026-11-20 "# Status: i"
+mkdir -p "$p/.claude/hooks" "$p/.claude/knowledge"
+cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
+cp "$ROOT/hooks/team-mode-prompt" "$ROOT/hooks/guard-command" "$ROOT/hooks/run-hook.cmd" "$p/.claude/hooks/"
+OUT="$(printf '{"prompt":"hello"}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_i_2026-11-20*) ;; *) fail in-project-sticky "the in-project copy lost sticky mode: $OUT" ;; esac
+OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/guard-command" 2>&1)"
+case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail in-project-guard "the in-project copy lost its guard: $OUT" ;; esac
+OUT="$(printf '{"prompt":"/team fix the crash"}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-OLD-INSTALL*'plugin'*'/dream-team:team-setup'*) ;; *) fail in-project-team "no instruction to move to the plugin on /team: $OUT" ;; esac
 
 # 11. inbox clean: silence
 p="$(inbox_project inbox-clean "$due_body")"
