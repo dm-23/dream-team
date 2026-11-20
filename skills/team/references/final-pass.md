@@ -19,7 +19,7 @@ One handoff → change-reviewer, `mode/phase: final-pass`, model from the cell `
 - the task in the user's words (`status.md → ## Task`);
 - the `status.md` path, for its Decisions log;
 - the knowledge dir;
-- `.claude/templates/review-baseline.md`;
+- `{team}/templates/review-baseline.md`;
 - the prior learnings lines;
 - `toolchain: run by the Reviewer at <sha> — <the Reviewer's Toolchain line>`, `<sha>` from `git rev-parse --short HEAD` and the line copied from the approving report.
 

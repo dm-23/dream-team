@@ -21,7 +21,8 @@ cd "$(dirname "$0")/.." || exit 1
 # 4.5.0: the sticky section describes the closed state, read every turn by design.
 # 4.6.0: the Quick Fix rows in Step 0, the references table and the marker block.
 # 4.8.0: the Review Changes rows in Step 0 and the references table, the advisory rule.
-MAX_PER_TURN=44000
+# 5.0.0: the team root line and the qualified role name a plugin needs.
+MAX_PER_TURN=44200
 SKILL=skills/team/SKILL.md
 REFS=skills/team/references
 status=0

@@ -3,7 +3,7 @@
 # (tracking.legacyDir) into the shared one (tracking.dir) that every edition
 # of the team reads. See team-manifest.json → tracking.
 #
-#   bash .claude/tools/migrate-tracking.sh [--dry-run]     (from the project root)
+#   bash {team}/tools/migrate-tracking.sh [--dry-run]     (from the project root)
 #
 # Order serves an interrupted run: the knowledge directory is backed up and
 # rewritten first, then the path is rewritten inside the legacy tree, then
