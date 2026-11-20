@@ -1,6 +1,6 @@
 {
   "name": "dream-team",
-  "version": "4.9.0",
+  "version": "5.0.0",
   "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>.",
   "author": { "name": "dm-23" },
   "repository": "https://github.com/dm-23/dream-team"
