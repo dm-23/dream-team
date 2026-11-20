@@ -74,7 +74,7 @@ Flag only with a concrete reason. Never demand a micro-optimisation without a me
 - The change lives in the module the architecture file says owns that concern.
 - Layer direction holds: a lower layer never imports from a higher one, and a re-export does not launder such an import.
 - The documented base types, wrappers and patterns are used. Anything new is registered where its kind is registered. Names follow the documented conventions.
-- Public contracts (interface shapes, events, shared data types) change only with a compatibility story.
+- Public contracts (interface shapes, events, shared data types) change only with a compatibility story. New optional members do not by themselves make one.
 - Consistency with the surrounding code beats abstract correctness.
 
 ## 8. Maintainability
@@ -82,7 +82,8 @@ Flag only with a concrete reason. Never demand a micro-optimisation without a me
 - Names reveal intent and use the vocabulary of the file. A boolean reads as an assertion.
 - A flag with three states where two would do is a finding.
 - One level of abstraction per function. Guard clauses over nesting. A function that does two things is two functions; a boolean argument that switches behaviour is two functions.
-- A contract between optional parameters (two that must be given together, one that is meaningless without another) is enforced by the type, never held by a comment.
+- A contract between optional parameters or fields (two that must be given together, one that is meaningless without another) is enforced by the type, never held by a comment.
+- Adding optional fields to a type other code imports is a finding when the type's name or its place promises more generality than its users need, or when two functions that build different stages of one shape now return that same type, so the narrower value passes where the wider is required. Optionality answers neither; the finding names what an alternative would touch.
 - A loop that throws from its middle when the error could be collected and raised once after it is a finding when the surrounding code collects.
 - Comments explain why. A comment that restates what simple code does is a finding; a stale comment is a finding.
 - Dead code is a finding: unused imports, parameters, variables and branches, and a parameter whose last caller is gone.
