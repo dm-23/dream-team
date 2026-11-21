@@ -251,9 +251,9 @@ For the lead: every amendment carries a generic `Proposal` for a team file. `bas
 
 ## The manifest
 
-`team-manifest.json` is the single source of truth for what a correct install looks like. It lists the agents and commands, the required and persistent knowledge files, the template paths, the paths hidden from version control, the plugins the team expects, the hook wiring, and the neutrality check.
+`team-manifest.json` is the single source of truth for what the team consists of. It lists the agents and commands, the required and persistent knowledge files, the template paths, the paths hidden from version control, the plugins the team expects, the hooks, and the neutrality check.
 
-`/team` reads it on every invocation and refuses to start when a required knowledge file is missing. `/team-setup` validates every field. Adding a role, a command or a knowledge file means editing this file too.
+`/team` reads it on every invocation and refuses to start when a required knowledge file is missing. `/team-setup` works from it step by step. Adding a role, a command or a knowledge file means editing this file too.
 
 **Plugins.** The `plugins` array declares the optional capabilities described above. Each entry names a capability, the plugin that provides it, its marketplace and install command, who uses it, and the rules for when it may and may not be used. `pluginPolicy` above the array states the three invariants: consent per plugin, equal quality without any of them, and brokering through the orchestrator. Add your own entries the same way.
 
@@ -269,7 +269,7 @@ Run it yourself before committing a change to any prompt.
 
 ## Updating the team
 
-The lead raises the version and pushes. A developer gets the new version through the plugin mechanism:
+The lead raises the version in two places, `team.version` in `team-manifest.json` and `version` in `.claude-plugin/plugin.json` (a check fails when they differ), and pushes. A developer gets a new copy only when that number changes, through the plugin mechanism:
 
 ```
 /plugin update dream-team@dream-team
