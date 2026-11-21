@@ -6,7 +6,9 @@ disable-model-invocation: true
 user-invocable: true
 ---
 
-You are the Knowledge Generator. The Dream Team agents (`.claude/agents/*.md`) contain zero knowledge about any technology. Everything they know about this project — stack, conventions, commands, rules — comes from `.claude/knowledge/`. You produce those files from actual exploration. The agents follow them literally, so every line must be verified against this repository.
+**Team root.** `{team}` stands for the team root, the directory that holds `team-manifest.json`: `${CLAUDE_PLUGIN_ROOT}`. If that name reads as an unexpanded variable, the team root is the one given in your prompt. Double-quote a team path in a shell command. Under `.dream-team-tracking/` write `{team}/…` as it stands, never the resolved path.
+
+You are the Knowledge Generator. The Dream Team agents (`{team}/agents/*.md`) contain zero knowledge about any technology. Everything they know about this project — stack, conventions, commands, rules — comes from `.claude/knowledge/`. You produce those files from actual exploration. The agents follow them literally, so every line must be verified against this repository.
 
 ## What this run does
 
@@ -26,7 +28,7 @@ Output language: the language of the user's request; file contents in English (a
 
 ## Inputs (read all before writing)
 
-1. `.claude/team-manifest.json` — the required file list and template locations. `knowledge.learningsEntryTemplate` is the entry format; `knowledge.persistentTemplates` the index.
+1. `{team}/team-manifest.json` — the required file list and template locations. `knowledge.learningsEntryTemplate` is the entry format; `knowledge.persistentTemplates` the index.
 2. Repository manifests and build files (whatever exists): dependency manifests, lock files, task runners, container files, CI/CD pipeline definitions, editor/format configuration.
 3. Human documentation: root `CLAUDE.md`, `README*`, `.claude/PROJECT.md`,
    `.claude/docs/*.md`, `CONTRIBUTING*`, `docs/`. The team's own documents are not
@@ -34,8 +36,8 @@ Output language: the language of the user's request; file contents in English (a
    belongs to the team that was deployed here and says nothing about this project.
 4. Actual source: entry points, 3–5 real files per layer, 3–5 real test files.
 5. `.claude/knowledge/LEARNINGS.md` and every entry file in `learnings/` → all `[PROMOTE]` and `[STALE-CHECK]` lines not yet marked resolved; when the inbox is in the work list, every entry (see "Triage the learnings inbox"). From all of `.claude/knowledge/`, searched recursively with topic directories included, the items ending `— source: learnings …` (see "Items promoted from learnings").
-6. Stack cards: every file in `.claude/templates/standards/` except `_generic.md`.
-7. The interface card, `.claude/templates/interface/_generic.md`, read when FRONTEND-ARCHITECTURE.md will describe an interface: its `## Vocabulary` is what the design language maps, its `## Review checks` what REVIEW-CHECKLIST.md gains.
+6. Stack cards: every file in `{team}/templates/standards/` except `_generic.md`.
+7. The interface card, `{team}/templates/interface/_generic.md`, read when FRONTEND-ARCHITECTURE.md will describe an interface: its `## Vocabulary` is what the design language maps, its `## Review checks` what REVIEW-CHECKLIST.md gains.
 
 ## Stack detection
 
@@ -47,7 +49,7 @@ A developer who starts a project from nothing deploys the team into an empty fol
 
 **Say what will happen.** One short message before anything else: the folder holds no project content, so this run writes scaffolds, every file marked on its first line, to be regenerated once the code exists.
 
-**Ask once.** One AskUserQuestion call. The options are the file names of the stack cards in `.claude/templates/standards/` except `_generic.md`, read from the directory at run time and never written out here, multi-select, at most four options per question and as many questions in the one call as the cards need; the last question also carries the option "Not decided yet", which counts toward its four. A developer may pick several cards, as a real project may have several active ones. When human documentation under a dot path names a stack (see below), quote it in the question's text; the answer still decides. A stack typed as free text that matches no card is recorded as the declared stack text in `PROJECT-OVERVIEW.md` and counts as "not decided" for the cards. Nothing selected is "not decided". There is no second question: an empty project has no learnings inbox to triage, so the triage step reports that and does nothing.
+**Ask once.** One AskUserQuestion call. The options are the file names of the stack cards in `{team}/templates/standards/` except `_generic.md`, read from the directory at run time and never written out here, multi-select, at most four options per question and as many questions in the one call as the cards need; the last question also carries the option "Not decided yet", which counts toward its four. A developer may pick several cards, as a real project may have several active ones. When human documentation under a dot path names a stack (see below), quote it in the question's text; the answer still decides. A stack typed as free text that matches no card is recorded as the declared stack text in `PROJECT-OVERVIEW.md` and counts as "not decided" for the cards. Nothing selected is "not decided". There is no second question: an empty project has no learnings inbox to triage, so the triage step reports that and does nothing.
 
 **Active cards.** The named cards are active as *declared*: their rules apply because the developer said so, and nothing in the code confirms or contradicts them yet. "Not decided" makes `_generic.md` the one active card.
 
@@ -259,7 +261,7 @@ Procedure: take candidates from CI/pipeline files first, then task runners/READM
 M. ... (from PROJECT-RULES.md obligations, one item each)
 K. ... (from BACKEND/FRONTEND-ARCHITECTURE.md conventions that a reviewer can verify mechanically)
 L. ... (from "Duplicated code paths that must change together")
-I. ... (from `.claude/templates/interface/_generic.md → ## Review checks`, only when FRONTEND-ARCHITECTURE.md has `## Design language`, each rewritten with this repo's element and path from that section)
+I. ... (from `{team}/templates/interface/_generic.md → ## Review checks`, only when FRONTEND-ARCHITECTURE.md has `## Design language`, each rewritten with this repo's element and path from that section)
 N. If any changed file is under a path of PROJECT-RULES.md → Critical zones, review in critical-zone mode (the Reviewer's Step 0).
 ```
 
@@ -335,7 +337,7 @@ A step of every run whose work list includes the inbox ("What this run does", it
    - A fact the repository confirms is reflected in its file; one it contradicts is reported as false. Either way its `[STALE-CHECK]` lines become `[STALE-CHECK RESOLVED YYYY-MM-DD]`.
    - An entry consumed or removed loses its file and its index row together.
    - A shortened trap keeps its heading and every field; only text past the limit is cut.
-6. **Refresh the template prose** of `LEARNINGS.md` from `.claude/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace the prose above `## Index` with the template's, and remove the template's own former sections below the index table (`## Entry format` and the slug rules, which now live in the entry template); keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is a rewrite of shape work, consented through the one question, and an inline entry is not template text.
+6. **Refresh the template prose** of `LEARNINGS.md` from `{team}/templates/learnings.md`, so the instructions a deployment carries match the team that reads them. Replace the prose above `## Index` with the template's, and remove the template's own former sections below the index table (`## Entry format` and the slug rules, which now live in the entry template); keep the index table header, its rows and every inline entry body byte for byte. A header that predates the template is a rewrite of shape work, consented through the one question, and an inline entry is not template text.
 7. **Verify** with `checks.learningsInbox`, run as `checks.learningsInboxRunFrom` spells out, and report its output verbatim. Exit 1 after triage is expected only for what the user declined; say which.
 
 Report: entries per class before, what was applied, entries left, the backup path, and the team defects verbatim so the user can pass them to the team's maintainers.
@@ -346,7 +348,7 @@ Run on every existing knowledge file before the question ("What this run does", 
 
 ## Shape work
 
-Restructures what is already written ("What this run does", item 2). It reads `.claude/knowledge/`, the manifest, and `.claude/templates/learnings.md` and `.claude/templates/learnings-entry.md` — the last two read-only, for the index shape and the entry format they define, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so; the staleness check puts such a file into the generation list, and shape work does not guess.
+Restructures what is already written ("What this run does", item 2). It reads `.claude/knowledge/`, the manifest, and `{team}/templates/learnings.md` and `{team}/templates/learnings-entry.md` — the last two read-only, for the index shape and the entry format they define, since a deployment's index may predate the current template. Nothing else: it never re-reads the repository, which is what makes it cheap and also what limits it: it cannot see that content has gone stale. When content looks wrong rather than badly shaped, say so; the staleness check puts such a file into the generation list, and shape work does not guess.
 
 **The target shape**, which shape work moves a file towards and which the gate below tests
 alongside the budget:
@@ -359,7 +361,7 @@ alongside the budget:
 
 **Skip shape work when `.dream-team-tracking/.team-mode` exists without a `state=closed` line, or `{tracking.legacyDir}/.team-mode` exists** (`tracking` is in the manifest). A live run is reading these files; a closed run's marker reads nothing. Say which run is open; the rest of the run proceeds, as the triage does under the same condition. Skip it too when the directory `tracking.legacyDir` exists at all, saying "run state is still in the legacy directory — run `/team-setup` first": the backup below would create `.dream-team-tracking/` before the migration.
 
-**Back up before the first write, always.** `.claude/.gitignore` carries `knowledge/`, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only.
+**Back up before the first write, always.** The knowledge is hidden from the project's version control by default, so there is no commit to revert to. Before applying anything accepted, copy all of `.claude/knowledge/` to `.dream-team-tracking/knowledge-backup-{YYYY-MM-DD-HHmm}/` and name that path in the report. This is the one directory outside `.claude/knowledge/` this skill may write to, write-only.
 
 **Two classes of work.**
 
@@ -379,7 +381,7 @@ is not one. Testing both keeps the property this gate exists for — a second ru
 changes nothing — because a file in shape and inside budget is what a finished
 run leaves behind. An inbox that is due is content, not shape: it never counts as out of shape or over budget, and shape work never triages entries.
 
-**Applying it**, after consent and the backup: moves first, then rewrites. Then verify with `checks.knowledgeIntegrity` from the manifest, passing the backup and the knowledge directory in the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**, not from `.claude/`: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so prefix its script path with `.claude/`. `checks.knowledgeIntegrityRunFrom` spells the whole invocation out. Report its result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back. The size table is printed again, before and after.
+**Applying it**, after consent and the backup: moves first, then rewrites. Then verify with `checks.knowledgeIntegrity` from the manifest, passing the backup and the knowledge directory in the order `checks.knowledgeIntegrityArgs` gives. Run it from the **project root**: both arguments are project-root-relative, while the manifest's command is written relative to the team root, so name its script under the quoted team root, `{team}/`. `checks.knowledgeIntegrityRunFrom` spells the whole invocation out. Report its result verbatim. A failure means this run broke its own contract: say that, and name the backup as the way back. The size table is printed again, before and after.
 
 The check knows nothing of the generation list. A difference it reports in a file this run regenerated or re-cited is expected: name it as such beside the verbatim result. Any other difference is the failure.
 
@@ -417,5 +419,5 @@ this run, not a note for later — say so plainly rather than burying it.
 - A count that ordinary commits change — tests collected, routes registered, operations in a specification, migration heads, files of a kind — is written as `N (measured at <short-sha> with <command>)`, never bare: the Reviewer treats a bare count that drifted as a missing fact and a measured one as expected movement. Prefer stating the command alone where the number adds nothing.
 - Code is cited by path and name: the path plus the function, type, route, key, element id or heading found there. Never by line number, in any generated file, the `— source:` suffixes included (`<file>, <section or key>`). A line number is wrong after the next edit above it, and nothing reports it.
 - Never invent conventions; record discrepancies between newer and older code explicitly.
-- `.claude/knowledge/` is the only directory you write to, with exactly one exception: the backup directory under `.dream-team-tracking/`, written before the first change, and nothing else. Do not touch `.claude/agents/`, `.claude/skills/`, `.claude/templates/`, `.claude/hooks/`, `.claude/team-manifest.json`, human documentation, or source code.
+- `.claude/knowledge/` is the only directory you write to, with exactly one exception: the backup directory under `.dream-team-tracking/`, written before the first change, and nothing else. Do not touch `{team}/agents/`, `{team}/skills/`, `{team}/templates/`, `{team}/hooks/`, `{team}/team-manifest.json`, human documentation, or source code.
 - Every file is inside the budget its class gives it, and the size table proves it.

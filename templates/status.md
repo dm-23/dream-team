@@ -69,7 +69,7 @@ Commands from `TOOLCHAIN.md → Operations` run during this run, and the Researc
 
 ## Team amendment candidates
 
-Lessons about the team itself found in this run, in the entry format of `.claude/templates/team-amendments.md` without `Added`, or `seen again: <id> — <context_id>` for one an active amendment already covers. Verified and offered to the developer after the closing question (`.claude/skills/team/references/amendments.md`).
+Lessons about the team itself found in this run, in the entry format of `{team}/templates/team-amendments.md` without `Added`, or `seen again: <id> — <context_id>` for one an active amendment already covers. Verified and offered to the developer after the closing question (`{team}/skills/team/references/amendments.md`).
 
 - {none}
 

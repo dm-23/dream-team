@@ -91,7 +91,6 @@ run missing-project "$TMP/does-not-exist"
 # writes on an empty project, passes verify-knowledge-integrity.sh against a
 # copy of itself, as a /generate-knowledge shape-work run would check it.
 root="$TMP/integrity"; k="$root/.claude/knowledge"; mkdir -p "$k/learnings"
-cp "$ROOT/team-manifest.json" "$root/.claude/team-manifest.json"
 for f in PROJECT-OVERVIEW TESTING-CONVENTIONS SEARCH-PLAYBOOK TOOLCHAIN REVIEW-CHECKLIST PROJECT-RULES; do
   printf '%s\n# %s\n\nnot yet known — empty project\n' "$BANNER" "$f" > "$k/$f.md"
 done

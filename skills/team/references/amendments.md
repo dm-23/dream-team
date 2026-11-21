@@ -10,10 +10,10 @@ An amendment enters only verified and adopted. A rule that reaches every role un
 
 A `Roles` value names a role prompt, and a `Proposal` names a team file. Hand the Verifier the deployed path:
 
-- `<role>`, or `<role>:<lens or mode>` → `.claude/agents/<role>.md`
-- `orchestrator` → `.claude/skills/team/SKILL.md`, plus the workflow reference the amendment is about
-- a reference such as `skills/team/references/quorum.md` → `.claude/skills/team/references/<file>`
-- a template such as `templates/status.md` → `.claude/templates/<file>`
+- `<role>`, or `<role>:<lens or mode>` → `{team}/agents/<role>.md`
+- `orchestrator` → `{team}/skills/team/SKILL.md`, plus the workflow reference the amendment is about
+- a reference such as `skills/team/references/quorum.md` → `{team}/skills/team/references/<file>`
+- a template such as `templates/status.md` → `{team}/templates/<file>`
 
 ## Step -1
 

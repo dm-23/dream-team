@@ -4,8 +4,8 @@
 #
 #   verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>
 #
-# The manifest is read at "$(dirname <knowledge-dir>)/team-manifest.json",
-# the deployed layout (.claude/knowledge/ beside .claude/team-manifest.json).
+# The manifest is read from the team root this script sits in (the parent of
+# its own directory); the knowledge dir is the project's and may be anywhere.
 # knowledge.classification is the source of truth for what every knowledge
 # file's verdict should be; this script never guesses a file's classification
 # from directory structure. Missing manifest or missing/empty classification
@@ -89,7 +89,7 @@ current="${2:?usage: verify-knowledge-integrity.sh <backup-dir> <knowledge-dir>}
 [ -d "$backup" ] || { echo "FAIL: backup dir not found: $backup" >&2; exit 1; }
 [ -d "$current" ] || { echo "FAIL: knowledge dir not found: $current" >&2; exit 1; }
 
-manifest="$(dirname "$current")/team-manifest.json"
+manifest="$(cd "$(dirname "$0")/.." && pwd)/team-manifest.json"
 [ -f "$manifest" ] || { echo "FAIL: manifest not found at $manifest (needed to read knowledge.classification)" >&2; exit 1; }
 
 status=0

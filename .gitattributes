@@ -5,10 +5,8 @@
 # tools/migrate-tracking.sh is run through bash by Claude Code the same way
 # and gets the same pin.
 #
-# Scoped to those files on purpose. This file travels with the team and
-# lands at .claude/.gitattributes in a project, where a blanket `* eol=lf` would
-# silently impose line endings on everything else that ends up under .claude/,
-# including the generated knowledge files.
+# Scoped to those files on purpose: a blanket `* eol=lf` would impose line
+# endings on every other file of the repository.
 hooks/run-hook.cmd text eol=lf
 hooks/team-mode-prompt text eol=lf
 hooks/guard-command text eol=lf

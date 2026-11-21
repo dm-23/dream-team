@@ -122,33 +122,30 @@ p="$(project launcher)"; marker "$p" bug_fix_l_2026-10-08 "3 Design"; status "$p
 OUT="$(printf '{"prompt":"hello"}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" team-mode-prompt)"
 case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail launcher "launcher output: $OUT" ;; esac
 
-# 9b. the snippet's command as a harness runs it: from the project root, with
-#     CLAUDE_PROJECT_DIR unset. Claude Code runs it under bash; VS Code Copilot
-#     reads the same .claude/settings.json entry, ignores its "shell" field and
-#     runs the command in the Windows default shell, PowerShell. The command
-#     must therefore parse in both, so it carries no bash-only syntax.
-SNIPPET_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*\)",$/\1/p' "$ROOT/hooks/settings-snippet.json" | head -1 | sed 's/\\"/"/g')"
-[ -n "$SNIPPET_CMD" ] || fail snippet-cmd "no command line found in settings-snippet.json"
-mkdir -p "$p/.claude/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
-OUT="$(cd "$p" && printf '{"prompt":"hello"}' | env -u CLAUDE_PROJECT_DIR bash -c "$SNIPPET_CMD" 2>&1)"
-case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-bash "snippet command under bash: $OUT" ;; esac
-if command -v powershell.exe >/dev/null 2>&1; then
-  OUT="$(cd "$p" && printf '{"prompt":"hello"}' | env -u CLAUDE_PROJECT_DIR powershell.exe -NoProfile -NonInteractive -Command "$SNIPPET_CMD" 2>&1)"
-  case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail snippet-powershell "snippet command under PowerShell: $OUT" ;; esac
-fi
+# 9b. the command hooks/hooks.json registers, as the harness runs it: under
+#     bash, with CLAUDE_PLUGIN_ROOT naming the plugin directory and
+#     CLAUDE_PROJECT_DIR the project. The directory name carries a space on
+#     purpose: a plugin cache under a user name with a space must still run.
+HOOKS_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*\)",$/\1/p' "$ROOT/hooks/hooks.json" 2>/dev/null | head -1 | sed 's/\\"/"/g')"
+[ -n "$HOOKS_CMD" ] || fail hooks-cmd "no command line found in hooks/hooks.json"
+team="$TMP/team root"; mkdir -p "$team/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$ROOT/hooks/team-mode-prompt" "$team/hooks/"
+OUT="$(cd "$p" && printf '{"prompt":"hello"}' | CLAUDE_PLUGIN_ROOT="$team" CLAUDE_PROJECT_DIR="$p" bash -c "$HOOKS_CMD" 2>&1)"
+case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_l_2026-10-08*) ;; *) fail hooks-cmd-bash "hooks.json command under bash: $OUT" ;; esac
 
 # 10. inbox due: only on a /team <task> prompt, only when the check says so
-inbox_project() { # name LEARNINGS-body -> project path with a team root, a manifest and a knowledge dir
+# The team root (hooks, checks, manifest) is a directory of its own, "<project>.team",
+# as a plugin's is; the project holds only its knowledge and its run state.
+inbox_project() { # name LEARNINGS-body -> project path with a knowledge dir; its team root is "<path>.team"
   local p; p="$(project "$1")"
-  mkdir -p "$p/.claude/knowledge/learnings" "$p/.claude/checks" "$p/.claude/hooks"
-  cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
-  cp "$ROOT/checks/verify-learnings-inbox.sh" "$p/.claude/checks/"
-  cp "$ROOT/hooks/team-mode-prompt" "$p/.claude/hooks/"
+  mkdir -p "$p/.claude/knowledge/learnings" "$p.team/checks" "$p.team/hooks"
+  cp "$ROOT/team-manifest.json" "$p.team/team-manifest.json"
+  cp "$ROOT/checks/verify-learnings-inbox.sh" "$p.team/checks/"
+  cp "$ROOT/hooks/team-mode-prompt" "$ROOT/hooks/guard-command" "$p.team/hooks/"
   printf '%s\n' "$2" > "$p/.claude/knowledge/LEARNINGS.md"
   printf '%s' "$p"
 }
-run_deployed() { # CASE PROJECT PROMPT: runs the hook from its deployed place
-  OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PROJECT_DIR="$2" bash "$2/.claude/hooks/team-mode-prompt")"; RC=$?
+run_deployed() { # CASE PROJECT PROMPT: runs the hook from the team root, as the harness does
+  OUT="$(printf '{"prompt":%s}' "$3" | CLAUDE_PLUGIN_ROOT="$2.team" CLAUDE_PROJECT_DIR="$2" bash "$2.team/hooks/team-mode-prompt")"; RC=$?
 }
 due_body='# Inbox
 
@@ -162,10 +159,57 @@ p="$(inbox_project inbox-due "$due_body")"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-due "$p" '"/team fix the crash"'
 case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*'references/knowledge-refresh.md'*'refresh now / continue'*) ;; *) fail inbox-due "expected the inbox block: $OUT" ;; esac
+# the reference is named under the team root, never under the project's .claude/
+case "$OUT" in *"${p##*/}.team/skills/team/references/knowledge-refresh.md"*) ;; *) fail inbox-due-root "reference not named under the team root: $OUT" ;; esac
+case "$OUT" in *'.claude/skills/'*) fail inbox-due-root "reference still named under .claude/: $OUT" ;; esac
 run_deployed inbox-due-plain "$p" '"hello"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-plain "inbox block on a plain prompt: $OUT" ;; esac
 run_deployed inbox-due-status "$p" '"/team status"'
 case "$OUT" in *TEAM-INBOX-DUE*) fail inbox-due-status "inbox block on /team status: $OUT" ;; esac
+# the qualified command name starts a run too, and its status form does not
+run_deployed full-name "$p" '"/dream-team:team fix the crash"'
+case "$OUT" in *TEAM-INBOX-DUE*'1 pending marks'*) ;; *) fail full-name "no inbox block on /dream-team:team <task>: $OUT" ;; esac
+run_deployed full-name-status "$p" '"/dream-team:team status"'
+case "$OUT" in *TEAM-INBOX-DUE*) fail full-name-status "inbox block on /dream-team:team status: $OUT" ;; esac
+# without CLAUDE_PLUGIN_ROOT the hook finds the team root from its own place and prints no rootless path
+OUT="$(printf '{"prompt":"/team fix the crash"}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p.team/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-INBOX-DUE*"${p##*/}.team/skills/team/references/knowledge-refresh.md"*) ;; *) fail no-env "no inbox block, or no team root in it, without CLAUDE_PLUGIN_ROOT: $OUT" ;; esac
+case "$OUT" in *' /skills/'*|*' /checks/'*) fail no-env "a path with an empty team root: $OUT" ;; esac
+
+# 10b. an old in-project install is still in charge of its project: the plugin's
+#      hooks stay out of its way. The prompt hook says so once the developer
+#      reaches for the team, and is silent otherwise, an open run included; the
+#      guard denies nothing, because the old install's own guard still does.
+p="$(inbox_project old-install "$due_body")"; marker "$p" bug_fix_o_2026-11-20 "5 Implement"; status "$p" bug_fix_o_2026-11-20 "# Status: o"
+cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
+run_deployed old-install-plain "$p" '"hello"'
+[ -z "$OUT" ] || fail old-install-plain "expected silence beside an old install: $OUT"
+run_deployed old-install-team "$p" '"/team fix the crash"'
+case "$OUT" in *TEAM-OLD-INSTALL*'/dream-team:team-setup'*) ;; *) fail old-install-team "no old-install block on /team: $OUT" ;; esac
+case "$OUT" in *TEAM-MODE-ACTIVE*|*TEAM-INBOX-DUE*) fail old-install-team "another block beside the old-install block: $OUT" ;; esac
+run_deployed old-install-full "$p" '"/dream-team:team fix the crash"'
+case "$OUT" in *TEAM-OLD-INSTALL*) ;; *) fail old-install-full "no old-install block on /dream-team:team: $OUT" ;; esac
+OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PLUGIN_ROOT="$p.team" CLAUDE_PROJECT_DIR="$p" bash "$p.team/hooks/guard-command" 2>&1)"
+[ -z "$OUT" ] || fail old-install-guard "the plugin's guard spoke beside an old install: $OUT"
+# the command that removes the old install must not be told to remove nothing
+run_deployed old-install-setup "$p" '"/dream-team:team-setup"'
+[ -z "$OUT" ] || fail old-install-setup "a block on the prompt that removes the old install: $OUT"
+case "$(run_deployed x "$p" '"/dream-team:team fix the crash"'; printf '%s' "$OUT")" in *'no run'*) ;; *) fail old-install-no-run "the block does not say to start no run through the plugin" ;; esac
+
+# 10c. the in-project copy itself, updated in place to a version that is a
+#      plugin (a pull inside .claude/): its hooks are the project's only ones,
+#      so they must keep working, the guard above all, and the prompt hook says
+#      what to do when the developer reaches for the team.
+p="$(project in-project)"; marker "$p" bug_fix_i_2026-11-20 "5 Implement"; status "$p" bug_fix_i_2026-11-20 "# Status: i"
+mkdir -p "$p/.claude/hooks" "$p/.claude/knowledge"
+cp "$ROOT/team-manifest.json" "$p/.claude/team-manifest.json"
+cp "$ROOT/hooks/team-mode-prompt" "$ROOT/hooks/guard-command" "$ROOT/hooks/run-hook.cmd" "$p/.claude/hooks/"
+OUT="$(printf '{"prompt":"hello"}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-MODE-ACTIVE*bug_fix_i_2026-11-20*) ;; *) fail in-project-sticky "the in-project copy lost sticky mode: $OUT" ;; esac
+OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/guard-command" 2>&1)"
+case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail in-project-guard "the in-project copy lost its guard: $OUT" ;; esac
+OUT="$(printf '{"prompt":"/team fix the crash"}' | env -u CLAUDE_PLUGIN_ROOT CLAUDE_PROJECT_DIR="$p" bash "$p/.claude/hooks/team-mode-prompt")"
+case "$OUT" in *TEAM-OLD-INSTALL*'plugin'*'/dream-team:team-setup'*) ;; *) fail in-project-team "no instruction to move to the plugin on /team: $OUT" ;; esac
 
 # 11. inbox clean: silence
 p="$(inbox_project inbox-clean "$due_body")"
@@ -174,7 +218,7 @@ run_deployed inbox-clean "$p" '"/team fix the crash"'
 
 # 12. inbox check cannot read its limits (old manifest): silence, never a false "due"
 p="$(inbox_project inbox-old "$due_body")"
-sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p/.claude/team-manifest.json"
+sed -i 's/"learningsIndexMaxRows": [0-9]*,/"learningsIndexMaxRowsX": 30,/' "$p.team/team-manifest.json"
 printf '## [2026-10-01] A trap\n- **Tags:** tag\n[PROMOTE] PROJECT-RULES.md — do the thing\n' > "$p/.claude/knowledge/learnings/2026-10-01-a-trap.md"
 run_deployed inbox-old "$p" '"/team fix the crash"'
 [ -z "$OUT" ] || fail inbox-old "expected silence on exit 2: $OUT"
@@ -182,7 +226,7 @@ run_deployed inbox-old "$p" '"/team fix the crash"'
 # 12b. scaffold knowledge on a project that has content: only on a /team <task> prompt, only on exit 1
 scaffold_project() { # name -> deployed project with a clean inbox and a scaffold PROJECT-OVERVIEW.md
   local p; p="$(inbox_project "$1" "$due_body")"
-  cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p/.claude/checks/"
+  cp "$ROOT/checks/verify-knowledge-scaffold.sh" "$p.team/checks/"
   printf '%s\n' '> SCAFFOLD — written on an empty project on 2026-10-28; nothing here is verified against code. Run /generate-knowledge when the code exists.' > "$p/.claude/knowledge/PROJECT-OVERVIEW.md"
   printf '%s' "$p"
 }
@@ -311,15 +355,15 @@ toolchain "$p" '`rm -rf "./tmp dir"/* && echo "a\b"`'
 expect_silence toolchain-escapes "$p" 'rm -rf "./tmp dir"/* && echo "a\b"'
 expect_deny toolchain-escapes-differs "$p" 'rm -rf "./tmp dir"/* && echo "a\c"' 'recursive rm'
 
-# the launcher reaches the guard, and so does the snippet's command run from the project root
+# the launcher reaches the guard, and so does the command hooks.json registers
 p="$(project guard-launcher)"; marker "$p" bug_fix_k_2026-10-20 "5 Implement"; status "$p" bug_fix_k_2026-10-20 "# Status: k"
 OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PROJECT_DIR="$p" bash "$LAUNCHER" guard-command 2>&1)"
 case "$OUT" in *'"permissionDecision": "deny"'*'force push'*) ;; *) fail guard-launcher "launcher output: $OUT" ;; esac
-GUARD_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*guard-command\)",$/\1/p' "$ROOT/hooks/settings-snippet.json" | head -1)"
-[ -n "$GUARD_CMD" ] || fail guard-snippet "no guard-command entry in settings-snippet.json"
-mkdir -p "$p/.claude/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$GUARD" "$p/.claude/hooks/" 2>/dev/null
-OUT="$(cd "$p" && printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | env -u CLAUDE_PROJECT_DIR bash -c "$GUARD_CMD" 2>&1)"
-case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail guard-snippet "snippet guard command under bash: $OUT" ;; esac
+GUARD_CMD="$(sed -n 's/^[[:space:]]*"command": "\(.*guard-command\)",$/\1/p' "$ROOT/hooks/hooks.json" 2>/dev/null | head -1 | sed 's/\\"/"/g')"
+[ -n "$GUARD_CMD" ] || fail guard-hooks-json "no guard-command entry in hooks/hooks.json"
+team="$TMP/guard team root"; mkdir -p "$team/hooks"; cp "$ROOT/hooks/run-hook.cmd" "$GUARD" "$team/hooks/" 2>/dev/null
+OUT="$(cd "$p" && printf '{"tool_name":"Bash","tool_input":{"command":"git push --force"}}' | CLAUDE_PLUGIN_ROOT="$team" CLAUDE_PROJECT_DIR="$p" bash -c "$GUARD_CMD" 2>&1)"
+case "$OUT" in *'"permissionDecision": "deny"'*) ;; *) fail guard-hooks-json "hooks.json guard command under bash: $OUT" ;; esac
 
 # the Copilot edition's copy: the same patterns and exemption, the project as
 # the working directory, its knowledge under .github/dream-team/, both deny forms

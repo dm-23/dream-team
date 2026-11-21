@@ -35,6 +35,13 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 MARKER="${PROJECT_DIR}/.dream-team-tracking/.team-mode"
 TOOLCHAIN="${PROJECT_DIR}/.claude/knowledge/TOOLCHAIN.md"
 
+# An old in-project install (the team cloned or copied into .claude/) still has
+# its own guard wired in the project; run from the plugin, this one stays
+# silent beside it. Run as that install's own copy, it is the only guard the
+# project has and keeps working.
+SELF_ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+if [ -f "${PROJECT_DIR}/.claude/team-manifest.json" ] && ! [ "$SELF_ROOT" -ef "${PROJECT_DIR}/.claude" ]; then exit 0; fi
+
 payload="$(cat 2>/dev/null || true)"
 
 [ -f "$MARKER" ] || exit 0

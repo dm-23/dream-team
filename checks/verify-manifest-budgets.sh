@@ -155,5 +155,17 @@ else
   fi
 fi
 
+# The plugin manifest carries the version the harness compares to decide
+# whether a developer gets a new copy; team.version is what the team reports
+# and what /team-setup records. One release, one number.
+plugin=.claude-plugin/plugin.json
+team_version="$(sed -n '/^  "team"[[:space:]]*:/,/^  }/s/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$m" | head -1)"
+plugin_version="$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$plugin" 2>/dev/null | head -1)"
+if [ -z "$team_version" ]; then
+  echo "FAIL: team.version not found in $m" >&2; status=1
+elif [ "$plugin_version" != "$team_version" ]; then
+  echo "FAIL: plugin.json version '${plugin_version:-<none>}' differs from team.version '$team_version'" >&2; status=1
+fi
+
 [ $status -eq 0 ] && echo "manifest budgets: ok"
 exit $status

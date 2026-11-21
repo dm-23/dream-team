@@ -1,0 +1,14 @@
+{
+  "name": "dream-team",
+  "description": "The Dream Team plugin for Claude Code.",
+  "owner": {
+    "name": "dm-23"
+  },
+  "plugins": [
+    {
+      "name": "dream-team",
+      "source": "./",
+      "description": "Stack-agnostic multi-agent development team for Claude Code. Invoke with /team <task>."
+    }
+  ]
+}

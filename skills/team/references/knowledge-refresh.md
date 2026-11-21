@@ -10,9 +10,9 @@ Two moments.
 
 ## Running it
 
-On yes: one Agent call, with no handoff envelope (the generator is a command, not a role) and `model` omitted. Prompt:
+On yes: one Agent call, with no handoff envelope (the generator is a command, not a role) and `model` omitted. The generator reads its file itself, so nothing in it is expanded for it: write the resolved team root in place of `{team}` in the prompt. Prompt:
 
-> You are the Knowledge Generator. Read `.claude/skills/generate-knowledge/SKILL.md` and follow it. Arguments: `Consent: given`. Answer in {language}. Ask no question; report the work list as done, the backup path and the size table.
+> You are the Knowledge Generator. The team root is `{team}`. Read `{team}/skills/generate-knowledge/SKILL.md` and follow it. Arguments: `Consent: given`. Answer in {language}. Ask no question; report the work list as done, the backup path and the size table.
 
 Scope: no file names at either moment. The generator's own staleness check and inbox classification find exactly the files and marks this run left behind, and a file-name run would skip the triage the option promises. The marker stays as it is. At Step 0 the call is made before the marker is written, because a marker in `state=open` is the one case the generator skips its shape work and triage for; at close the marker is already `state=closed`, which it accepts. Never run the generator while a marker says `state=open`, and never delete a marker to make room for it.
 

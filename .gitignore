@@ -1,17 +1,17 @@
-# This file travels with the team. In a project it lands at .claude/.gitignore,
-# where every pattern below is read relative to .claude/ — so `knowledge/` hides
-# .claude/knowledge/ without the project having to touch its own ignore file.
+# This repository's own ignore file. The Claude Code plugin takes no part in a
+# project's version control: /team-setup hides a project's .claude/knowledge/
+# and .dream-team-tracking/ through .git/info/exclude, which needs no commit
+# (see gitExclude in team-manifest.json).
 #
-# .dream-team-tracking/ lives at the project root, outside this directory.
-# /team-setup hides it through .git/info/exclude, which needs no commit, and
-# touches the project's own .gitignore only to replace a legacy line it already
-# carries (see gitExclude in team-manifest.json). Neither layer is ever committed.
+# The Copilot edition installs this file as .github/dream-team/.gitignore,
+# where `knowledge/` is read relative to that directory and hides the
+# edition's knowledge.
 knowledge/
 temp/
 docs/
 
-# The project's own hook wiring and permissions live beside the team in a
-# clone-in-place install and are never the team's.
+# Left from the in-project install, where a project's settings sat beside the
+# team; inert in this repository and in the Copilot edition.
 settings.json
 settings.local.json
 
